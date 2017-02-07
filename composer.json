@@ -1,0 +1,19 @@
+{
+    "name": "nozemi/nozlib",
+    "description": "Nozemi's Framework & Library",
+    "keywords": ["Nozemi"],
+    "type": "library",
+    "license": "Apache-2.0",
+    "homepage": "https://wdnsbn.com/",
+    "authors": [
+        {
+            "name": "Nozemi",
+            "homepage": "https://github.com/Nozemi"
+        }
+    ],
+    "autoload": {
+        "psr-0": {
+            "Nozemi": "lib/"
+        }
+    }
+}
