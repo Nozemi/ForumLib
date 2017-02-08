@@ -51,14 +51,23 @@
         } catch(PDOException $ex) {
           // Handle PDO error. In this case the PDO connection error.
           if($this->debug) {
-            return $ex->getMessage();
+            return array(
+              'error' => 1,
+              'message' => $ex->getMessage()
+            );
           } else {
-            return 'Something went wrong while connecting to the database.';
+            return array(
+              'error' => 1,
+              'message' => 'Something went wrong while connecting to the database.'
+            );
           }
         }
       } else {
         // Handle the error upon either username, password, host or name being null.
-        return 'Missing database credentials and/or details.';
+        return array(
+          'error' => 1,
+          'message' => 'Missing database credentials and/or details.'
+        );
       }
     }
 
@@ -86,9 +95,15 @@
       } catch(PDOException $ex) {
         // Handle prepare exception.
         if($this->debug) {
-          return $ex->getMessage();
+          return array(
+            'error' => 1,
+            'message' => $ex->getMessage()
+          );
         } else {
-          return 'The database is having issues. Please try again.';
+          return array(
+            'error' => 1,
+            'message' => 'The database is having issues. Please try again.'
+          );
         }
       }
     }
@@ -101,9 +116,15 @@
         } catch(PDOException $ex) {
           // Handle result exception.
           if($this->debug) {
-            return $ex->getMessage();
+            return array(
+              'error' => 1,
+              'message' => $ex->getMessage()
+            );
           } else {
-            return 'The database is having issues. Please try again.';
+            return array(
+              'error' => 1,
+              'message' => 'The database is having issues. Please try again.'
+            );
           }
         }
       }
@@ -114,7 +135,10 @@
       if(!is_null($this->statement)) {
         return $this->statement->fetch();
       } else {
-        return 'There is nothing to fetch.';
+        return array(
+          'error' => 1,
+          'message' => 'There is nothing to fetch.'
+        );
       }
     }
 
@@ -123,7 +147,10 @@
       if(!is_null($this->statement)) {
         return $this->statement->fetchAll();
       } else {
-        return 'There is nothing to fetch.';
+        return array(
+          'error' => 1,
+          'message' => 'There is nothing to fetch.'
+        );
       }
     }
   }
