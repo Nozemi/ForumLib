@@ -1,8 +1,7 @@
 <?php
   namespace NozLib\Utilities;
 
-  class PSQL
-  {
+  class PSQL {
     // Database Details - Filled with default information.
     private $dbuser;
     private $dbpass;
