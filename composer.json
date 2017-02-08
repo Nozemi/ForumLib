@@ -15,5 +15,8 @@
         "psr-0": {
             "Nozemi": "lib/"
         }
+    },
+    "require": {
+      "ircmaxell/password-compat": "*"
     }
 }

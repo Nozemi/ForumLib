@@ -94,7 +94,7 @@
     }
 
     // Execute with the query parameters (if any).
-    public function queryResult($params = null) {
+    public function executeQuery($params = null) {
       if(!is_null($this->statement)) {
         try {
           $this->result = $this->statement->execute($params);
