@@ -9,10 +9,8 @@
       // Checks whether or not $file exists.
       if(!file_exists($file)) {
         // How many parent folders it'll check. (3 by default)
-  			for($i = 0; $i < $loops; $i++)
-  			{
-  				if(!file_exists($file))
-  				{
+  			for($i = 0; $i < $loops; $i++) {
+  				if(!file_exists($file)) {
   					$file = '../' . $file;
   				}
   			}
