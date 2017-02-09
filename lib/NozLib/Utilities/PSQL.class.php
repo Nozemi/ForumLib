@@ -19,14 +19,13 @@
     private $lastError;
 
     // MySQL Database Operation Object Constructor.
-    public function __construct($user, $pass, $name, $host, $pref, $dbg = false) {
+    public function __construct($details) {
       // Take constructor parameters, and update the database detials.
-      $this->dbuser = $user;
-      $this->dbpass = $pass;
-      $this->dbhost = $host;
-      $this->dbname = $name;
-      $this->dbpref = $pref;
-      $this->debug  = $dbg;
+      $this->dbuser = $details['dbuser'];
+      $this->dbpass = $details['dbpass'];
+      $this->dbhost = $details['dbhost'];
+      $this->dbname = $details['dbname'];
+      $this->dbpref = $details['dbpref'];
     }
 
     // Open Database Connection.
