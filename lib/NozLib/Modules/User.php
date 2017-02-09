@@ -19,14 +19,15 @@
   */
 
   class User {
+    public $uid;       // Account User ID.
     public $username;  // Account username.
-    public $group;     // Array of account group details
+    public $group;     // Array of account group details.
     public $email;     // Account email address.
     public $lastlogin; // Array of last login detials.
     public $about;     // Array of information.
     public $firstname; // First name.
     public $lastname;  // Last name.
-    public $avatar;    // Avatar URL
+    public $avatar;    // Avatar URL.
 
     private $password;
 
@@ -36,7 +37,7 @@
 
     public function __construct(PSQL $SQL) {
       // We'll check if the required parameters are filled.
-      if(!is_null($S)) {
+      if(!is_null($SQL)) {
         $this->S = $SQL;
 
         // Getting IP address for the user.
@@ -59,23 +60,25 @@
       */
       switch($uname) {
         case 1:
-          $S->prepareQuery($S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}users` WHERE `email` = :username"));
+          $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}users` WHERE `email` = :username"));
           break;
         case 2:
           break;
         default:
-          $S->prepareQuery($S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}users` WHERE `username` = :username"));
+          $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}users` WHERE `username` = :username"));
           break;
       }
 
       // Check if the query executes alright, and return an error if it doesn't.
-      if($S->executeQuery(array(
+      if($this->S->executeQuery(array(
         ':username' => $this->username
       ))) {
-        $details = $S->fetch();
+        $details = $this->S->fetch();
+
+        // Verify the username/password upon login.
       } else {
         if(defined('DEBUG')) {
-          $this->lastError = $S->getLastError();
+          $this->lastError = $this->S->getLastError();
           return false;
         } else {
           $this->lastError = 'Something went wrong during login.';
@@ -89,7 +92,7 @@
         $this->lastError = 'Username and/or password is missing.';
         return false;
       } else {
-        $this->S->prepareQuery($S->replacePrefix('{{DBP}}', "
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
           INSERT INTO `{{DPB}}users` (
              `username`
             ,`password`
@@ -123,10 +126,10 @@
           return true;
         } else {
           if(defined('DEBUG')) {
-            $this->lastError = $S->getLastError();
+            $this->lastError = $this->S->getLastError();
             return false;
           } else {
-            $this->lastError = 'Something went wrong during registration';
+            $this->lastError = 'Something went wrong during registration.';
             return false;
           }
         }
@@ -150,7 +153,7 @@
     }
 
     public function updateAccount() {
-      $S->prepareQuery($S->replacePrefix('{{DBP}}', "
+      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
         UPDATE `{{DBP}}users` SET
            `email`      = :email
           ,`password`   = :password
@@ -158,9 +161,9 @@
           ,`lastname`   = :lastname
           ,`avatar`     = :avatar
           ,`group`      = :group
-        WHERE `username` = :username
+        WHERE `username` = :username;
       "));
-      if($S->executeQuery(array(
+      if($this->S->executeQuery(array(
         ':email'      => $this->email,
         ':password'   => $this->password,
         ':firstname'  => $this->firstname,
@@ -169,10 +172,10 @@
         ':group'      => $this->group,
         ':username'   => $this->username
       ))) {
-        $this->lastMessage = 'Account was successfully updated';
+        $this->lastMessage = 'Account was successfully updated.';
         return true;
       } else {
-        $this->lastError = $S->getLastError();
+        $this->lastError = $this->S->getLastError();
         return false;
       }
     }
