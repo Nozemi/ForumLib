@@ -1,5 +1,5 @@
 <?php
-  namespace NozLib\Modules;
+  namespace ForumLib\Users;
 
   /*
     The User object requires the PSQL class in order to function.

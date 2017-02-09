@@ -1,5 +1,5 @@
 <?php
-  namespace NozLib\Utilities;
+  namespace ForumLib\Utilities;
 
   class PSQLDetails {
     private $dbuser; // Database Username

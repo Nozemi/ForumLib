@@ -1,6 +1,6 @@
 {
-    "name": "nozemi/nozlib",
-    "description": "Nozemi's Framework & Library",
+    "name": "nozemi/forumlib",
+    "description": "Nozemi's Forum Framework",
     "keywords": ["Nozemi"],
     "type": "library",
     "license": "Apache-2.0",

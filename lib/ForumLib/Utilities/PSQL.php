@@ -1,5 +1,5 @@
 <?php
-  namespace NozLib\Utilities;
+  namespace ForumLib\Utilities;
 
   class PSQL {
     // Database Details - Filled with default information.

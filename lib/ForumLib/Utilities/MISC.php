@@ -1,5 +1,5 @@
 <?php
-  namespace NozLib\Utilities;
+  namespace ForumLib\Utilities;
 
   // MISC class - a collection of miscellaneous useful methods.
   class MISC {
