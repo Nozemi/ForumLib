@@ -30,6 +30,6 @@
         'dbuser' => $this->dbuser,
         'dbpass' => $this->dbname,
         'dbpref' => $this->dbpref
-      )
+      );
     }
   }

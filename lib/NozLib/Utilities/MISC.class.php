@@ -5,7 +5,7 @@
   class MICS {
 
     // Finds a file, by default it will try up to 3 parent folders.
-    public static findFile($file, $loops = 3) {
+    public static function findFile($file, $loops = 3) {
       // Checks whether or not $file exists.
       if(!file_exists($file)) {
         // How many parent folders it'll check. (3 by default)
@@ -22,7 +22,7 @@
 
     // Finds a key within an array. Which means you won't have to know where
     // in the array the key is, just that it exists in there somewhere.
-    public static findKey($aKey, $array) {
+    public static function findKey($aKey, $array) {
       // Check if an array is provided.
 			if(is_array($array)) {
         // Loops through the array.
