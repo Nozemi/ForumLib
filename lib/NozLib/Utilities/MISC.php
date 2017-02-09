@@ -2,7 +2,7 @@
   namespace NozLib\Utilities;
 
   // MISC class - a collection of miscellaneous useful methods.
-  class MICS {
+  class MISC {
 
     // Finds a file, by default it will try up to 3 parent folders.
     public static function findFile($file, $loops = 3) {
