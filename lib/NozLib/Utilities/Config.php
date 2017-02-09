@@ -18,7 +18,7 @@
 
       // Loads all the configs into an array.
       $this->config = array();
-      foreach(glob($this->configDirectory . '*.conf.json') as $file) {
+      foreach(glob($this->configDirectory . '/*.conf.json') as $file) {
         $this->config[basename($file,'.conf.json')] = json_decode(file_get_contents($file), true);
       }
     }
