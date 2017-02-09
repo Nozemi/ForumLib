@@ -29,6 +29,8 @@
     private $password;
 
     private $S;
+    private $lastError;
+    private $lastMessage;
 
     public function __construct(PSQL $SQL) {
       // We'll check if the required parameters are filled.
@@ -42,10 +44,8 @@
           'ip'    => $ipadr
         );
       } else {
-        return array(
-          'error' => 1,
-          'message' => 'Something went wrong with the user.'
-        );
+        $this->lastError = 'Something went wrong with the user.';
+        return false;
       }
     }
 
@@ -72,19 +72,20 @@
       ))) {
         $details = $S->fetch();
       } else {
-        return array(
-          'error' => 1,
-          'message' => 'Something went wrong during login.'
-        );
+        if(defined('DEBUG')) {
+          $this->lastError = $S->getLastError();
+          return false;
+        } else {
+          $this->lastError = 'Something went wrong during login.';
+          return false;
+        }
       }
     }
 
     public function register() {
       if(is_null($this->password) || is_null($this->username)) {
-        return array(
-          'error' => 1,
-          'message' => 'Username and/or password not provided.'
-        );
+        $this->lastError = 'Username and/or password is missing.';
+        return false;
       } else {
         $this->S->prepareQuery($S->replacePrefix('{{DBP}}', "
           INSERT INTO `{{DPB}}users` (
@@ -116,15 +117,16 @@
           ':firstname'  => $this->firstname,
           ':lastname'   => $this->lastname
         ))) {
-          return array(
-            'error' => 0,
-            'message' => 'Account was successfully registered.'
-          );
+          $this->lastMessage = 'Account was successfully registered.';
+          return true;
         } else {
-          return array(
-            'error' => 1,
-            'message' => 'Something went wrong during registration.'
-          );
+          if(defined('DEBUG')) {
+            $this->lastError = $S->getLastError();
+            return false;
+          } else {
+            $this->lastError = 'Something went wrong during registration';
+            return false;
+          }
         }
       }
     }
@@ -134,18 +136,26 @@
       if($p1 == $p2) {
         // If $p1 and $p2 matches (both passwords provided), it'll hash the password, and store it in the object.
         $this->password = password_hash($p1, PASSWORD_BCRYPT);
+        return true;
       } else if(is_null($p2) && $login = true) {
         // If password 2 is empty and $login is true, it'll store the clear text password in the object.
         $this->password = $p1;
+        return true;
       } else {
-        return array(
-          'error' => 1,
-          'message' => 'Passwords don\'t match.'
-        );
+        $this->lastError = 'Passwords doesn\'t match.';
+        return false;
       }
     }
 
     public function updateAccount() {
 
+    }
+
+    public function getLastMessage() {
+      return $this->lastMessage;
+    }
+
+    public function getLastError() {
+      return $this->lastError;
     }
   }

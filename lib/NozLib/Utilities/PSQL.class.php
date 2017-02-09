@@ -16,7 +16,7 @@
     private $statment;
     private $result;
 
-    private $debug;
+    private $lastError;
 
     // MySQL Database Operation Object Constructor.
     public function __construct($user, $pass, $name, $host, $pref, $dbg = false) {
@@ -50,24 +50,18 @@
           $this->statement = null;
         } catch(PDOException $ex) {
           // Handle PDO error. In this case the PDO connection error.
-          if($this->debug) {
-            return array(
-              'error' => 1,
-              'message' => $ex->getMessage()
-            );
+          if(defined('DEBUG')) {
+            $this->lastError = $ex->getMessage();
+            return false;
           } else {
-            return array(
-              'error' => 1,
-              'message' => 'Something went wrong while connecting to the database.'
-            );
+            $this->lastError = 'Something went wrong while connecting to the database.';
+            return false;
           }
         }
       } else {
         // Handle the error upon either username, password, host or name being null.
-        return array(
-          'error' => 1,
-          'message' => 'Missing database credentials and/or details.'
-        );
+        $this->lastError = 'Missing database details.';
+        return false;
       }
     }
 
@@ -94,16 +88,12 @@
         $this->statement = $this->db->prepare($query);
       } catch(PDOException $ex) {
         // Handle prepare exception.
-        if($this->debug) {
-          return array(
-            'error' => 1,
-            'message' => $ex->getMessage()
-          );
+        if(defined('DEBUG')) {
+          $this->lastError = $ex->getMessage();
+          return false;
         } else {
-          return array(
-            'error' => 1,
-            'message' => 'The database is having issues. Please try again.'
-          );
+          $this->lastError = 'The database is having issues. Please try again.';
+          return false;
         }
       }
     }
@@ -112,19 +102,29 @@
     public function executeQuery($params = null) {
       if(!is_null($this->statement)) {
         try {
+          /** - Let's figure out this part some time later.
+    			/**/ if(function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc()) {
+    			/**/   function undo_magic_quotes_gpc(&$array) {
+    			/**/ 		 foreach($array as &$value) {
+    			/**/ 		   if(is_array($value)) {
+    			/**/ 			   undo_magic_quotes_gpc($value);
+    			/**/ 		   } else {
+    			/**/ 			   $value = stripslashes($value);
+    			/**/ 		   }
+    			/**/ 	   }
+          /**/   }
+    			/**/   undo_magic_quotes_gpc($params);
+    			/**/ }
+
           $this->result = $this->statement->execute($params);
         } catch(PDOException $ex) {
           // Handle result exception.
-          if($this->debug) {
-            return array(
-              'error' => 1,
-              'message' => $ex->getMessage()
-            );
+          if(defined('DEBUG')) {
+            $this->lastError = $ex->getMessage();
+            return false;
           } else {
-            return array(
-              'error' => 1,
-              'message' => 'The database is having issues. Please try again.'
-            );
+            $this->lastError = 'The database is having issues. Please try again.';
+            return false;
           }
         }
       }
@@ -135,10 +135,8 @@
       if(!is_null($this->statement)) {
         return $this->statement->fetch();
       } else {
-        return array(
-          'error' => 1,
-          'message' => 'There is nothing to fetch.'
-        );
+        $this->lastError = 'There is nothing to fetch.';
+        return false;
       }
     }
 
@@ -147,10 +145,12 @@
       if(!is_null($this->statement)) {
         return $this->statement->fetchAll();
       } else {
-        return array(
-          'error' => 1,
-          'message' => 'There is nothing to fetch.'
-        );
+        $this->lastError = 'There is nothing to fetch.';
+        return false;
       }
+    }
+
+    public function getLastError() {
+      return $this->lastError;
     }
   }
