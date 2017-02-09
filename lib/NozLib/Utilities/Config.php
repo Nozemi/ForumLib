@@ -8,7 +8,7 @@
     private $lastError;
 
     public function __construct($cnfDir = 'config') {
-      $this->$configDirectory = MISC::findFile($cnfDir); // Finds the config directory.
+      $this->configDirectory = MISC::findFile($cnfDir); // Finds the config directory.
 
       // Checks and handles the error upon config directory not existing.
       if(!file_exists($this->$configDirectory)) {
