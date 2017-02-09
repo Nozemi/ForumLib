@@ -10,9 +10,9 @@
 
     private $lastError;
 
-    public function __construct($user = 'root', $pass = '', $host = 'localhost', $name, $prefix = '') {
-      if(is_null($name)) {
-        $this->lastError = 'The database name cannot be null.';
+    public function __construct($name, $user = 'root', $pass = '', $host = 'localhost', $prefix = '') {
+      if(is_null($name) || $name == '') {
+        $this->lastError = 'The database name cannot be empty.';
         return false;
       }
 
@@ -28,7 +28,7 @@
         'dbhost' => $this->dbhost,
         'dbname' => $this->dbname,
         'dbuser' => $this->dbuser,
-        'dbpass' => $this->dbname,
+        'dbpass' => $this->dbpass,
         'dbpref' => $this->dbpref
       );
     }
