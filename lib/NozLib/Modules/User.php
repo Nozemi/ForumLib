@@ -166,7 +166,8 @@
         ':firstname'  => $this->firstname,
         ':lastname'   => $this->lastname,
         ':avatar'     => $this->avatar,
-        ':group'      => $this->group
+        ':group'      => $this->group,
+        ':username'   => $this->username
       ))) {
         $this->lastMessage = 'Account was successfully updated';
         return true;
