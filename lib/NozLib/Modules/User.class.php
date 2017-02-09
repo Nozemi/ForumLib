@@ -8,6 +8,7 @@
     - username (varchar(50))
     - password (varchar(255))
     - email (varchar(100))
+    - avatar (varchar(255))
     - group (int(1))
     - regip (varchar(15)) - Only supports IPv4 for now.
     - regdate (datetime)
@@ -25,6 +26,7 @@
     public $about;     // Array of information.
     public $firstname; // First name.
     public $lastname;  // Last name.
+    public $avatar;    // Avatar URL
 
     private $password;
 
@@ -148,7 +150,30 @@
     }
 
     public function updateAccount() {
-
+      $S->prepareQuery($S->replacePrefix('{{DBP}}', "
+        UPDATE `{{DBP}}users` SET
+           `email`      = :email
+          ,`password`   = :password
+          ,`firstname`  = :firstname
+          ,`lastname`   = :lastname
+          ,`avatar`     = :avatar
+          ,`group`      = :group
+        WHERE `username` = :username
+      "));
+      if($S->executeQuery(array(
+        ':email'      => $this->email,
+        ':password'   => $this->password,
+        ':firstname'  => $this->firstname,
+        ':lastname'   => $this->lastname,
+        ':avatar'     => $this->avatar,
+        ':group'      => $this->group
+      ))) {
+        $this->lastMessage = 'Account was successfully updated';
+        return true;
+      } else {
+        $this->lastError = $S->getLastError();
+        return false;
+      }
     }
 
     public function getLastMessage() {
