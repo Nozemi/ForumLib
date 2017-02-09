@@ -32,4 +32,8 @@
         'dbpref' => $this->dbpref
       );
     }
+
+    public function getLastError() {
+      return $this->lastError;
+    }
   }
