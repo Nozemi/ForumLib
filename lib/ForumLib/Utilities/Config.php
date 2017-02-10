@@ -47,11 +47,10 @@
           // Catch the error (if any) when attempting to create the file.
           if(defined('DEBUG')) {
             $this->lastError = $ex->getMessage();
-            return false;
           } else {
             $this->lastError = 'Something went wrong during the config loading.';
-            return false;
           }
+          return false;
         }
       }
     }

@@ -56,11 +56,10 @@
       } else {
         if(defined('DEBUG')) {
           $this->lastError = $S->getLastMessage();
-          return false;
         } else {
           $this->lastError = 'Something went wrong while posting news.';
-          return false;
         }
+        return false;
       }
     }
 
@@ -87,11 +86,10 @@
       } else {
         if(defined('DEBUG')) {
           $this->lastError = $this->S->getLastError();
-          return false;
         } else {
           $this->lastError = 'Something went wrong while updating news.';
-          return false;
         }
+        return false;
       }
     }
 
@@ -105,11 +103,10 @@
         } else {
           if(defined('DEBUG')) {
             $this->lastError = $this->S->getLastError();
-            return false;
           } else {
             $this->lastError = 'Something went wrong while fetching all news.';
-            return false;
           }
+          return false;
         }
       } else {
         // If $id isn't null, we'll fetch the news item with that exact id from the database.
@@ -120,11 +117,10 @@
         } else {
           if(defined('DEBUG')) {
             $this->lastError = $this->S->getLastError();
-            return false;
           } else {
             $this->lastError = 'Something went wrong while fetching news item.';
-            return false;
           }
+          return false;
         }
       }
     }

@@ -79,11 +79,10 @@
       } else {
         if(defined('DEBUG')) {
           $this->lastError = $this->S->getLastError();
-          return false;
         } else {
           $this->lastError = 'Something went wrong during login.';
-          return false;
         }
+        return false;
       }
     }
 
@@ -127,11 +126,10 @@
         } else {
           if(defined('DEBUG')) {
             $this->lastError = $this->S->getLastError();
-            return false;
           } else {
             $this->lastError = 'Something went wrong during registration.';
-            return false;
           }
+          return false;
         }
       }
     }

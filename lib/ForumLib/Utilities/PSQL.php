@@ -51,11 +51,10 @@
           // Handle PDO error. In this case the PDO connection error.
           if(defined('DEBUG')) {
             $this->lastError = $ex->getMessage();
-            return false;
           } else {
             $this->lastError = 'Something went wrong while connecting to the database.';
-            return false;
           }
+          return false;
         }
       } else {
         // Handle the error upon either username, password, host or name being null.
@@ -89,11 +88,10 @@
         // Handle prepare exception.
         if(defined('DEBUG')) {
           $this->lastError = $ex->getMessage();
-          return false;
         } else {
           $this->lastError = 'The database is having issues. Please try again.';
-          return false;
         }
+        return false;
       }
     }
 
@@ -120,11 +118,10 @@
           // Handle result exception.
           if(defined('DEBUG')) {
             $this->lastError = $ex->getMessage();
-            return false;
           } else {
             $this->lastError = 'The database is having issues. Please try again.';
-            return false;
           }
+          return false;
         }
       }
     }
