@@ -29,11 +29,7 @@
       $this->dbname = $details['dbname'];
       $this->dbpref = $details['dbpref'];
 
-      if($this->open()) {
-        return true;
-      } else {
-        return false;
-      }
+      $this->open();
     }
 
     // Open Database Connection.
@@ -55,7 +51,6 @@
           // If there is any result already, we'll be clearing that.
           $this->result = null;
           $this->statement = null;
-          return true;
         } catch(PDOException $ex) {
           // Handle PDO error. In this case the PDO connection error.
           if(defined('DEBUG')) {
@@ -91,6 +86,10 @@
 
     // Prepares the query for execution.
     public function prepareQuery($query) {
+      if(is_null($this->db)) {
+        $this->lastError = 'No database connection.';
+        return false;
+      }
       try {
         $this->statement = $this->db->prepare($query);
         return true;
@@ -107,6 +106,10 @@
 
     // Execute with the query parameters (if any).
     public function executeQuery($params = null) {
+      if(is_null($this->db)) {
+        $this->lastError = 'No database connection.';
+        return false;
+      }
       if(!is_null($this->statement)) {
         try {
           /** - Let's figure out this part some time later.
