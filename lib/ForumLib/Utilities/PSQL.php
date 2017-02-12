@@ -29,7 +29,11 @@
       $this->dbname = $details['dbname'];
       $this->dbpref = $details['dbpref'];
 
-      $this->open();
+      if($this->open()) {
+        return true;
+      } else {
+        return false;
+      }
     }
 
     // Open Database Connection.
@@ -51,6 +55,9 @@
           // If there is any result already, we'll be clearing that.
           $this->result = null;
           $this->statement = null;
+
+          $this->lastMessage = 'Connected successfully';
+          return true;
         } catch(PDOException $ex) {
           // Handle PDO error. In this case the PDO connection error.
           if(defined('DEBUG')) {
