@@ -76,7 +76,7 @@
       $this->result = null;
     }
 
-    public function replacePrefix($pHolder, $query) {
+    public static function replacePrefix($pHolder, $query) {
       return str_replace($pHolder, $this->dbpref, $query); // Replaces the prefix placeholder.
     }
 

@@ -37,6 +37,12 @@
       }
     }
 
+    public function getCategory($id) {
+      $this->id = $id;
+
+      // Rest of the process goes here...
+    }
+
     public function createCategory() {
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
         INSERT INTO `{{DBP}}categories` (
