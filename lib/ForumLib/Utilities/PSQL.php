@@ -1,6 +1,8 @@
 <?php
   namespace ForumLib\Utilities;
 
+  use \PDO;
+
   class PSQL {
     // Database Details - Filled with default information.
     private $dbuser;
@@ -26,6 +28,12 @@
       $this->dbhost = $details['dbhost'];
       $this->dbname = $details['dbname'];
       $this->dbpref = $details['dbpref'];
+
+      if($this->open()) {
+        return true;
+      } else {
+        return false;
+      }
     }
 
     // Open Database Connection.
@@ -47,6 +55,7 @@
           // If there is any result already, we'll be clearing that.
           $this->result = null;
           $this->statement = null;
+          return true;
         } catch(PDOException $ex) {
           // Handle PDO error. In this case the PDO connection error.
           if(defined('DEBUG')) {
@@ -76,7 +85,7 @@
       $this->result = null;
     }
 
-    public static function replacePrefix($pHolder, $query) {
+    public function replacePrefix($pHolder, $query) {
       return str_replace($pHolder, $this->dbpref, $query); // Replaces the prefix placeholder.
     }
 
@@ -84,6 +93,7 @@
     public function prepareQuery($query) {
       try {
         $this->statement = $this->db->prepare($query);
+        return true;
       } catch(PDOException $ex) {
         // Handle prepare exception.
         if(defined('DEBUG')) {
@@ -114,6 +124,7 @@
     			/**/ }
 
           $this->result = $this->statement->execute($params);
+          return true;
         } catch(PDOException $ex) {
           // Handle result exception.
           if(defined('DEBUG')) {

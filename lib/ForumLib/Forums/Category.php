@@ -1,6 +1,8 @@
 <?php
   namespace ForumLib\Forums;
 
+  use ForumLib\Utilities\PSQL;
+
   class Category {
     public $id;
     public $title;
@@ -22,7 +24,7 @@
       }
     }
 
-    public static function getCategories() {
+    public function getCategories() {
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}categories` ORDER BY `order` ASC"));
       if($this->S->executeQuery()) {
         $this->lastMessage = 'Successfully fetched categories.';
