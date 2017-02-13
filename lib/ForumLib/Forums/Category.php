@@ -16,6 +16,7 @@
     private $lastMessage;
 
     public function __construct(PSQL $SQL) {
+      // Let's check if the $SQL is not a null.
       if(!is_null($SQL)) {
         $this->S = $SQL;
       } else {
@@ -42,7 +43,25 @@
     public function getCategory($id) {
       $this->id = $id;
 
-      // Rest of the process goes here...
+      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+        SELECT
+          *
+        FROM `{{DBP}}categories`
+        WHERE `cid` = :cid
+      "));
+      if($this->S->executeQuery(array(
+        ':cid' => $this->id
+      ))) {
+        $this->lastMessage = 'The category was successfully loaded.';
+        return true;
+      } else {
+        if(defined('DEBUG')) {
+          $this->lastError = $this->S->getLastError();
+        } else {
+          $this->lastError = 'Failed to get category.';
+        }
+        return false;
+      }
     }
 
     public function createCategory() {
@@ -69,6 +88,34 @@
           $this->lastError = $this->S->getLastError();
         } else {
           $this->lastError = 'Something went wrong while creating the new category.';
+        }
+        return false;
+      }
+    }
+
+    public function updateCategory() {
+
+    }
+
+    public function deleteCategory($cid = null) {
+      if($cid == null) {
+        $cid = $this->id;
+      }
+
+      // We'll have to fill in a few more delete queries. So that sub topics, threads and post are deleted as well.
+      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+        DELETE * FROM `{{DBP}}categories` WHERE `cid` = :cid;
+      "));
+      if($this->S->executeQuery(array(
+        ':cid' => $cid
+      ))) {
+        $this->lastMessage = 'Successfully deleted category.';
+        return true;
+      } else {
+        if(defined('DEBUG')) {
+          $this->lastError = $this->S->getLastError();
+        } else {
+          $this->lastError = 'Something went wrong while deleting category.';
         }
         return false;
       }

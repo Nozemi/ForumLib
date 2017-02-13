@@ -16,6 +16,28 @@
     private $lastMessage;
 
     public function __construct() {
+      if(!is_null($SQL)) {
+        $this->S = $SQL;
+      } else {
+        $this->lastError = 'Something went wrong while creating the post object.';
+        return false;
+      }
+    }
+
+    public function createPost() {
+
+    }
+
+    // Takes one parameter, which would be the thread ID.
+    public function getPosts($tid = null) {
+
+    }
+
+    public function updatePost() {
+
+    }
+
+    public function deletePost($pid = null) {
 
     }
 

@@ -22,7 +22,7 @@
 
     // MySQL Database Operation Object Constructor.
     public function __construct($details) {
-      // Take constructor parameters, and update the database detials.
+      // Take constructor parameters, and update the database details.
       $this->dbuser = $details['dbuser'];
       $this->dbpass = $details['dbpass'];
       $this->dbhost = $details['dbhost'];

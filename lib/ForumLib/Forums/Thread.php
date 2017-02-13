@@ -16,6 +16,31 @@
     private $lastMessage;
 
     public function __construct() {
+      if(!is_null($SQL)) {
+        $this->S = $SQL;
+      } else {
+        $this->lastError = 'Something went wrong while creating the thread object.';
+        return false;
+      }
+    }
+
+    public function getThreads($cid = null) {
+
+    }
+
+    public function createThread() {
+
+    }
+
+    public function getThread() {
+
+    }
+
+    public function updateThread() {
+
+    }
+
+    public function deleteThread($tid = null) {
 
     }
 
