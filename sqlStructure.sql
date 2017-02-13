@@ -73,7 +73,7 @@ CREATE TABLE `pref_groups` (
   PRIMARY KEY (`gid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE `for2345_permissions` (
+CREATE TABLE `pref_permissions` (
   `pid` int(11) NOT NULL AUTO_INCREMENT,
   `groupId` int(11) DEFAULT NULL,
   `userId` int(11) DEFAULT NULL,
