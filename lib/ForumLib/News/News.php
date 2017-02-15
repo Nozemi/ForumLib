@@ -12,15 +12,15 @@
 
     private $S;
 
-    private $lastError;
-    private $lastMessage;
+    private $lastError = array();
+    private $lastMessage = array();
 
     public function __construct(PSQL $SQL) {
       // We'll check if the required parameters are filled.
       if(!is_null($SQL)) {
         $this->S = $SQL;
       } else {
-        $this->lastError = 'Failed to make news object.';
+        $this->lastError[] = 'Failed to make news object.';
         return false;
       }
     }
@@ -51,13 +51,13 @@
         ':date_posted'  => $this->date_posted,
         ':last_edit'    => $this->date_last_edit
       ))) {
-        $this->lastMessage = 'News successfully posted.';
+        $this->lastMessage[] = 'News successfully posted.';
         return true;
       } else {
         if(defined('DEBUG')) {
-          $this->lastError = $S->getLastMessage();
+          $this->lastError[] = $S->getLastMessage();
         } else {
-          $this->lastError = 'Something went wrong while posting news.';
+          $this->lastError[] = 'Something went wrong while posting news.';
         }
         return false;
       }
@@ -81,13 +81,13 @@
         ':last_edit'    => $this->date_last_edit,
         ':nid'          => $this->id
       ))) {
-        $this->lastMessage = 'News was successfully updated.';
+        $this->lastMessage[] = 'News was successfully updated.';
         return true;
       } else {
         if(defined('DEBUG')) {
-          $this->lastError = $this->S->getLastError();
+          $this->lastError[] = $this->S->getLastError();
         } else {
-          $this->lastError = 'Something went wrong while updating news.';
+          $this->lastError[] = 'Something went wrong while updating news.';
         }
         return false;
       }
@@ -98,13 +98,13 @@
         // If $id is null (which it is by default), we'll fetch all news items.
         $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}news` ORDER BY `date_posted` DESC;"));
         if($this->S->executeQuery()) {
-          $this->lastMessage = 'All news was successfully fetched.';
+          $this->lastMessage[] = 'All news was successfully fetched.';
           return true;
         } else {
           if(defined('DEBUG')) {
-            $this->lastError = $this->S->getLastError();
+            $this->lastError[] = $this->S->getLastError();
           } else {
-            $this->lastError = 'Something went wrong while fetching all news.';
+            $this->lastError[] = 'Something went wrong while fetching all news.';
           }
           return false;
         }
@@ -116,9 +116,9 @@
           return true;
         } else {
           if(defined('DEBUG')) {
-            $this->lastError = $this->S->getLastError();
+            $this->lastError[] = $this->S->getLastError();
           } else {
-            $this->lastError = 'Something went wrong while fetching news item.';
+            $this->lastError[] = 'Something went wrong while fetching news item.';
           }
           return false;
         }
@@ -126,10 +126,18 @@
     }
 
     public function getLastError() {
-      return $this->lastError;
+      return end($this->lastError);
     }
 
     public function getLastMessage() {
+      return end($this->lastMessage);
+    }
+
+    public function getErrors() {
+      return $this->lastError;
+    }
+
+    public function getMessages() {
       return $this->lastMessage;
     }
   }

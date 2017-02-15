@@ -5,7 +5,8 @@
     public $configDirectory;
     public $config;
 
-    private $lastError;
+    private $lastError = array();
+    private $lastMessage = array();
 
     /*
       Config object adds all the configuration variables from the config directory's
@@ -18,7 +19,7 @@
 
       // Checks and handles the error upon config directory not existing.
       if(!file_exists($this->configDirectory)) {
-        $this->lastError = 'Config directory wasn\'t found.';
+        $this->lastError[] = 'Config directory wasn\'t found.';
         return false;
       }
 
@@ -46,9 +47,9 @@
         } catch(Exception $ex) {
           // Catch the error (if any) when attempting to create the file.
           if(defined('DEBUG')) {
-            $this->lastError = $ex->getMessage();
+            $this->lastError[] = $ex->getMessage();
           } else {
-            $this->lastError = 'Something went wrong during the config loading.';
+            $this->lastError[] = 'Something went wrong during the config loading.';
           }
           return false;
         }
@@ -56,6 +57,18 @@
     }
 
     public function getLastError() {
+      return end($this->lastError);
+    }
+
+    public function getLastMessage() {
+      return end($this->lastMessage);
+    }
+
+    public function getErrors() {
       return $this->lastError;
+    }
+
+    public function getMessages() {
+      return $this->lastMessage;
     }
   }

@@ -18,7 +18,8 @@
     private $statment;
     private $result;
 
-    private $lastError;
+    private $lastError = array();
+    private $lastMessage = array();
 
     // MySQL Database Operation Object Constructor.
     public function __construct($details) {
@@ -56,20 +57,20 @@
           $this->result = null;
           $this->statement = null;
 
-          $this->lastMessage = 'Connected successfully';
+          $this->lastMessage[] = 'Database connected successfully.';
           return true;
         } catch(PDOException $ex) {
           // Handle PDO error. In this case the PDO connection error.
           if(defined('DEBUG')) {
-            $this->lastError = $ex->getMessage();
+            $this->lastError[] = $ex->getMessage();
           } else {
-            $this->lastError = 'Something went wrong while connecting to the database.';
+            $this->lastError[] = 'Something went wrong while connecting to the database.';
           }
           return false;
         }
       } else {
         // Handle the error upon either username, password, host or name being null.
-        $this->lastError = 'Missing database details.';
+        $this->lastError[] = 'Missing database details.';
         return false;
       }
     }
@@ -94,7 +95,7 @@
     // Prepares the query for execution.
     public function prepareQuery($query) {
       if(is_null($this->db)) {
-        $this->lastError = 'No database connection.';
+        $this->lastError[] = 'No database connection.';
         return false;
       }
       try {
@@ -103,9 +104,9 @@
       } catch(PDOException $ex) {
         // Handle prepare exception.
         if(defined('DEBUG')) {
-          $this->lastError = $ex->getMessage();
+          $this->lastError[] = $ex->getMessage();
         } else {
-          $this->lastError = 'The database is having issues. Please try again.';
+          $this->lastError[] = 'The database is having issues. Please try again.';
         }
         return false;
       }
@@ -114,7 +115,7 @@
     // Execute with the query parameters (if any).
     public function executeQuery($params = null) {
       if(is_null($this->db)) {
-        $this->lastError = 'No database connection.';
+        $this->lastError[] = 'No database connection.';
         return false;
       }
       if(!is_null($this->statement)) {
@@ -138,9 +139,9 @@
         } catch(PDOException $ex) {
           // Handle result exception.
           if(defined('DEBUG')) {
-            $this->lastError = $ex->getMessage();
+            $this->lastError[] = $ex->getMessage();
           } else {
-            $this->lastError = 'The database is having issues. Please try again.';
+            $this->lastError[] = 'The database is having issues. Please try again.';
           }
           return false;
         }
@@ -152,7 +153,7 @@
       if(!is_null($this->statement)) {
         return $this->statement->fetch();
       } else {
-        $this->lastError = 'There is nothing to fetch.';
+        $this->lastError[] = 'There is nothing to fetch.';
         return false;
       }
     }
@@ -162,12 +163,24 @@
       if(!is_null($this->statement)) {
         return $this->statement->fetchAll();
       } else {
-        $this->lastError = 'There is nothing to fetch.';
+        $this->lastError[] = 'There is nothing to fetch.';
         return false;
       }
     }
 
     public function getLastError() {
+      return end($this->lastError);
+    }
+
+    public function getLastMessage() {
+      return end($this->lastMessage);
+    }
+
+    public function getErrors() {
       return $this->lastError;
+    }
+
+    public function getMessages() {
+      return $this->lastMessage;
     }
   }

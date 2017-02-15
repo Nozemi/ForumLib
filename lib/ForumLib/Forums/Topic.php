@@ -11,14 +11,14 @@
 
     private $S;
 
-    private $lastError;
-    private $lastMessage;
+    private $lastError = array();
+    private $lastMessage = array();
 
     public function __construct() {
       if(!is_null($SQL)) {
         $this->S = $SQL;
       } else {
-        $this->lastError = 'Something went wrong while creating the topic object.';
+        $this->lastError[] = 'Something went wrong while creating the topic object.';
         return false;
       }
     }
@@ -44,10 +44,18 @@
     }
 
     public function getLastError() {
-      return $this->lastError;
+      return end($this->lastError);
     }
 
     public function getLastMessage() {
+      return end($this->lastMessage);
+    }
+
+    public function getErrors() {
+      return $this->lastError;
+    }
+
+    public function getMessages() {
       return $this->lastMessage;
     }
   }

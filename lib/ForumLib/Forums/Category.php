@@ -12,15 +12,15 @@
 
     private $S;
 
-    private $lastError;
-    private $lastMessage;
+    private $lastError = array();
+    private $lastMessage = array();
 
     public function __construct(PSQL $SQL) {
       // Let's check if the $SQL is not a null.
       if(!is_null($SQL)) {
         $this->S = $SQL;
       } else {
-        $this->lastError = 'Something went wrong while creating the category object.';
+        $this->lastError[] = 'Something went wrong while creating the category object.';
         return false;
       }
     }
@@ -28,13 +28,13 @@
     public function getCategories() {
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}categories` ORDER BY `order` ASC"));
       if($this->S->executeQuery()) {
-        $this->lastMessage = 'Successfully fetched categories.';
+        $this->lastMessage[] = 'Successfully fetched categories.';
         return $this->S->fetchAll();
       } else {
         if(defined('DEBUG')) {
-          $this->lastError = $this->S->getLastError();
+          $this->lastError[] = $this->S->getLastError();
         } else {
-          $this->lastError = 'Something went wrong while fetching the categories.';
+          $this->lastError[] = 'Something went wrong while fetching the categories.';
         }
         return false;
       }
@@ -52,13 +52,13 @@
       if($this->S->executeQuery(array(
         ':cid' => $this->id
       ))) {
-        $this->lastMessage = 'The category was successfully loaded.';
+        $this->lastMessage[] = 'The category was successfully loaded.';
         return true;
       } else {
         if(defined('DEBUG')) {
-          $this->lastError = $this->S->getLastError();
+          $this->lastError[] = $this->S->getLastError();
         } else {
-          $this->lastError = 'Failed to get category.';
+          $this->lastError[] = 'Failed to get category.';
         }
         return false;
       }
@@ -81,13 +81,13 @@
         ':description'  => $this->description,
         ':order'        => $this->order
       ))) {
-        $this->lastMessage = 'Succefully created category.';
+        $this->lastMessage[] = 'Succefully created category.';
         return true;
       } else {
         if(defined('DEBUG')) {
-          $this->lastError = $this->S->getLastError();
+          $this->lastError[] = $this->S->getLastError();
         } else {
-          $this->lastError = 'Something went wrong while creating the new category.';
+          $this->lastError[] = 'Something went wrong while creating the new category.';
         }
         return false;
       }
@@ -107,13 +107,13 @@
         ':order'        => $this->order
         ':cid'          => $this->id
       ))) {
-        $this->lastMessage = 'Successfully updated the category.';
+        $this->lastMessage[] = 'Successfully updated the category.';
         return true;
       } else {
         if(defined('DEBUG'))) {
-          $this->lastError = $S->getLastError();
+          $this->lastError[] = $S->getLastError();
         } else {
-          $this->lastError = 'Something went wrong while updating category.';
+          $this->lastError[] = 'Something went wrong while updating category.';
         }
         return false;
       }
@@ -131,23 +131,31 @@
       if($this->S->executeQuery(array(
         ':cid' => $cid
       ))) {
-        $this->lastMessage = 'Successfully deleted category.';
+        $this->lastMessage[] = 'Successfully deleted category.';
         return true;
       } else {
         if(defined('DEBUG')) {
-          $this->lastError = $this->S->getLastError();
+          $this->lastError[] = $this->S->getLastError();
         } else {
-          $this->lastError = 'Something went wrong while deleting category.';
+          $this->lastError[] = 'Something went wrong while deleting category.';
         }
         return false;
       }
     }
 
     public function getLastError() {
-      return $this->lastError;
+      return end($this->lastError);
     }
 
     public function getLastMessage() {
+      return end($this->lastMessage);
+    }
+
+    public function getErrors() {
+      return $this->lastError;
+    }
+
+    public function getMessages() {
       return $this->lastMessage;
     }
   }

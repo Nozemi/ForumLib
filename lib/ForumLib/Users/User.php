@@ -32,8 +32,8 @@
     private $password;
 
     private $S;
-    private $lastError;
-    private $lastMessage;
+    private $lastError = array();
+    private $lastMessage = array();
 
     public function __construct(PSQL $SQL) {
       // We'll check if the required parameters are filled.
@@ -47,7 +47,7 @@
           'ip'    => $ipadr
         );
       } else {
-        $this->lastError = 'Something went wrong with the user.';
+        $this->lastError[] = 'Something went wrong with the user.';
         return false;
       }
     }
@@ -78,9 +78,9 @@
         // Verify the username/password upon login.
       } else {
         if(defined('DEBUG')) {
-          $this->lastError = $this->S->getLastError();
+          $this->lastError[] = $this->S->getLastError();
         } else {
-          $this->lastError = 'Something went wrong during login.';
+          $this->lastError[] = 'Something went wrong during login.';
         }
         return false;
       }
@@ -88,7 +88,7 @@
 
     public function register() {
       if(is_null($this->password) || is_null($this->username)) {
-        $this->lastError = 'Username and/or password is missing.';
+        $this->lastError[] = 'Username and/or password is missing.';
         return false;
       } else {
         $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
@@ -121,13 +121,13 @@
           ':firstname'  => $this->firstname,
           ':lastname'   => $this->lastname
         ))) {
-          $this->lastMessage = 'Account was successfully registered.';
+          $this->lastMessage[] = 'Account was successfully registered.';
           return true;
         } else {
           if(defined('DEBUG')) {
-            $this->lastError = $this->S->getLastError();
+            $this->lastError[] = $this->S->getLastError();
           } else {
-            $this->lastError = 'Something went wrong during registration.';
+            $this->lastError[] = 'Something went wrong during registration.';
           }
           return false;
         }
@@ -145,7 +145,7 @@
         $this->password = $p1;
         return true;
       } else {
-        $this->lastError = 'Passwords doesn\'t match.';
+        $this->lastError[] = 'Passwords doesn\'t match.';
         return false;
       }
     }
@@ -170,19 +170,27 @@
         ':group'      => $this->group,
         ':username'   => $this->username
       ))) {
-        $this->lastMessage = 'Account was successfully updated.';
+        $this->lastMessage[] = 'Account was successfully updated.';
         return true;
       } else {
-        $this->lastError = $this->S->getLastError();
+        $this->lastError[] = $this->S->getLastError();
         return false;
       }
     }
 
     public function getLastMessage() {
-      return $this->lastMessage;
+      return end($this->lastMessage);
     }
 
     public function getLastError() {
+      return end($this->lastError);
+    }
+
+    public function getErrors() {
       return $this->lastError;
+    }
+
+    public function getMessages() {
+      return $this->lastMessage;
     }
   }

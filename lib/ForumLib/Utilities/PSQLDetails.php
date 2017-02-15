@@ -8,7 +8,7 @@
     private $dbname; // Database Name
     private $dbpref; // Database Prefix
 
-    private $lastError;
+    private $lastError = array();
 
     public function __construct($name, $user = 'root', $pass = '', $host = 'localhost', $prefix = '') {
       if(is_null($name) || $name == '') {
@@ -34,6 +34,10 @@
     }
 
     public function getLastError() {
+      return end($this->lastError);
+    }
+
+    public function getErrors() {
       return $this->lastError;
     }
   }
