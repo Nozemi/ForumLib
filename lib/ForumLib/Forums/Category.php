@@ -94,7 +94,29 @@
     }
 
     public function updateCategory() {
-
+      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+        UPDATE `{{DBP}}categories` SET
+           `title`        = :title
+          ,`description`  = :description
+          ,`order`        = :order
+        WHERE `cid` = :cid
+      "));
+      if($this->S->executeQuery(array(
+        ':title'        => $this->title,
+        ':description'  => $this->description,
+        ':order'        => $this->order
+        ':cid'          => $this->id
+      ))) {
+        $this->lastMessage = 'Successfully updated the category.';
+        return true;
+      } else {
+        if(defined('DEBUG'))) {
+          $this->lastError = $S->getLastError();
+        } else {
+          $this->lastError = 'Something went wrong while updating category.';
+        }
+        return false;
+      }
     }
 
     public function deleteCategory($cid = null) {
