@@ -5,8 +5,8 @@
 
     private $S;
 
-    private lastError = array();
-    private lastMessage = array();
+    private $lastError = array();
+    private $lastMessage = array();
 
     public function __constructor(PSQL $SQL, $install) {
       // Let's check if the $SQL is not a null.

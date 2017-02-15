@@ -80,9 +80,9 @@ CREATE TABLE `pref_permissions` (
   `categoryId` int(11) DEFAULT NULL,
   `topicId` int(11) DEFAULT NULL,
   `threadId` int(11) DEFAULT NULL,
-  `read` tinyint(4) DEFAULT NULL,
-  `post` tinyint(4) DEFAULT NULL,
-  `mod` tinyint(4) DEFAULT NULL,
-  `admin` tinyint(4) DEFAULT NULL,
+  `read` tinyint(1) DEFAULT NULL,
+  `post` tinyint(1) DEFAULT NULL,
+  `mod` tinyint(1) DEFAULT NULL,
+  `admin` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`pid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
