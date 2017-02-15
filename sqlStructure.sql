@@ -2,7 +2,7 @@
   This would be the MySQL database structure. You can copy/paste this script
   to install the database. For now, there won't be an installer, which means
   any prefix for the tables, you'll have to add yourself. You can do so by
-  replaceing all "pref_" with whatever prefix you desire.
+  replacing all "pref_" with whatever prefix you desire.
 */
 
 /* Forum Part */
