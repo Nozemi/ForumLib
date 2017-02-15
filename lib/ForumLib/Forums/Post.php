@@ -25,20 +25,109 @@
     }
 
     public function createPost() {
-
+      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+        INSERT INTO `{{DBP}}posts` (
+           `post_content_html`
+          ,`post_content_text`
+          ,`authorId`
+          ,`threadId`
+          ,`postDate`
+          ,`editDate`
+        ) VALUES (
+           :post_content_html
+          ,:post_content_text
+          ,:authorId
+          ,:threadId
+          ,:postDate
+          ,:editDate
+        );
+      "));
+      if($this->S->executeQuery(array(
+        ':post_content_html'  => $this->post_html,
+        ':post_content_text'  => $this->post_text,
+        ':authorId'           => $this->author->id,
+        ':threadId'           => $this->thread->id,
+        ':postDate'           => date('Y-m-d H:i:s', time()),
+        ':editDate'           => date('Y-m-d H:i:s', time())
+      ))) {
+        $this->lastMessage[] = 'Post successfully created.';
+        return true;
+      } else {
+        if(defined('DEBUG')) {
+          $this->lastError[] = $this->S->getLastError();
+        } else {
+          $this->lastError[] = 'Something went wrong while submitting post.';
+        }
+        return false;
+      }
     }
 
     // Takes one parameter, which would be the thread ID.
     public function getPosts($tid = null) {
+      if(is_null($tid)) $tid = $this->thread->id;
 
+      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}posts` WHERE `threadId` = :threadId ORDER BY `postDate` DESC"));
+      if($this->S->executeQuery(array(
+        ':threadId' => $tid
+      ))) {
+        $this->lastMessage = 'Successfully fetched posts.';
+        return true;
+      } else {
+        if(defined('DEBUG')) {
+          $this->lastError[] = $this->S->getLastError();
+        } else {
+          $this->lastError[] = 'Something went wrong while fetching posts.';
+        }
+        return false;
+      }
     }
 
     public function updatePost() {
-
+      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+        UPDATE `{{DBP}}posts` SET
+           `post_content_html`  = :post_content_html
+          ,`post_content_text`  = :post_content_text
+          ,`authorId`           = :authorId
+          ,`threadId`           = :threadId
+          ,`editDate`           = :editDate
+        WHERE `postId` = :postId
+      "));
+      if($this->S->executeQuery(array(
+        ':post_content_html'  => $this->post_html,
+        ':post_content_text'  => $this->post_text,
+        ':authorId'           => $this->author->id,
+        ':threadId'           => $this->threadId,
+        ':editDate'           => date('Y-m-d H:i:s', time())
+      ))) {
+        $this->lastMessage[] = 'Successfully edited post.';
+        return true;
+      } else {
+        if(defined('DEBUG')) {
+          $this->lastError[] = $this->S->getLastError();
+        } else {
+          $this->lastError[] = 'Something went wrong while updating post.';
+        }
+        return false;
+      }
     }
 
     public function deletePost($pid = null) {
+      if(is_null($pid)) $pid = $this->id;
 
+      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "DELETE * FROM `{{DBP}}posts` WHERE `pid` = :postId"));
+      if($this->S->executeQuery(array(
+        ':postId' => $pid
+      ))) {
+        $this->lastMessage[] = 'Successfully deleted post.';
+        return true;
+      } else {
+        if(defined('DEBUG')) {
+          $this->lastError[] = $this->S->getLastError();
+        } else {
+          $this->lastError[] = 'Something went wrong while deleting post.';
+        }
+        return false;
+      }
     }
 
     public function getLastError() {

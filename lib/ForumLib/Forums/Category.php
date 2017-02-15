@@ -104,13 +104,13 @@
       if($this->S->executeQuery(array(
         ':title'        => $this->title,
         ':description'  => $this->description,
-        ':order'        => $this->order
+        ':order'        => $this->order,
         ':cid'          => $this->id
       ))) {
         $this->lastMessage[] = 'Successfully updated the category.';
         return true;
       } else {
-        if(defined('DEBUG'))) {
+        if(defined('DEBUG')) {
           $this->lastError[] = $S->getLastError();
         } else {
           $this->lastError[] = 'Something went wrong while updating category.';

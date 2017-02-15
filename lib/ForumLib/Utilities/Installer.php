@@ -8,6 +8,13 @@
     private $lastError = array();
     private $lastMessage = array();
 
+    /*
+      This is how to use the installer, by passing an array with the following keys:
+        $install = array(
+          'forum' => true/false,
+          'blogg' => true/false
+        )
+    */
     public function __constructor(PSQL $SQL, $install) {
       // Let's check if the $SQL is not a null.
       if(!is_null($SQL)) {

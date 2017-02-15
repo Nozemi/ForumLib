@@ -10,6 +10,8 @@
     public $posted;
     public $topic;
 
+    public $posts;
+
     private $S;
 
     private $lastError = array();
