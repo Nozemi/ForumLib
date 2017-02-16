@@ -168,6 +168,10 @@
       }
     }
 
+    public function getLastInsertId() {
+      return $this->db->lastInsertId();
+    }
+
     public function getLastError() {
       return end($this->lastError);
     }
