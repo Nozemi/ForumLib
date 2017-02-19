@@ -126,7 +126,7 @@
 
       // We'll have to fill in a few more delete queries. So that sub topics, threads and post are deleted as well.
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        DELETE * FROM `{{DBP}}categories` WHERE `cid` = :cid;
+        DELETE FROM `{{DBP}}categories` WHERE `cid` = :cid;
       "));
       if($this->S->executeQuery(array(
         ':cid' => $cid

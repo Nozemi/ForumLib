@@ -8,6 +8,7 @@
     public $sticky;
     public $closed;
     public $posted;
+    public $edited;
     public $topic;
 
     public $posts;
@@ -133,7 +134,9 @@
       }
     }
 
-    public function updateThread() {
+    public function updateThread($tid = null) {
+      if(is_null($tid)) $tid = $this->id;
+
       $this->S->prepareQuery($this->S->executeQuery('{{DBP}}', "
         UPDATE `{{DBP}}threads` SET
            `title`        = :title
@@ -145,10 +148,48 @@
           ,`closed`       = :closed
         WHERE `tid` = :tid
       "));
+
+      if($this->S->executeQuery(array(
+        ':title'        => $this->title,
+        ':topicId'      => $this->topicId,
+        ':authorId'     => $this->author->id,
+        ':dateCreated'  => $this->posted,
+        ':lastEdited'   => $this->edited,
+        ':sticky'       => $this->sticky,
+        ':closed'       => $this->closed
+      ))) {
+        $this->lastMessage[] = 'Successfully updated thread.';
+        return true;
+      } else {
+        if(defined('DEBUG')) {
+          $this->lastError[] = $this->S->getLastError();
+        } else {
+          $this->lastError[] = 'Something went wrong while updating thread.';
+        }
+        return false;
+      }
     }
 
     public function deleteThread($tid = null) {
+      if(is_null($tid)) $tid = $this->id;
 
+      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+        DELETE FROM `{{DBP}}threads` WHERE `tid` = :tid
+      "));
+
+      if($this->S->executeQuery(array(
+        ':tid' => $tid
+      ))) {
+        $this->lastMessage[] = 'Successfully deleted thread.';
+        return true;
+      } else {
+        if(defined('DEBUG')) {
+          $this->lastError[] = $this->S->getLastError();
+        } else {
+          $this->lastError[] = 'Something went wrong while deleting thread.';
+        }
+        return false;
+      }
     }
 
     public function getLastError() {

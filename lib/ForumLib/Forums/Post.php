@@ -114,7 +114,10 @@
     public function deletePost($pid = null) {
       if(is_null($pid)) $pid = $this->id;
 
-      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "DELETE * FROM `{{DBP}}posts` WHERE `pid` = :postId"));
+      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+        DELETE FROM `{{DBP}}posts` WHERE `pid` = :postId
+      "));
+      
       if($this->S->executeQuery(array(
         ':postId' => $pid
       ))) {
