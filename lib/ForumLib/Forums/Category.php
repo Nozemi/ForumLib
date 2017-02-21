@@ -53,7 +53,7 @@
         ':cid' => $this->id
       ))) {
         $this->lastMessage[] = 'The category was successfully loaded.';
-        return true;
+        return $this->S->fetch();
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();

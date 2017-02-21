@@ -62,7 +62,7 @@
         ':categoryId' => $cid
       ))) {
         $this->lastMessage[] = 'Successfully loaded topics.';
-        return true; // We still need to return the actual topics, rather than just true.
+        return $this->S->fetchAll();
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();
@@ -83,7 +83,7 @@
         ':tid' => $tid
       ))) {
         $this->lastMessage[] = 'Successfully fetched topic.';
-        return true; // We still need to return the actual topic, rather than just true.
+        return $this->S->fetch();
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();

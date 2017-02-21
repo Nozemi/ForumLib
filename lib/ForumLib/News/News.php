@@ -96,10 +96,13 @@
     public static function getNews($id = null) {
       if(is_null($id)) {
         // If $id is null (which it is by default), we'll fetch all news items.
-        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}news` ORDER BY `date_posted` DESC;"));
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+          SELECT * FROM `{{DBP}}news` ORDER BY `date_posted` DESC;
+        "));
+
         if($this->S->executeQuery()) {
           $this->lastMessage[] = 'All news was successfully fetched.';
-          return true;
+          return $this->S->fetchAll();
         } else {
           if(defined('DEBUG')) {
             $this->lastError[] = $this->S->getLastError();
@@ -110,10 +113,13 @@
         }
       } else {
         // If $id isn't null, we'll fetch the news item with that exact id from the database.
-        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}news` WHERE `nid` = :nid"));
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+          SELECT * FROM `{{DBP}}news` WHERE `nid` = :nid
+        "));
+
         if($this->S->executeQuery(array(':nid' => $id))) {
           $this->lastMessage = 'News item was successfully fetched.';
-          return true;
+          return $this->S->fetch();
         } else {
           if(defined('DEBUG')) {
             $this->lastError[] = $this->S->getLastError();
@@ -122,6 +128,28 @@
           }
           return false;
         }
+      }
+    }
+
+    public function deleteNews($id = null) {
+      if(is_null($id)) $id = $this->id;
+
+      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+        DELETE FROM `{{DBP}}news` WHER `nid` = :nid
+      "));
+
+      if($this->S->executeQuery(array(
+        ':nid' => $id
+      ))) {
+        $this->lastMessage[] = 'Successfully deleted news item.';
+        return true;
+      } else {
+        if(defined('DEBUG')) {
+          $this->lastError[] = $this->S->getLastError();
+        } else {
+          $this->lastError[] = 'Something went wrong while deleting news item.';
+        }
+        return false;
       }
     }
 

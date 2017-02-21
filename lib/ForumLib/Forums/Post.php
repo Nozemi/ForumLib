@@ -71,7 +71,7 @@
         ':threadId' => $tid
       ))) {
         $this->lastMessage = 'Successfully fetched posts.';
-        return true;
+        return $this->S->fetchAll();
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();
@@ -117,7 +117,7 @@
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
         DELETE FROM `{{DBP}}posts` WHERE `pid` = :postId
       "));
-      
+
       if($this->S->executeQuery(array(
         ':postId' => $pid
       ))) {

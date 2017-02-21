@@ -37,7 +37,7 @@
         ':topicId' => $this->topicId
       ))) {
         $this->lastMessage[] = 'Successfully loaded threads.';
-        return true;
+        return $this->S->fetchAll();
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();
@@ -123,7 +123,7 @@
         ':tid' => $id
       ))) {
         $this->lastMessage[] = 'Successfully loaded thread.';
-        return true; // Rather than returning true, we'll return the thread.
+        return $this->S->fetch();
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();
