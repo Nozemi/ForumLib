@@ -30,7 +30,19 @@
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}categories` ORDER BY `order` ASC"));
       if($this->S->executeQuery()) {
         $this->lastMessage[] = 'Successfully fetched categories.';
-        return $this->S->fetchAll();
+
+        $theCategories = array();
+        $qR = $this->S->fetchAll();
+
+        for($i = 0; $i < count($qR); $i++) {
+          $theCategories[$i] = new Category($S);
+          $theCategories[$i]
+            ->setTitle($qR['title'])
+            ->setDescription($qR['description'])
+            ->setOrder($qR['order']);
+        }
+
+        return $theCategories;
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();
@@ -54,7 +66,16 @@
         ':cid' => $this->id
       ))) {
         $this->lastMessage[] = 'The category was successfully loaded.';
-        return $this->S->fetch();
+
+        $cat = $this->S->fetch(); // Let's get the query result.
+
+        $theCategory = new Category($S);
+        $theCategory
+          ->setTitle($cat['title'])
+          ->setDescription($cat['description'])
+          ->setOrder($cat['order']);
+
+        return $theCategory;
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();
@@ -121,7 +142,7 @@
     }
 
     public function deleteCategory($cid = null) {
-      if($cid == null) {
+      if(is_null($cid)) {
         $cid = $this->id;
       }
 
@@ -142,6 +163,22 @@
         }
         return false;
       }
+    }
+
+    public function setTitle($_title) {
+      $this->title = $_title;
+    }
+
+    public function setDescription($_description) {
+      $this->description = $_description;
+    }
+
+    public function setOrder($_order) {
+      $this->order = $_order;
+    }
+
+    public function setEnabled($_enabled) {
+      $this->enabled = $_enabled;
     }
 
     public function getType() {
