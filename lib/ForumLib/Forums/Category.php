@@ -9,6 +9,7 @@
     public $description;
     public $order;
     public $enabled;
+    public $permissions = array();
 
     private $S;
 
@@ -141,6 +142,10 @@
         }
         return false;
       }
+    }
+
+    public function getType() {
+      return __CLASS__ ;
     }
 
     public function getLastError() {

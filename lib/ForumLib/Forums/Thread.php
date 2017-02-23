@@ -10,6 +10,7 @@
     public $posted;
     public $edited;
     public $topic;
+    public $permissions = array();
 
     public $posts;
 
@@ -190,6 +191,10 @@
         }
         return false;
       }
+    }
+
+    public function getType() {
+      return __CLASS__ ;
     }
 
     public function getLastError() {

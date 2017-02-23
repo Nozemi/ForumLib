@@ -8,6 +8,7 @@
     public $description;
     public $enabled;
     public $categoryId;
+    public $permissions = array();
 
     private $S;
 
@@ -145,6 +146,10 @@
         }
         return false;
       }
+    }
+
+    public function getType() {
+      return __CLASS__ ;
     }
 
     public function getLastError() {

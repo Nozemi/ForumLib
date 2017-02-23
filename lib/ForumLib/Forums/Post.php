@@ -9,6 +9,7 @@
     public $post_text;
     public $post_date;
     public $post_last_edit;
+    public $permissions = array();
 
     private $S;
 
