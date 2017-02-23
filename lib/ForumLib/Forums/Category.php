@@ -35,7 +35,7 @@
         $qR = $this->S->fetchAll();
 
         for($i = 0; $i < count($qR); $i++) {
-          $theCategories[$i] = new Category($S);
+          $theCategories[$i] = new Category($this->S);
           $theCategories[$i]
             ->setTitle($qR['title'])
             ->setDescription($qR['description'])
@@ -69,7 +69,7 @@
 
         $cat = $this->S->fetch(); // Let's get the query result.
 
-        $theCategory = new Category($S);
+        $theCategory = new Category($this->S);
         $theCategory
           ->setTitle($cat['title'])
           ->setDescription($cat['description'])
