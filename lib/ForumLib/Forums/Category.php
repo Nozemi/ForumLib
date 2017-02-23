@@ -26,7 +26,7 @@
       }
     }
 
-    public function getCategories() {
+    public static function getCategories() {
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}categories` ORDER BY `order` ASC"));
       if($this->S->executeQuery()) {
         $this->lastMessage[] = 'Successfully fetched categories.';
@@ -38,6 +38,7 @@
           $theCategories[$i] = new Category($this->S);
           $theCategories[$i]
             ->setTitle($qR[$i]['title'])
+            ->setDescription($qR[$i]['description'])
             ->setOrder($qR[$i]['order']);
         }
 
