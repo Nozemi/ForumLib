@@ -37,9 +37,9 @@
         for($i = 0; $i < count($qR); $i++) {
           $theCategories[$i] = new Category($this->S);
           $theCategories[$i]
-            ->setTitle($qR['title'])
-            ->setDescription($qR['description'])
-            ->setOrder($qR['order']);
+            ->setTitle($qR[$i]['title'])
+            ->setDescription($qR[$i]['description'])
+            ->setOrder($qR[$i]['order']);
         }
 
         return $theCategories;
