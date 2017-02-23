@@ -38,7 +38,6 @@
           $theCategories[$i] = new Category($this->S);
           $theCategories[$i]
             ->setTitle($qR[$i]['title'])
-            ->setDescription($qR[$i]['description'])
             ->setOrder($qR[$i]['order']);
         }
 
