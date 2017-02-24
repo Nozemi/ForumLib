@@ -3,7 +3,7 @@
 
   class Post {
     public $id;
-    public $thread;
+    public $threadId;
     public $author;
     public $post_html;
     public $post_text;
@@ -72,7 +72,22 @@
         ':threadId' => $tid
       ))) {
         $this->lastMessage = 'Successfully fetched posts.';
-        return $this->S->fetchAll();
+
+        $posts = $this->S->fetchAll();
+
+        for($i = 0; $i < count($posts); $i++) {
+          $thePost = new Post($S);
+          $thePost
+            ->setId($posts[$i]['pid'])
+            ->setThreadId($posts[$i]['threadId'])
+            ->setAuthor($posts[$i]['authorId'])
+            ->setPostDate($posts[$i]['postDate'])
+            ->setEditDate($posts[$i]['editDate'])
+            ->setHTML($posts[$i]['post_content_html'])
+            ->setText($posts[$i]['post_content_text']);
+        }
+
+        return $posts;
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();
@@ -132,6 +147,42 @@
         }
         return false;
       }
+    }
+
+    public function setId($_pid) {
+      $this->id = $_pid;
+      return $this;
+    }
+
+    public function setThreadId($_tid) {
+      $this->threadId = $_tid;
+      return $this;
+    }
+
+    public function setAuthor($_uid) {
+      $U = new User($this->S);
+      $this->author = $U->getUser($_uid);
+      return $this;
+    }
+
+    public function setPostDate($_date) {
+      $this->postDate = $_date;
+      return $this;
+    }
+
+    public function setEditDate($_date) {
+      $this->editDate = $_date;
+      return $this;
+    }
+
+    public function setHTML($_html) {
+      $this->post_html = $_html;
+      return $this;
+    }
+
+    public function setText($_text) {
+      $this->post_text = $_text;
+      return $this;
     }
 
     public function getLastError() {

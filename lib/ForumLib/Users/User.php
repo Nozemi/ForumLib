@@ -23,7 +23,10 @@
     public $username;  // Account username.
     public $group;     // Array of account group details.
     public $email;     // Account email address.
-    public $lastlogin; // Array of last login detials.
+    public $lastLogin; 
+    public $lastIp;
+    public $regIp;
+    public $regDate;
     public $about;     // Array of information.
     public $firstname; // First name.
     public $lastname;  // Last name.
@@ -35,7 +38,7 @@
     private $lastError = array();
     private $lastMessage = array();
 
-    public function __construct(PSQL $SQL) {
+    public function __construct(PSQL $SQL, $_uid = null) {
       // We'll check if the required parameters are filled.
       if(!is_null($SQL)) {
         $this->S = $SQL;
@@ -176,6 +179,104 @@
         $this->lastError[] = $this->S->getLastError();
         return false;
       }
+    }
+
+    public function getUser($_uid = null) {
+      if(!is_null($_uid)) $this->uid = $_uid;
+
+      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+        SELECT
+           `username`
+          ,`avatar`
+          ,`group`
+          ,`firsname`
+          ,`lastname`
+          ,`lastlogindate`
+          ,`regdate`
+          ,`lastip`
+          ,`regip`
+          ,`email`
+        FROM `{{DBP}}users`
+        WHERE `uid` = :uid
+      "));
+
+      if($this->S->executeQuery(array(
+        ':uid' => $this->uid
+      ))) {
+        $uR = $this->S->fetch();
+        $user = new User($this->S);
+        $user
+          ->setAvatar($uR['avatar'])
+          ->setGroup($uR['group'])
+          ->setFirstname($uR['firstname'])
+          ->setLastname($uR['lastname'])
+          ->setLastLogin($uR['lastlogindate'])
+          ->setRegDate($uR['regdate'])
+          ->setLastIP($uR['lastip'])
+          ->setRegIP($uR['regip'])
+          ->setEmail($uR['email'])
+          ->setUsername($uR['username']);
+
+        return $user;
+      } else {
+        if(defined('DEBUG')) {
+          $this->lastError[] = $this->S->getLastError();
+        } else {
+          $this->lastError[] = 'Something went wrong while getting the user.';
+        }
+        return false;
+      }
+    }
+
+    public function setAvatar($_avatar) {
+      $this->avatar = $_avatar;
+      return $this;
+    }
+
+    public function setGroup($_gid) {
+      $G = new Group($this->S);
+      $this->group = $G->getGroup($_gid);
+      return $this;
+    }
+
+    public function setFirstname($_firstname) {
+      $this->firstname = $_firstname;
+      return $this;
+    }
+
+    public function setLastname($_lastname) {
+      $this->lastname = $_lastname;
+      return $this;
+    }
+
+    public function setLastLogin($_date) {
+      $this->lastLogin = $_date;
+      return $this;
+    }
+
+    public function setRegDate($_date) {
+      $this->regDate = $_date;
+      return $this;
+    }
+
+    public function setLastIP($_ip) {
+      $this->lastIp = $_ip;
+      return $this;
+    }
+
+    public function setRegIP($_ip) {
+      $this->regIp = $_ip;
+      return $this;
+    }
+
+    public function setEmail($_email) {
+      $this->email = $_email;
+      return $this;
+    }
+
+    public function setUsername($_username) {
+      $this->username = $_username;
+      return $this;
     }
 
     public function getLastMessage() {

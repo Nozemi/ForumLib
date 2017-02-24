@@ -11,7 +11,7 @@
     public $edited;
     public $topic;
     public $permissions = array();
-
+    
     public $posts;
 
     private $S;
@@ -124,7 +124,13 @@
         ':tid' => $id
       ))) {
         $this->lastMessage[] = 'Successfully loaded thread.';
-        return $this->S->fetch();
+        $tR = $this->S->fetch();
+
+        $thread = new Thread($this->S);
+        $thread
+          ->setPosts();
+
+        return $thread;
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();
@@ -191,6 +197,12 @@
         }
         return false;
       }
+    }
+
+    public function setPosts() {
+      $P = new Post($this->S);
+      $this->posts = $P->getPosts($this->id);
+      return $this;
     }
 
     public function getType() {

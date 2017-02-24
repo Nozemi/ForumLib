@@ -26,7 +26,7 @@
       }
     }
 
-    public static function getCategories() {
+    public function getCategories() {
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}categories` ORDER BY `order` ASC"));
       if($this->S->executeQuery()) {
         $this->lastMessage[] = 'Successfully fetched categories.';
@@ -37,9 +37,11 @@
         for($i = 0; $i < count($qR); $i++) {
           $theCategories[$i] = new Category($this->S);
           $theCategories[$i]
+            ->setId($qR[$i]['cid'])
             ->setTitle($qR[$i]['title'])
             ->setDescription($qR[$i]['description'])
-            ->setOrder($qR[$i]['order']);
+            ->setOrder($qR[$i]['order'])
+            ->setEnabled($qR[$i]['enabled']);
         }
 
         return $theCategories;
@@ -71,9 +73,11 @@
 
         $theCategory = new Category($this->S);
         $theCategory
+          ->setId($cat['cid'])
           ->setTitle($cat['title'])
           ->setDescription($cat['description'])
-          ->setOrder($cat['order']);
+          ->setOrder($cat['order'])
+          ->setEnabled($cat['enabled']);
 
         return $theCategory;
       } else {
@@ -121,7 +125,7 @@
            `title`        = :title
           ,`description`  = :description
           ,`order`        = :order
-        WHERE `cid` = :cid
+        WHERE `cid` = :cid;
       "));
       if($this->S->executeQuery(array(
         ':title'        => $this->title,
@@ -165,20 +169,29 @@
       }
     }
 
+    public function setId($_id) {
+      $this->id = $_id;
+      return $this;
+    }
+
     public function setTitle($_title) {
       $this->title = $_title;
+      return $this;
     }
 
     public function setDescription($_description) {
       $this->description = $_description;
+      return $this;
     }
 
     public function setOrder($_order) {
       $this->order = $_order;
+      return $this;
     }
 
     public function setEnabled($_enabled) {
       $this->enabled = $_enabled;
+      return $this;
     }
 
     public function getType() {
