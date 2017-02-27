@@ -8,7 +8,8 @@
     public $description;
     public $enabled;
     public $categoryId;
-    public $permissions = array();
+    public $permissions;
+    public $threads;
 
     private $S;
 
@@ -148,8 +149,24 @@
       }
     }
 
+    public function setPermissions($_id = null) {
+      if(is_null($this->id)) $this->id = $_id;
+
+      $P = new Permissions($this->S, $this->id, $this);
+      $this->permissions = $P->getPermissions();
+      return $this;
+    }
+
+    public function setThreads($_tid = null) {
+      if(is_null($this->id)) $this->id = $_tid;
+
+      $T = new Thread($this->S);
+      $this->threads = $T->getThreads();
+      return $this;
+    }
+
     public function getType() {
-      return __CLASS__ ;
+      return __CLASS__;
     }
 
     public function getLastError() {

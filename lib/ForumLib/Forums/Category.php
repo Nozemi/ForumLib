@@ -9,7 +9,8 @@
     public $description;
     public $order;
     public $enabled;
-    public $permissions = array();
+    public $permissions;
+    public $topics;
 
     private $S;
 
@@ -41,7 +42,8 @@
             ->setTitle($qR[$i]['title'])
             ->setDescription($qR[$i]['description'])
             ->setOrder($qR[$i]['order'])
-            ->setEnabled($qR[$i]['enabled']);
+            ->setEnabled($qR[$i]['enabled'])
+            ->setPermissions($this->id);
         }
 
         return $theCategories;
@@ -191,6 +193,21 @@
 
     public function setEnabled($_enabled) {
       $this->enabled = $_enabled;
+      return $this;
+    }
+
+    public function setPermissions($_id = null) {
+      if(is_null($this->id)) $this->id = $_id;
+
+      $P = new Permissions($this->S, $this->id, $this);
+      $this->permissions = $P->getPermissions();
+    }
+
+    public function setTopics($_cid = null) {
+      if(is_null($this->id)) $this->id = $_cid;
+
+      $T = new Topic($this->S);
+      $this->topics = $T->getTopics();
       return $this;
     }
 

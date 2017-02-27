@@ -9,9 +9,9 @@
     public $closed;
     public $posted;
     public $edited;
-    public $topic;
+    public $topicId;
     public $permissions = array();
-    
+
     public $posts;
 
     private $S;
@@ -37,8 +37,25 @@
       if($this->S->executeQuery(array(
         ':topicId' => $this->topicId
       ))) {
+        $tR = $this->S->fetchAll();
+
+        $threads = array();
+
+        for($i = 0; $i < count($tR); $i++) {
+          $T = new Thread($this->S);
+          $T->setId($tR[$i]['tid'])
+            ->setTitle($tR[$i]['title'])
+            ->setAuthor($tR[$i]['authorId'])
+            ->setSticky($tR[$i]['sticky'])
+            ->setClosed($tR[$i]['closed'])
+            ->setPosted($tR[$i]['posted'])
+            ->setEdited($tR[$i]['edited'])
+            ->setTopic($tR[$i]['topicId'])
+            ->setPermissions($this->id);
+          $threads[] = $T;
+        }
         $this->lastMessage[] = 'Successfully loaded threads.';
-        return $this->S->fetchAll();
+        return $threads;        
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();
@@ -127,8 +144,15 @@
         $tR = $this->S->fetch();
 
         $thread = new Thread($this->S);
-        $thread
-          ->setPosts();
+        $thread->setId($tR['id'])
+          ->setPosts($tR['tid'])
+          ->setTitle($tR['title'])
+          ->setClosed($tR['closed'])
+          ->setPosted($tR['posted'])
+          ->setEdited($tR['edited'])
+          ->setSticky($tR['sticky'])
+          ->setAutor($tR['authorId'])
+          ->setTopic($tR['topicId']);
 
         return $thread;
       } else {
@@ -202,6 +226,55 @@
     public function setPosts() {
       $P = new Post($this->S);
       $this->posts = $P->getPosts($this->id);
+      return $this;
+    }
+
+    public function setPermissions($_id = null) {
+      if(is_null($this->id)) $this->id = $_id;
+
+      $P = new Permissions($this->S, $this->id, $this);
+      $this->permissions = $P->getPermissions();
+      return $this;
+    }
+
+    public function setTitle($_title) {
+      $this->title = $_title;
+      return $this;
+    }
+
+    public function setId($_id) {
+      $this->id = $_id;
+      return $this;
+    }
+
+    public function setAuthor($_uid) {
+      $U = new User($this->S);
+      $this->author = $U->getUser($_uid);
+      return $this;
+    }
+
+    public function setSticky($_sticky) {
+      $this->sticky = $_sticky;
+      return $this;
+    }
+
+    public function setClosed($_closed) {
+      $this->closed = $_closed;
+      return $this;
+    }
+
+    public function setPosted($_posted) {
+      $this->posted = $_posted;
+      return $this;
+    }
+
+    public function setEdited($_edited) {
+      $this->edited = $_edited;
+      return $this;
+    }
+
+    public function setTopiId($_tid) {
+      $this->topicId = $_tid;
       return $this;
     }
 

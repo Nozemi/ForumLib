@@ -72,21 +72,37 @@
       ))) {
         $perms = $this->S->fetchAll(); // Let's get the query results.
 
-        $this->canRead  = $perms['read'];
-        $this->canPost  = $perms['post'];
-        $this->canMod   = $perms['mod'];
-        $this->canAdmin = $perms['admin'];
+        $users = array(); $groups = array();
 
-        if(is_null($perms['userId'])) {
-          $this->userId   = null;
-          $this->groupId  = $perms['groupId'];
-        } else {
-          $this->groupId  = null;
-          $this->userId   = $perms['userId'];
+        for($i = 0; $i < count($perms); $i++) {
+          $P = new permissions($this->S);
+
+          if(is_null($perms['userId'])) {
+            $P->setUserId(null)
+              ->setGroupId($perms[$i]['groupId']);
+          } else {
+            $P->setGroupId(null)
+              ->setUserId($perms[$i]['userId']);
+          }
+
+          $P->setPost($perms[$i]['post'])
+            ->setRead($perms[$i]['read'])
+            ->setMod($perms[$i]['mod'])
+            ->setAdmin($perms[$i]['admin']);
+
+          if(is_null($P->getUserId)) {
+            $groups[] = $P;
+          } else {
+            $users[] = $P;
+          }
         }
 
         $this->lastMessage[] = 'Successfully loaded permissions.';
-        return true;
+        
+        return array(
+          'users'   => $users,
+          'groups'  => $groups
+        );
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();
@@ -112,6 +128,45 @@
     public function canAdmin() {
       return $this->canAdmin;
     }
+
+    public function getUserId() {
+      return $this->userId;
+    }
+
+    public function getGroupId() {
+      return $this->groupId;
+    }
+
+    public function setRead($_read) {
+      $this->canRead = $_read;
+      return $this;
+    }
+
+    public function setPost($_post) {
+      $this->canPost = $_post;
+      return $this;
+    }
+
+    public function setMod($_mod) {
+      $this->canMod = $_mod;
+      return $this;
+    }
+
+    public function setAdmin($_admin) {
+      $this->canAdmin = $_admin;
+      return $this;
+    }
+
+    public function setUserId($_uid) {
+      $this->userId = $_uid;
+      return $this;
+    }
+
+    public function setGroupId($_gid) {
+      $this->groupId = $_gid;
+      return $this;
+    }
+
 
     public function getLastError() {
       return end($this->lastError);
