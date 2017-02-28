@@ -21,9 +21,10 @@
   class User {
     public $uid;       // Account User ID.
     public $username;  // Account username.
-    public $group;     // Array of account group details.
+    public $groupId;
+    public $group;     // Group Object
     public $email;     // Account email address.
-    public $lastLogin; 
+    public $lastLogin;
     public $lastIp;
     public $regIp;
     public $regDate;
@@ -78,7 +79,15 @@
       ))) {
         $details = $this->S->fetch();
 
-        // Verify the username/password upon login.
+        if(password_verify($this->password, $details['password'])) {
+          $this->lastMessage[] = 'Successfully logged in.';
+          $user = $this->getUser();
+
+          return $user;
+        } else {
+          $this->lastError[] = 'Incorrect username or password.';
+          return false;
+        }
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();
@@ -205,7 +214,7 @@
       ))) {
         $uR = $this->S->fetch();
         $user = new User($this->S);
-        $user
+        $user->setId($uR['uid'])
           ->setAvatar($uR['avatar'])
           ->setGroup($uR['group'])
           ->setFirstname($uR['firstname'])
@@ -228,8 +237,18 @@
       }
     }
 
+    public function setId($_id) {
+      $this->id = $_id;
+      return $this;
+    }
+
     public function setAvatar($_avatar) {
       $this->avatar = $_avatar;
+      return $this;
+    }
+
+    public function setGroupId($_gid) {
+      $this->groupId = $_gid;
       return $this;
     }
 
