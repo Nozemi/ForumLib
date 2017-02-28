@@ -40,7 +40,7 @@
     // Open Database Connection.
     public function open() {
       // Check if database details are set.
-      if(!is_null($this->dbuser) || !isnull($this->dbpass) || !isnull($this->dbname) || !isnull($this->dbhost)) {
+      if(!is_null($this->dbuser) || !is_null($this->dbpass) || !is_null($this->dbname) || !is_null($this->dbhost)) {
         // Set character encoding to UTF-8.
         $options = array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8');
 
