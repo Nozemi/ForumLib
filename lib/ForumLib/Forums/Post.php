@@ -9,7 +9,6 @@
     public $post_text;
     public $post_date;
     public $post_last_edit;
-    public $permissions = array();
 
     private $S;
 
@@ -65,7 +64,7 @@
 
     // Takes one parameter, which would be the thread ID.
     public function getPosts($tid = null) {
-      if(is_null($tid)) $tid = $this->thread->id;
+      if(is_null($tid)) $tid = $this->threadId;
 
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}posts` WHERE `threadId` = :threadId ORDER BY `postDate` DESC"));
       if($this->S->executeQuery(array(
@@ -74,6 +73,7 @@
         $this->lastMessage = 'Successfully fetched posts.';
 
         $posts = $this->S->fetchAll();
+        $thePosts = array();
 
         for($i = 0; $i < count($posts); $i++) {
           $thePost = new Post($S);
@@ -85,14 +85,46 @@
             ->setEditDate($posts[$i]['editDate'])
             ->setHTML($posts[$i]['post_content_html'])
             ->setText($posts[$i]['post_content_text']);
+            
+          $thePosts[] = $thePost;
         }
 
-        return $posts;
+        return $thePosts;
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();
         } else {
           $this->lastError[] = 'Something went wrong while fetching posts.';
+        }
+        return false;
+      }
+    }
+
+    public function getPost($tid = null) {
+      if(is_null($tid)) $tid = $this->threadId;
+
+      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}posts` WHERE `threadId` = :threadId ORDER BY `postDate` DESC"));
+      if($this->S->executeQuery(array(
+        ':threadId' => $tid
+      ))) {
+        $post = $this->S->fetch();
+
+        $thePost = new Post($S);
+        $thePost->setId($post['pid'])
+          ->setThreadId($post['threadId'])
+          ->setAuthor($post['authorId'])
+          ->setPostDate($post['postDate'])
+          ->setEditDate($post['editDate'])
+          ->setHTML($post['post_content_html'])
+          ->setText($post['post_content_text']);
+
+        $this->lastMessage = 'Successfully fetched posts.';
+        return $thePost;
+      } else {
+        if(defined('DEBUG')) {
+          $this->lastError[] = $this->S->getLastError();
+        } else {
+          $this->lastError[] = 'Something went wrong while fetching post.';
         }
         return false;
       }

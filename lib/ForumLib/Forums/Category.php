@@ -43,7 +43,8 @@
             ->setDescription($qR[$i]['description'])
             ->setOrder($qR[$i]['order'])
             ->setEnabled($qR[$i]['enabled'])
-            ->setPermissions($this->id);
+            ->setPermissions($this->id)
+            ->setTopics($this->id);
         }
 
         return $theCategories;

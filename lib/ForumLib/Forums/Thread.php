@@ -10,8 +10,7 @@
     public $posted;
     public $edited;
     public $topicId;
-    public $permissions = array();
-
+    public $permissions;
     public $posts;
 
     private $S;
@@ -55,7 +54,7 @@
           $threads[] = $T;
         }
         $this->lastMessage[] = 'Successfully loaded threads.';
-        return $threads;        
+        return $threads;
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();
@@ -152,7 +151,8 @@
           ->setEdited($tR['edited'])
           ->setSticky($tR['sticky'])
           ->setAutor($tR['authorId'])
-          ->setTopic($tR['topicId']);
+          ->setTopic($tR['topicId'])
+          ->setPosts($this->id);
 
         return $thread;
       } else {
@@ -275,6 +275,14 @@
 
     public function setTopiId($_tid) {
       $this->topicId = $_tid;
+      return $this;
+    }
+
+    public function setPosts($_id = null) {
+      if(is_null($this->id)) $this->id = $_id;
+
+      $P = new Post($this->S);
+      $this->posts = $P->getPosts($this->id);
       return $this;
     }
 

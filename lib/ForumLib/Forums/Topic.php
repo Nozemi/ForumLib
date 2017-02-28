@@ -63,8 +63,25 @@
       if($this->S->executeQuery(array(
         ':categoryId' => $cid
       ))) {
+        $tR = $this->S->fetchAll();
+
+        $topics = array();
+
+        for($i = 0; $i < count($tR); $i++) {
+          $T = new Topic($this->S);
+          $T->setId($tR[$i]['id'])
+            ->setTitle($tR[$i]['title'])
+            ->setDescription($tR[$i]['description'])
+            ->setOrder($tR[$i]['order'])
+            ->setEnabled($tR[$i]['enabled'])
+            ->setCategoryId($tR[$i]['categoryId'])
+            ->setPermissions($this->id)
+            ->setThreads($this->id);
+          $topics[] = $T;
+        }
+
         $this->lastMessage[] = 'Successfully loaded topics.';
-        return $this->S->fetchAll();
+        return $topics;
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();
@@ -84,8 +101,20 @@
       if($this->S->executeQuery(array(
         ':tid' => $tid
       ))) {
+        $topic = $this->S->fetch();
+
+        $T = new Topic($this->S);
+        $T->setId($topic['id'])
+          ->setTitle($topic['title'])
+          ->setDescription($topic['description'])
+          ->setOrder($topic['order'])
+          ->setEnabled($topic['enabled'])
+          ->setCategoryId($topic['categoryId'])
+          ->setPermissions($this->id)
+          ->setThreads($this->id);
+
         $this->lastMessage[] = 'Successfully fetched topic.';
-        return $this->S->fetch();
+        return $T;
       } else {
         if(defined('DEBUG')) {
           $this->lastError[] = $this->S->getLastError();
@@ -147,6 +176,31 @@
         }
         return false;
       }
+    }
+
+    public function setId($_id) {
+      $this->id = $_id;
+      return $this;
+    }
+
+    public function setTitle($_title) {
+      $this->title = $_title;
+      return $this;
+    }
+
+    public function setDescription($_desc) {
+      $this->description = $_desc;
+      return $this;
+    }
+
+    public function setOrder($_order) {
+      $this->order = $_order;
+      return $this;
+    }
+
+    public function setCategoryId($_cid) {
+      $this->categoryId = $_cid;
+      return $this;
     }
 
     public function setPermissions($_id = null) {
