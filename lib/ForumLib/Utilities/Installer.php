@@ -15,7 +15,7 @@
           'blogg' => true/false
         )
     */
-    public function __constructor(PSQL $SQL, $install) {
+    public function __construct(PSQL $SQL, $install) {
       // Let's check if the $SQL is not a null.
       if(!is_null($SQL)) {
         $this->S = $SQL;

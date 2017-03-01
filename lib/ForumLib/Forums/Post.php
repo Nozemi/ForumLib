@@ -1,6 +1,8 @@
 <?php
   namespace ForumLib\Forums;
 
+  use ForumLib\Utilities\PSQL;
+
   class Post {
     public $id;
     public $threadId;
@@ -85,7 +87,7 @@
             ->setEditDate($posts[$i]['editDate'])
             ->setHTML($posts[$i]['post_content_html'])
             ->setText($posts[$i]['post_content_text']);
-            
+
           $thePosts[] = $thePost;
         }
 

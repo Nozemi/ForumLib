@@ -2,6 +2,7 @@
   namespace ForumLib\Forums;
 
   use ForumLib\Utilities\PSQL;
+  use ForumLib\Users\Permissions;
 
   class Category {
     public $id;

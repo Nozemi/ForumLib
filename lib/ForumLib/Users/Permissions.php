@@ -1,6 +1,8 @@
 <?php
   namespace ForumLib\Users;
 
+  use ForumLib\Utilities\PSQL;
+
   class Permissions {
     private $id;
     private $OI; // Object Instance.
@@ -98,7 +100,7 @@
         }
 
         $this->lastMessage[] = 'Successfully loaded permissions.';
-        
+
         return array(
           'users'   => $users,
           'groups'  => $groups

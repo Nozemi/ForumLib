@@ -1,6 +1,9 @@
 <?php
   namespace ForumLib\Forums;
 
+  use ForumLib\Utilities\PSQL;
+  use ForumLib\Users\Permissions;
+
   class Topic {
     public $id;
     public $order;

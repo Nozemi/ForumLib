@@ -1,6 +1,9 @@
 <?php
   namespace ForumLib\Forums;
 
+  use ForumLib\Utilities\PSQL;
+  use ForumLib\Users\Permissions;
+
   class Thread {
     public $id;
     public $title;
@@ -221,12 +224,6 @@
         }
         return false;
       }
-    }
-
-    public function setPosts() {
-      $P = new Post($this->S);
-      $this->posts = $P->getPosts($this->id);
-      return $this;
     }
 
     public function setPermissions($_id = null) {

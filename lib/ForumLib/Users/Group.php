@@ -1,6 +1,8 @@
 <?php
   namespace ForumLib\Users;
 
+  use ForumLib\Utilities\PSQL;
+
   class Group {
     public $id;
     public $name;

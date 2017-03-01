@@ -1,6 +1,8 @@
 <?php
   namespace ForumLib\Users;
 
+  use ForumLib\Utilities\PSQL;
+
   /*
     The User object requires the PSQL class in order to function.
     It also requires a table, with whatever prefix you desire, the important part is to end it with users. (e.g. site2341_users)
