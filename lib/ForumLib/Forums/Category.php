@@ -203,6 +203,7 @@
 
       $P = new Permissions($this->S, $this->id, $this);
       $this->permissions = $P->getPermissions();
+      return $this;
     }
 
     public function setTopics($_cid = null) {
