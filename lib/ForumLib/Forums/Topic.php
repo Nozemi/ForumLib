@@ -19,7 +19,7 @@
     private $lastError = array();
     private $lastMessage = array();
 
-    public function __construct() {
+    public function __construct(PSQL $SQL) {
       if(!is_null($SQL)) {
         $this->S = $SQL;
       } else {
@@ -57,7 +57,7 @@
       }
     }
 
-    public function getTopics($tid = null) {
+    public function getTopics($cid = null) {
       if(is_null($cid)) $cid = $this->categoryId;
 
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
