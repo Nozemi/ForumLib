@@ -59,17 +59,21 @@
       }
     }
 
-    public function getCategory($id) {
-      $this->id = $id;
+    public function getCategory($id = null, $byId = true) {
+      if(is_null($id)) $id = $this->id;
 
-      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        SELECT
-          *
-        FROM `{{DBP}}categories`
-        WHERE `cid` = :cid
-      "));
+      if($byId) {
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+          SELECT * FROM `{{DBP}}categories` WHERE `cid` = :cid;
+        "));
+      } else {
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+          SELECT * FROM `{{DBP}}categories` WHERE MATCH(`title`) AGAINST(:cid IN BOOLEAN MODE);
+        "));
+      }
+
       if($this->S->executeQuery(array(
-        ':cid' => $this->id
+        ':cid' => $id
       ))) {
         $this->lastMessage[] = 'The category was successfully loaded.';
 
@@ -203,6 +207,7 @@
 
       $P = new Permissions($this->S, $this->id, $this);
       $this->permissions = $P->getPermissions();
+      return $this;
     }
 
     public function setTopics($_cid = null) {
@@ -211,6 +216,10 @@
       $T = new Topic($this->S);
       $this->topics = $T->getTopics();
       return $this;
+    }
+
+    public function getURL() {
+      return strtolower(str_replace('--', '-', preg_replace("/[^a-z0-9._-]+/i", "", str_replace(' ', '-', $this->title))));
     }
 
     public function getType() {
