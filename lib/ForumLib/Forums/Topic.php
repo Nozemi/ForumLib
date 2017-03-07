@@ -9,6 +9,7 @@
     public $order;
     public $title;
     public $description;
+    public $icon;
     public $enabled;
     public $categoryId;
     public $permissions;
@@ -61,7 +62,7 @@
       if(is_null($cid)) $cid = $this->categoryId;
 
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        SELECT * FROM `{{DBP}}topics` WHERE `categoryId` = :categoryId
+        SELECT * FROM `{{DBP}}topics` WHERE `categoryId` = :categoryId ORDER BY `order` ASC
       "));
       if($this->S->executeQuery(array(
         ':categoryId' => $cid
@@ -75,6 +76,7 @@
           $T->setId($tR[$i]['id'])
             ->setTitle($tR[$i]['title'])
             ->setDescription($tR[$i]['description'])
+            ->setIcon($tR[$i]['icon'])
             ->setOrder($tR[$i]['order'])
             ->setEnabled($tR[$i]['enabled'])
             ->setCategoryId($tR[$i]['categoryId'])
@@ -95,14 +97,20 @@
       }
     }
 
-    public function getTopic($cid = null) {
-      if(is_null($tid)) $tid = $this->topicId;
+    public function getTopic($id = null, $byId = true) {
+      if(is_null($id)) $id = $this->id;
 
-      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        SELECT * FROM `{{DBP}}topics` WHERE `tid` = :tid
-      "));
+      if($byId) {
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+          SELECT * FROM `{{DBP}}topics` WHERE `id` = :id;
+        "));
+      } else {
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+          SELECT * FROM `{{DBP}}topics` WHERE MATCH(`title`) AGAINST(:id IN BOOLEAN MODE);
+        "));
+      }
       if($this->S->executeQuery(array(
-        ':tid' => $tid
+        ':id' => $id
       ))) {
         $topic = $this->S->fetch();
 
@@ -110,6 +118,7 @@
         $T->setId($topic['id'])
           ->setTitle($topic['title'])
           ->setDescription($topic['description'])
+          ->setIcon($topic['icon'])
           ->setOrder($topic['order'])
           ->setEnabled($topic['enabled'])
           ->setCategoryId($topic['categoryId'])
@@ -163,7 +172,7 @@
       if(is_null($id)) $id = $this->id;
 
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        DELETE FROM `{{DBP}}topics` WHERE `tid` = :tid
+        DELETE FROM `{{DBP}}topics` WHERE `id` = :tid
       "));
 
       if($this->S->executeQuery(array(
@@ -196,6 +205,11 @@
       return $this;
     }
 
+    public function setIcon($_icon) {
+      $this->icon = $_icon;
+      return $this;
+    }
+
     public function setOrder($_order) {
       $this->order = $_order;
       return $this;
@@ -203,6 +217,11 @@
 
     public function setCategoryId($_cid) {
       $this->categoryId = $_cid;
+      return $this;
+    }
+
+    public function setEnabled($_enabled) {
+      $this->enabled = $_enabled;
       return $this;
     }
 
@@ -220,6 +239,10 @@
       $T = new Thread($this->S);
       $this->threads = $T->getThreads();
       return $this;
+    }
+
+    public function getURL() {
+      return strtolower(str_replace('--', '-', preg_replace("/[^a-z0-9._-]+/i", "", str_replace(' ', '-', $this->title))));
     }
 
     public function getType() {
