@@ -29,8 +29,8 @@
       }
     }
 
-    public function createTopic($cid = null) {
-      if(is_null($cid)) $cid = $this->categoryId;
+    public function createTopic($categoryId = null) {
+      if(is_null($categoryId)) $categoryId = $this->categoryId;
 
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
         INSERT INTO `{{DBP}}topics` SET
@@ -41,7 +41,7 @@
       "));
 
       if($this->S->executeQuery(array(
-        ':categoryId'   => $this->categoryId,
+        ':categoryId'   => $categoryId,
         ':title'        => $this->title,
         ':description'  => $this->description,
         ':enabled'      => $this->enabled
@@ -58,14 +58,14 @@
       }
     }
 
-    public function getTopics($cid = null) {
-      if(is_null($cid)) $cid = $this->categoryId;
+    public function getTopics($categoryId = null) {
+      if(is_null($categoryId)) $categoryId = $this->categoryId;
 
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
         SELECT * FROM `{{DBP}}topics` WHERE `categoryId` = :categoryId ORDER BY `order` ASC
       "));
       if($this->S->executeQuery(array(
-        ':categoryId' => $cid
+        ':categoryId' => $categoryId
       ))) {
         $tR = $this->S->fetchAll();
 
@@ -137,8 +137,8 @@
       }
     }
 
-    public function updateTopic($tid = null) {
-      if(is_null($tid)) $tid = $this->id;
+    public function updateTopic($id = null) {
+      if(is_null($id)) $id = $this->id;
 
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
         UPDATE `{{DBP}}topics` SET
@@ -146,7 +146,7 @@
           ,`title`        = :title
           ,`description`  = :description
           ,`enabled`      = :enabled
-        WHERE `tid` = :tid
+        WHERE `id` = :id
       "));
 
       if($this->S->executeQuery(array(
@@ -154,7 +154,7 @@
         ':title'        => $this->title,
         ':description'  => $this->description,
         ':enabled'      => $this->enabled,
-        ':tid'          => $tid
+        ':id'           => $id
       ))) {
         $this->lastMessage[] = 'Successfully updated topic.';
         return true;
@@ -172,11 +172,11 @@
       if(is_null($id)) $id = $this->id;
 
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        DELETE FROM `{{DBP}}topics` WHERE `id` = :tid
+        DELETE FROM `{{DBP}}topics` WHERE `id` = :id
       "));
 
       if($this->S->executeQuery(array(
-        ':tid' => $tid
+        ':id' => $id
       ))) {
         $this->lastMessage[] = 'Successfully deleted topic.';
         return true;
@@ -226,18 +226,18 @@
     }
 
     public function setPermissions($_id = null) {
-      if(is_null($this->id)) $this->id = $_id;
+      if(is_null($_id)) $_id = $this->id;
 
-      $P = new Permissions($this->S, $this->id, $this);
+      $P = new Permissions($this->S, $_id, $this);
       $this->permissions = $P->getPermissions();
       return $this;
     }
 
-    public function setThreads($_tid = null) {
-      if(is_null($this->id)) $this->id = $_tid;
+    public function setThreads($_threadId = null) {
+      if(is_null($_threadId)) $_threadId = $this->id;
 
       $T = new Thread($this->S);
-      $this->threads = $T->getThreads();
+      $this->threads = $T->getThreads($_threadId);
       return $this;
     }
 

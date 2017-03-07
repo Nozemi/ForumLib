@@ -30,14 +30,14 @@
       }
     }
 
-    public function getThreads($cid = null) {
-      if(is_null($cid)) $cid = $this->id;
+    public function getThreads($topicId = null) {
+      if(is_null($topicId)) $topicId = $this->topicId;
 
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
         SELECT * FROM `{{DBP}}threads` WHERE `topicId` = :topicId
       "));
       if($this->S->executeQuery(array(
-        ':topicId' => $this->topicId
+        ':topicId' => $topicId
       ))) {
         $tR = $this->S->fetchAll();
 
@@ -45,7 +45,7 @@
 
         for($i = 0; $i < count($tR); $i++) {
           $T = new Thread($this->S);
-          $T->setId($tR[$i]['tid'])
+          $T->setId($tR[$i]['id'])
             ->setTitle($tR[$i]['title'])
             ->setAuthor($tR[$i]['authorId'])
             ->setSticky($tR[$i]['sticky'])
@@ -137,17 +137,16 @@
 
       // We'll need to load the thread and it's posts. Currently it just loads the thread.
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        SELECT * FROM `{{DBP}}threads` WHERE `tid` = :tid
+        SELECT * FROM `{{DBP}}threads` WHERE `id` = :id
       "));
       if($this->S->executeQuery(array(
-        ':tid' => $id
+        ':id' => $id
       ))) {
         $this->lastMessage[] = 'Successfully loaded thread.';
         $tR = $this->S->fetch();
 
         $thread = new Thread($this->S);
         $thread->setId($tR['id'])
-          ->setPosts($tR['tid'])
           ->setTitle($tR['title'])
           ->setClosed($tR['closed'])
           ->setPosted($tR['posted'])
@@ -168,8 +167,8 @@
       }
     }
 
-    public function updateThread($tid = null) {
-      if(is_null($tid)) $tid = $this->id;
+    public function updateThread($id = null) {
+      if(is_null($id)) $id = $this->id;
 
       $this->S->prepareQuery($this->S->executeQuery('{{DBP}}', "
         UPDATE `{{DBP}}threads` SET
@@ -180,7 +179,7 @@
           ,`lastEdited`   = :lastEdited
           ,`sticky`       = :sticky
           ,`closed`       = :closed
-        WHERE `tid` = :tid
+        WHERE `id` = :id
       "));
 
       if($this->S->executeQuery(array(
@@ -190,7 +189,8 @@
         ':dateCreated'  => $this->posted,
         ':lastEdited'   => $this->edited,
         ':sticky'       => $this->sticky,
-        ':closed'       => $this->closed
+        ':closed'       => $this->closed,
+        ':id'           => $this->id
       ))) {
         $this->lastMessage[] = 'Successfully updated thread.';
         return true;
@@ -204,15 +204,15 @@
       }
     }
 
-    public function deleteThread($tid = null) {
-      if(is_null($tid)) $tid = $this->id;
+    public function deleteThread($id = null) {
+      if(is_null($id)) $id = $this->id;
 
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        DELETE FROM `{{DBP}}threads` WHERE `tid` = :tid
+        DELETE FROM `{{DBP}}threads` WHERE `id` = :id
       "));
 
       if($this->S->executeQuery(array(
-        ':tid' => $tid
+        ':id' => $id
       ))) {
         $this->lastMessage[] = 'Successfully deleted thread.';
         return true;
@@ -227,9 +227,9 @@
     }
 
     public function setPermissions($_id = null) {
-      if(is_null($this->id)) $this->id = $_id;
+      if(is_null($_id)) $_id = $this->id;
 
-      $P = new Permissions($this->S, $this->id, $this);
+      $P = new Permissions($this->S, $_id, $this);
       $this->permissions = $P->getPermissions();
       return $this;
     }
@@ -276,10 +276,10 @@
     }
 
     public function setPosts($_id = null) {
-      if(is_null($this->id)) $this->id = $_id;
+      if(is_null($_id)) $_id = $this->id;
 
       $P = new Post($this->S);
-      $this->posts = $P->getPosts($this->id);
+      $this->posts = $P->getPosts($_id);
       return $this;
     }
 

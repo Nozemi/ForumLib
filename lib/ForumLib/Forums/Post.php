@@ -65,12 +65,12 @@
     }
 
     // Takes one parameter, which would be the thread ID.
-    public function getPosts($tid = null) {
-      if(is_null($tid)) $tid = $this->threadId;
+    public function getPosts($threadId = null) {
+      if(is_null($threadId)) $threadId = $this->threadId;
 
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}posts` WHERE `threadId` = :threadId ORDER BY `postDate` DESC"));
       if($this->S->executeQuery(array(
-        ':threadId' => $tid
+        ':threadId' => $threadId
       ))) {
         $this->lastMessage = 'Successfully fetched posts.';
 
@@ -79,8 +79,7 @@
 
         for($i = 0; $i < count($posts); $i++) {
           $thePost = new Post($S);
-          $thePost
-            ->setId($posts[$i]['pid'])
+          $thePost->setId($posts[$i]['id'])
             ->setThreadId($posts[$i]['threadId'])
             ->setAuthor($posts[$i]['authorId'])
             ->setPostDate($posts[$i]['postDate'])
@@ -102,17 +101,17 @@
       }
     }
 
-    public function getPost($tid = null) {
-      if(is_null($tid)) $tid = $this->threadId;
+    public function getPost($id = null) {
+      if(is_null($id)) $id = $this->id;
 
-      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}posts` WHERE `threadId` = :threadId ORDER BY `postDate` DESC"));
+      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}posts` WHERE `id` = :id ORDER BY `postDate` DESC"));
       if($this->S->executeQuery(array(
-        ':threadId' => $tid
+        ':id' => $id
       ))) {
         $post = $this->S->fetch();
 
         $thePost = new Post($S);
-        $thePost->setId($post['pid'])
+        $thePost->setId($post['id'])
           ->setThreadId($post['threadId'])
           ->setAuthor($post['authorId'])
           ->setPostDate($post['postDate'])
@@ -161,15 +160,15 @@
       }
     }
 
-    public function deletePost($pid = null) {
-      if(is_null($pid)) $pid = $this->id;
+    public function deletePost($id = null) {
+      if(is_null($id)) $id = $this->id;
 
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        DELETE FROM `{{DBP}}posts` WHERE `pid` = :postId
+        DELETE FROM `{{DBP}}posts` WHERE `id` = :id
       "));
 
       if($this->S->executeQuery(array(
-        ':postId' => $pid
+        ':id' => $id
       ))) {
         $this->lastMessage[] = 'Successfully deleted post.';
         return true;

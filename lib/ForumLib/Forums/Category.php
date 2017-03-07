@@ -39,7 +39,7 @@
         for($i = 0; $i < count($qR); $i++) {
           $theCategories[$i] = new Category($this->S);
           $theCategories[$i]
-            ->setId($qR[$i]['cid'])
+            ->setId($qR[$i]['id'])
             ->setTitle($qR[$i]['title'])
             ->setDescription($qR[$i]['description'])
             ->setOrder($qR[$i]['order'])
@@ -64,16 +64,16 @@
 
       if($byId) {
         $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-          SELECT * FROM `{{DBP}}categories` WHERE `cid` = :cid;
+          SELECT * FROM `{{DBP}}categories` WHERE `id` = :id;
         "));
       } else {
         $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-          SELECT * FROM `{{DBP}}categories` WHERE MATCH(`title`) AGAINST(:cid IN BOOLEAN MODE);
+          SELECT * FROM `{{DBP}}categories` WHERE MATCH(`title`) AGAINST(:id IN BOOLEAN MODE);
         "));
       }
 
       if($this->S->executeQuery(array(
-        ':cid' => $id
+        ':id' => $id
       ))) {
         $this->lastMessage[] = 'The category was successfully loaded.';
 
@@ -81,7 +81,7 @@
 
         $theCategory = new Category($this->S);
         $theCategory
-          ->setId($cat['cid'])
+          ->setId($cat['id'])
           ->setTitle($cat['title'])
           ->setDescription($cat['description'])
           ->setOrder($cat['order'])
@@ -153,17 +153,15 @@
       }
     }
 
-    public function deleteCategory($cid = null) {
-      if(is_null($cid)) {
-        $cid = $this->id;
-      }
+    public function deleteCategory($id = null) {
+      if(is_null($id)) $id = $this->id;
 
       // We'll have to fill in a few more delete queries. So that sub topics, threads and post are deleted as well.
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        DELETE FROM `{{DBP}}categories` WHERE `cid` = :cid;
+        DELETE FROM `{{DBP}}categories` WHERE `id` = :id;
       "));
       if($this->S->executeQuery(array(
-        ':cid' => $cid
+        ':id' => $id
       ))) {
         $this->lastMessage[] = 'Successfully deleted category.';
         return true;
@@ -203,18 +201,18 @@
     }
 
     public function setPermissions($_id = null) {
-      if(is_null($this->id)) $this->id = $_id;
+      if(is_null($_id)) $_id = $this->id;
 
-      $P = new Permissions($this->S, $this->id, $this);
+      $P = new Permissions($this->S, $_id, $this);
       $this->permissions = $P->getPermissions();
       return $this;
     }
 
-    public function setTopics($_cid = null) {
-      if(is_null($this->id)) $this->id = $_cid;
+    public function setTopics($_categoryId = null) {
+      if(is_null($_categoryId)) $_categoryId = $this->id;
 
       $T = new Topic($this->S);
-      $this->topics = $T->getTopics();
+      $this->topics = $T->getTopics($_categoryId);
       return $this;
     }
 
