@@ -87,7 +87,7 @@
       }
     }
 
-    public function getTopic($id = null, $byId = true) {
+    public function getTopic($id = null, $byId = true, $categoryId = null) {
       if(is_null($id)) $id = $this->id;
 
       if($byId) {
@@ -96,12 +96,20 @@
         "));
       } else {
         $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-          SELECT * FROM `{{DBP}}topics` WHERE MATCH(`title`) AGAINST(:id IN BOOLEAN MODE);
-        "));
+          SELECT * FROM `{{DBP}}topics` WHERE MATCH(`title`) AGAINST(:id IN BOOLEAN MODE) "
+          . (!is_null($categoryId) ? "AND `categoryId` = :categoryId;" : ";"))
+        );
       }
-      if($this->S->executeQuery(array(
+
+      $params = array(
         ':id' => $id
-      ))) {
+      );
+
+      if(!is_null($categoryId)) {
+        $params[':categoryId'] = $categoryId;
+      }
+
+      if($this->S->executeQuery($params)) {
         $topic = $this->S->fetch();
 
         $T = new Topic($this->S);
