@@ -21,7 +21,7 @@
   */
 
   class User {
-    public $uid;       // Account User ID.
+    public $id;       // Account User ID.
     public $username;  // Account username.
     public $groupId;
     public $group;     // Group Object
@@ -192,15 +192,15 @@
       }
     }
 
-    public function getUser($_uid = null) {
-      if(!is_null($_uid)) $this->uid = $_uid;
+    public function getUser($_id = null) {
+      if(!is_null($_id)) $this->id = $_id;
 
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
         SELECT
            `username`
           ,`avatar`
           ,`group`
-          ,`firsname`
+          ,`firstname`
           ,`lastname`
           ,`lastlogindate`
           ,`regdate`
@@ -208,15 +208,15 @@
           ,`regip`
           ,`email`
         FROM `{{DBP}}users`
-        WHERE `uid` = :uid
+        WHERE `id` = :id
       "));
 
       if($this->S->executeQuery(array(
-        ':uid' => $this->uid
+        ':id' => $this->id
       ))) {
         $uR = $this->S->fetch();
         $user = new User($this->S);
-        $user->setId($uR['uid'])
+        $user->setId($uR['id'])
           ->setAvatar($uR['avatar'])
           ->setGroup($uR['group'])
           ->setFirstname($uR['firstname'])
