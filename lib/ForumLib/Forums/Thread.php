@@ -3,6 +3,7 @@
 
   use ForumLib\Utilities\PSQL;
   use ForumLib\Users\Permissions;
+  use ForumLib\Users\User;
 
   class Thread extends Base {
     public $author;
