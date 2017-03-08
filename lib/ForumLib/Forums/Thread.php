@@ -266,4 +266,8 @@
       $this->permissions = $P->getPermissions();
       return $this;
     }
+
+    public function getType() {
+      return __CLASS__;
+    }
   }

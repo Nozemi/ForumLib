@@ -13,6 +13,8 @@
     private $lastError = array();
     private $lastMessage = array();
 
+    abstract public function getType();
+
     public function setId($_id) {
       $this->id = $_id;
       return $this;
@@ -40,10 +42,6 @@
 
     public function getURL() {
       return strtolower(str_replace('--', '-', preg_replace("/[^a-z0-9._-]+/i", "", str_replace(' ', '-', $this->title))));
-    }
-
-    public function getType() {
-      return __CLASS__ ;
     }
 
     public function getLastError() {

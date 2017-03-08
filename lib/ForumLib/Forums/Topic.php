@@ -205,4 +205,8 @@
       $this->threads = $T->getThreads($_threadId);
       return $this;
     }
+
+    public function getType() {
+      return __CLASS__;
+    }
   }

@@ -66,6 +66,11 @@
       return $this;
     }
 
+    public function setBanned($_banned) {
+      $this->banned = $_banned;
+      return $this;
+    }
+
     public function getLastError() {
       return end($this->lastError);
     }
