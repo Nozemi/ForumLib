@@ -44,9 +44,9 @@
             ->setAuthor($tR[$i]['authorId'])
             ->setSticky($tR[$i]['sticky'])
             ->setClosed($tR[$i]['closed'])
-            ->setPosted($tR[$i]['posted'])
-            ->setEdited($tR[$i]['edited'])
-            ->setTopic($tR[$i]['topicId'])
+            ->setPosted($tR[$i]['dateCreated'])
+            ->setEdited($tR[$i]['lastEdited'])
+            ->setTopicId($tR[$i]['topicId'])
             ->setPermissions($this->id);
           $threads[] = $T;
         }
@@ -143,11 +143,11 @@
         $thread->setId($tR['id'])
           ->setTitle($tR['title'])
           ->setClosed($tR['closed'])
-          ->setPosted($tR['posted'])
-          ->setEdited($tR['edited'])
+          ->setPosted($tR['dateCreated'])
+          ->setEdited($tR['lastEdited'])
           ->setSticky($tR['sticky'])
           ->setAutor($tR['authorId'])
-          ->setTopic($tR['topicId'])
+          ->setTopicId($tR['topicId'])
           ->setPosts($this->id);
 
         return $thread;
@@ -246,7 +246,7 @@
       return $this;
     }
 
-    public function setTopiId($_tid) {
+    public function setTopicId($_tid) {
       $this->topicId = $_tid;
       return $this;
     }

@@ -29,7 +29,7 @@
     }
 
     public function setIcon($_icon) {
-      $this->description = $_icon;
+      $this->icon = $_icon;
       return $this;
     }
 

@@ -216,7 +216,7 @@
       ))) {
         $uR = $this->S->fetch();
         $user = new User($this->S);
-        $user->setId($uR['id'])
+        $user->setId($this->id)
           ->setAvatar($uR['avatar'])
           ->setGroup($uR['group'])
           ->setFirstname($uR['firstname'])

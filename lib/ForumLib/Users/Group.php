@@ -26,15 +26,15 @@
 
     public function getGroup($_id) {
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        SELECT * FROM `{{DBP}}groups` WHERE `gid` = :gid
+        SELECT * FROM `{{DBP}}groups` WHERE `id` = :id
       "));
       if($this->S->executeQuery(array(
-        ':gid' => $_id
+        ':id' => $_id
       ))) {
         $gR = $this->S->fetch();
 
         $group = new Group($this->S);
-        $group->setId($gR['gid'])
+        $group->setId($gR['id'])
           ->setDescription($gR['description'])
           ->setName($gR['name'])
           ->setBanned($gR['banned']);
