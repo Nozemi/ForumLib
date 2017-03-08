@@ -3,19 +3,13 @@
 
   use ForumLib\Utilities\PSQL;
 
-  class Post {
-    public $id;
+  class Post extends Base {
     public $threadId;
     public $author;
     public $post_html;
     public $post_text;
     public $post_date;
     public $post_last_edit;
-
-    private $S;
-
-    private $lastError = array();
-    private $lastMessage = array();
 
     public function __construct(PSQL $SQL) {
       if(!is_null($SQL)) {
@@ -182,11 +176,6 @@
       }
     }
 
-    public function setId($_pid) {
-      $this->id = $_pid;
-      return $this;
-    }
-
     public function setThreadId($_tid) {
       $this->threadId = $_tid;
       return $this;
@@ -216,21 +205,5 @@
     public function setText($_text) {
       $this->post_text = $_text;
       return $this;
-    }
-
-    public function getLastError() {
-      return end($this->lastError);
-    }
-
-    public function getLastMessage() {
-      return end($this->lastMessage);
-    }
-
-    public function getErrors() {
-      return $this->lastError;
-    }
-
-    public function getMessages() {
-      return $this->lastMessage;
     }
   }

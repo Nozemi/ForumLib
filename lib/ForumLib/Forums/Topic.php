@@ -4,21 +4,11 @@
   use ForumLib\Utilities\PSQL;
   use ForumLib\Users\Permissions;
 
-  class Topic {
-    public $id;
-    public $order;
-    public $title;
-    public $description;
-    public $icon;
+  class Topic extends Base {
     public $enabled;
     public $categoryId;
     public $permissions;
     public $threads;
-
-    private $S;
-
-    private $lastError = array();
-    private $lastMessage = array();
 
     public function __construct(PSQL $SQL) {
       if(!is_null($SQL)) {
@@ -190,31 +180,6 @@
       }
     }
 
-    public function setId($_id) {
-      $this->id = $_id;
-      return $this;
-    }
-
-    public function setTitle($_title) {
-      $this->title = $_title;
-      return $this;
-    }
-
-    public function setDescription($_desc) {
-      $this->description = $_desc;
-      return $this;
-    }
-
-    public function setIcon($_icon) {
-      $this->icon = $_icon;
-      return $this;
-    }
-
-    public function setOrder($_order) {
-      $this->order = $_order;
-      return $this;
-    }
-
     public function setCategoryId($_cid) {
       $this->categoryId = $_cid;
       return $this;
@@ -239,29 +204,5 @@
       $T = new Thread($this->S);
       $this->threads = $T->getThreads($_threadId);
       return $this;
-    }
-
-    public function getURL() {
-      return strtolower(str_replace('--', '-', preg_replace("/[^a-z0-9._-]+/i", "", str_replace(' ', '-', $this->title))));
-    }
-
-    public function getType() {
-      return __CLASS__;
-    }
-
-    public function getLastError() {
-      return end($this->lastError);
-    }
-
-    public function getLastMessage() {
-      return end($this->lastMessage);
-    }
-
-    public function getErrors() {
-      return $this->lastError;
-    }
-
-    public function getMessages() {
-      return $this->lastMessage;
     }
   }

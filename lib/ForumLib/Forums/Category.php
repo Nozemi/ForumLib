@@ -4,19 +4,10 @@
   use ForumLib\Utilities\PSQL;
   use ForumLib\Users\Permissions;
 
-  class Category {
-    public $id;
-    public $title;
-    public $description;
-    public $order;
+  class Category extends Base {
     public $enabled;
     public $permissions;
     public $topics;
-
-    private $S;
-
-    private $lastError = array();
-    private $lastMessage = array();
 
     public function __construct(PSQL $SQL) {
       // Let's check if the $SQL is not a null.
@@ -175,26 +166,6 @@
       }
     }
 
-    public function setId($_id) {
-      $this->id = $_id;
-      return $this;
-    }
-
-    public function setTitle($_title) {
-      $this->title = $_title;
-      return $this;
-    }
-
-    public function setDescription($_description) {
-      $this->description = $_description;
-      return $this;
-    }
-
-    public function setOrder($_order) {
-      $this->order = $_order;
-      return $this;
-    }
-
     public function setEnabled($_enabled) {
       $this->enabled = $_enabled;
       return $this;
@@ -214,29 +185,5 @@
       $T = new Topic($this->S);
       $this->topics = $T->getTopics($_categoryId);
       return $this;
-    }
-
-    public function getURL() {
-      return strtolower(str_replace('--', '-', preg_replace("/[^a-z0-9._-]+/i", "", str_replace(' ', '-', $this->title))));
-    }
-
-    public function getType() {
-      return __CLASS__ ;
-    }
-
-    public function getLastError() {
-      return end($this->lastError);
-    }
-
-    public function getLastMessage() {
-      return end($this->lastMessage);
-    }
-
-    public function getErrors() {
-      return $this->lastError;
-    }
-
-    public function getMessages() {
-      return $this->lastMessage;
     }
   }

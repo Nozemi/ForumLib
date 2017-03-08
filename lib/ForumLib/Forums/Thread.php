@@ -4,9 +4,7 @@
   use ForumLib\Utilities\PSQL;
   use ForumLib\Users\Permissions;
 
-  class Thread {
-    public $id;
-    public $title;
+  class Thread extends Base {
     public $author;
     public $sticky;
     public $closed;
@@ -15,11 +13,6 @@
     public $topicId;
     public $permissions;
     public $posts;
-
-    private $S;
-
-    private $lastError = array();
-    private $lastMessage = array();
 
     public function __construct(PSQL $SQL) {
       if(!is_null($SQL)) {
@@ -226,24 +219,6 @@
       }
     }
 
-    public function setPermissions($_id = null) {
-      if(is_null($_id)) $_id = $this->id;
-
-      $P = new Permissions($this->S, $_id, $this);
-      $this->permissions = $P->getPermissions();
-      return $this;
-    }
-
-    public function setTitle($_title) {
-      $this->title = $_title;
-      return $this;
-    }
-
-    public function setId($_id) {
-      $this->id = $_id;
-      return $this;
-    }
-
     public function setAuthor($_uid) {
       $U = new User($this->S);
       $this->author = $U->getUser($_uid);
@@ -283,23 +258,11 @@
       return $this;
     }
 
-    public function getType() {
-      return __CLASS__ ;
-    }
+    public function setPermissions($_id = null) {
+      if(is_null($_id)) $_id = $this->id;
 
-    public function getLastError() {
-      return end($this->lastError);
-    }
-
-    public function getLastMessage() {
-      return end($this->lastMessage);
-    }
-
-    public function getErrors() {
-      return $this->lastError;
-    }
-
-    public function getMessages() {
-      return $this->lastMessage;
+      $P = new Permissions($this->S, $_id, $this);
+      $this->permissions = $P->getPermissions();
+      return $this;
     }
   }
