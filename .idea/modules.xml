@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/../ForumSoftware/ForumLibFront/vendor/nozemi/forumlib/.idea/ForumLib.iml" filepath="$PROJECT_DIR$/../ForumSoftware/ForumLibFront/vendor/nozemi/forumlib/.idea/ForumLib.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../ForumSoftware/ForumLibFront/.idea/ForumLibFront.iml" filepath="$PROJECT_DIR$/../ForumSoftware/ForumLibFront/.idea/ForumLibFront.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../klemetsrud/ForumSoftware/.idea/ForumSoftware.iml" filepath="$PROJECT_DIR$/../klemetsrud/ForumSoftware/.idea/ForumSoftware.iml" />
+    </modules>
+  </component>
+</project>
