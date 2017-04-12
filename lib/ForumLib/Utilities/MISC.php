@@ -41,7 +41,9 @@
     }
 
       /**
-       * @param $_file Filename
+       * @param $_file string - Filename
+       *
+       * @return string
        */
     public static function getTabTitle($_file) {
         global $Config;
@@ -53,6 +55,10 @@
         $title = $_file;
 
         $title = MISC::findKey('name', $Config->config) . ' - ' . ucfirst(basename($title, '.php'));
+
+        if(isset($_GET['page'])) {
+            $title = MISC::findKey('name', $Config->config) . ' - ' . ucfirst($_GET['page']);
+        }
 
         return $title;
     }

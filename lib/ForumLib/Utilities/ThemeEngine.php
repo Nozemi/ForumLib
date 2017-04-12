@@ -162,11 +162,15 @@
          *
          * @return string html
          */
-        public function getTemplate($_template, $_page = null) {
+        public function getTemplate($_template, $_page = null, $_options = array()) {
             if($_page) {
                 $tmp = $this->templates['page_' . $_page];
             } else {
                 $tmp = $this->templates;
+            }
+
+            if($_page == 'forums' && !empty($_options)) {
+                return $this->parseTemplate(MISC::findKey($_template, $tmp), $_options);
             }
 
             return $this->parseTemplate(MISC::findKey($_template, $tmp));
@@ -237,10 +241,42 @@
                         if($template[1] == 'imgDir') {
                             $_template = $this->replaceVariable($template[0], $template[1], $_template, '/' . $this->directory . '/_assets/img/');
                         } else if($template[1] == 'dir') {
-                            $_template = $this->replaceVariable($template[0], $template[1], $_template, $this->directory . '/');
+                            $_template = $this->replaceVariable($template[0], $template[1], $_template, '/' .$this->directory . '/');
                         } else {
                             $_template = $this->replaceVariable($template[0], $template[1], $_template, $this->getPlugins($template[1]));
                         }
+                        break;
+                    case 'forum':
+                        $html = '';
+
+                        if(strpos($template[1], '|')) {
+                            $myTemp = explode('|', $template[1]);
+                            $template[1] = $myTemp[0];
+                            $template[2] = $myTemp[1];
+                        }
+
+                        if($template[1] == 'categories') {
+                            $html = '';
+                            for($i = 0; $i < rand(2,6); $i++) {
+                                $html .= $this->getTemplate('category_view', 'forums');
+                            }
+                        } else if($template[1] == 'topics') {
+                            $html = '';
+                            for($i = 0; $i < rand(1,3); $i++) {
+                                $html .= $this->getTemplate('topic_view', 'forums');
+                            }
+                        } else if($template[1] == 'category') {
+                            $html = $this->getTemplate('category_view','forums');
+                            $_template = $this->replaceVariable($template[0], $template[1].'|'.$template[2], $_template, $html);
+                        } else if($template[1] == 'getThreads') {
+                            $html = '';
+                            for($i = 0; $i < rand(5,20); $i++) {
+                                $html .= $this->getTemplate('thread_view','forums');
+                            }
+                            $_template = $this->replaceVariable($template[0], $template[1].'|'.$template[2], $_template, $html);
+                        }
+
+                        $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
                         break;
                     default:
                         break;
