@@ -39,4 +39,21 @@
 			}
 			return false;
     }
+
+      /**
+       * @param $_file Filename
+       */
+    public static function getTabTitle($_file) {
+        global $Config;
+
+        if(!$Config instanceof Config) {
+            $Config = new Config;
+        }
+
+        $title = $_file;
+
+        $title = MISC::findKey('name', $Config->config) . ' - ' . ucfirst(basename($title, '.php'));
+
+        return $title;
+    }
   }
