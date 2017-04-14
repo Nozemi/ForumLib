@@ -1,6 +1,10 @@
 <?php
   namespace ForumLib\Utilities;
 
+  use ForumLib\Forums\Category;
+  use ForumLib\Forums\Topic;
+  use ForumLib\Forums\Thread;
+
   // MISC class - a collection of miscellaneous useful methods.
   class MISC {
 
@@ -46,20 +50,80 @@
        * @return string
        */
     public static function getTabTitle($_file) {
-        global $Config;
+        global $Config, $SQL;
 
         if(!$Config instanceof Config) {
             $Config = new Config;
         }
 
-        $title = $_file;
-
-        $title = MISC::findKey('name', $Config->config) . ' - ' . ucfirst(basename($title, '.php'));
+        $title = MISC::findKey('name', $Config->config);
+        $page = ucfirst(basename($_file, '.php'));
 
         if(isset($_GET['page'])) {
-            $title = MISC::findKey('name', $Config->config) . ' - ' . ucfirst($_GET['page']);
+            $page = ucfirst($_GET['page']);
         }
 
+        $cat = $top = $trd = null;
+
+        if(isset($_GET['category'])) {
+            $C = new Category($SQL);
+            $cat = $C->getCategory($_GET['category'], false);
+
+            $page = $cat->title;
+        }
+
+        if(isset($_GET['topic'])) {
+            if($cat instanceof Category) {
+                $T = new Topic($SQL);
+                $top = $T->getTopic($_GET['topic'], false, $cat->id);
+            }
+            $page = $top->title;
+        }
+
+        if(isset($_GET['thread'])) {
+            if($top instanceof Topic) {
+                $Tr = new Thread($SQL);
+                $trd = $Tr->getThread($_GET['thread'], false, $top->id);
+            }
+            $page = $trd->title;
+        }
+
+        $title .= ' - ' . $page;
+
         return $title;
+    }
+
+    public static function parseDate($dateString, Config $config = null, $options = array()) {
+        if($config instanceof Config) {
+            $format = MISC::findKey('timeFormat', $config->config);
+        }
+
+        if(empty($format)) {
+            $format = 'F jS Y';
+        }
+
+        if(isset($options['howLongAgo'])) {
+            $time   = strtotime($dateString);
+            $when   = date($format, $time);
+
+            if((time() - $time) < 60) {
+                $newTime = time() - $time;
+                $when = $newTime . ' ' . ($newTime == 1 ? 'second' : 'seconds') . ' ago';
+            }
+
+            if((time() - $time) >= 60 && ((time() - $time) / 60) <= 59) {
+                $newTime = round((time() - $time) / 60, 0);
+                $when = $newTime . ' ' . ($newTime == 1 ? 'minute' : 'minutes') . ' ago';
+            }
+
+            if(((time() - $time) / 60) >= 60 && ((time() - $time) / 60 / 60) <= 23) {
+                $newTime = round((time() - $time) / 60 / 60, 0);
+                $when = $newTime . ' ' . ($newTime == 1 ? 'hour' : 'hours') . ' ago';
+            }
+
+            return $when;
+        } else {
+            return date($format, strtotime($dateString));
+        }
     }
   }

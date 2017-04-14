@@ -8,10 +8,10 @@
     public $icon;             // Is supposed to hold an icon, originally intended for a font-awesome class. (home (as in fa-home))
     public $order;            // This is for the Category and Topic objects.
 
-    private $S;               // The PSQL object.
+    protected $S;               // The PSQL object.
 
-    private $lastError = array();
-    private $lastMessage = array();
+    protected $lastError = array();
+    protected $lastMessage = array();
 
     abstract public function getType();
 

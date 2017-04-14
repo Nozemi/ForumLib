@@ -126,16 +126,32 @@
       }
     }
 
-    public function getThread($id = null) {
-      if(is_null($id)) $id = $this->id;
+    public function getThread($id = null, $byId = true, $topicId = null) {
+        if(is_null($id)) $id = $this->id;
 
-      // We'll need to load the thread and it's posts. Currently it just loads the thread.
-      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        SELECT * FROM `{{DBP}}threads` WHERE `id` = :id
-      "));
-      if($this->S->executeQuery(array(
-        ':id' => $id
-      ))) {
+        // We'll need to load the thread and it's posts. Currently it just loads the thread.
+        if($byId) {
+            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+                SELECT * FROM `{{DBP}}threads` WHERE `id` = :id
+            "));
+        } else {
+            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+                SELECT * FROM `{{DBP}}threads` WHERE MATCH(`title`) AGAINST(:id IN BOOLEAN MODE) "
+                . (!is_null($topicId) ? "AND `topicId` = :topicId;" : ";"))
+            );
+
+            $id = '+' . str_replace('-', ' +', $id);
+        }
+
+        $params = array(
+            ':id' => $id
+        );
+
+        if(!is_null($topicId)) {
+            $params[':topicId'] = $topicId;
+        }
+
+      if($this->S->executeQuery($params)) {
         $this->lastMessage[] = 'Successfully loaded thread.';
         $tR = $this->S->fetch();
 
@@ -146,7 +162,7 @@
           ->setPosted($tR['dateCreated'])
           ->setEdited($tR['lastEdited'])
           ->setSticky($tR['sticky'])
-          ->setAutor($tR['authorId'])
+          ->setAuthor($tR['authorId'])
           ->setTopicId($tR['topicId'])
           ->setPosts($this->id);
 
@@ -256,6 +272,7 @@
 
       $P = new Post($this->S);
       $this->posts = $P->getPosts($_id);
+
       return $this;
     }
 

@@ -42,11 +42,11 @@
       // Check if database details are set.
       if(!is_null($this->dbuser) || !is_null($this->dbpass) || !is_null($this->dbname) || !is_null($this->dbhost)) {
         // Set character encoding to UTF-8.
-        $options = array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8');
+        //$options = array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8');
 
         try {
           // Try to open the connection.
-          $dbTemp = new PDO('mysql:host=' . $this->dbhost . ';dbname=' . $this->dbname . ';charset=utf8', $this->dbuser, $this->dbpass, $options);
+          $dbTemp = new PDO('mysql:host=' . $this->dbhost . ';dbname=' . $this->dbname . ';charset=utf8', $this->dbuser, $this->dbpass);
 
           $dbTemp->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);       // Make PDO throw exceptions.
           $dbTemp->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);  // Sets the default fetch style. Currently using ASSOC. (ASSOC = returns an array indexed by column name as returned in your result set)

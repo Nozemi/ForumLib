@@ -61,6 +61,8 @@
         $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
           SELECT * FROM `{{DBP}}categories` WHERE MATCH(`title`) AGAINST(:id IN BOOLEAN MODE);
         "));
+
+        $id = str_replace('-', ' +', $id);
       }
 
       if($this->S->executeQuery(array(
@@ -136,7 +138,7 @@
         return true;
       } else {
         if(defined('DEBUG')) {
-          $this->lastError[] = $S->getLastError();
+          $this->lastError[] = $this->S->getLastError();
         } else {
           $this->lastError[] = 'Something went wrong while updating category.';
         }

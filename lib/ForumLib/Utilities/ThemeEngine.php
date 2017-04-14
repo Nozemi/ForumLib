@@ -1,6 +1,10 @@
 <?php
-
     namespace ForumLib\Utilities;
+
+    use ForumLib\Forums\Category;
+    use ForumLib\Forums\Topic;
+    use ForumLib\Forums\Thread;
+    use ForumLib\Forums\Post;
 
     class ThemeEngine {
         public $name;                   // Theme name
@@ -15,7 +19,8 @@
         private $lastError      = array(); // Stores errors produced by this class.
         private $lastMessage    = array(); // Stores messages produced by this class.
 
-        private $config         = null; // Stores the config object, if it was specified upon initializing the object.
+        private $sql            = null; // Stores the PSQL object that will be used to run database queries.
+        private $config         = null; // Stores the Config object, if it was specified upon initializing the object.
         private $themeConf      = null; // Stores the theme config, gotten from the theme root (theme.json file).
 
         /**
@@ -24,7 +29,7 @@
          * @param             $_name    string - Theme name (the name of the direcotry under "themes"-directory)
          * @param Config|null $_config  Config - Config object that is optional. Currently to parse language strings.
          */
-        public function __construct($_name, Config $_config = null) {
+        public function __construct($_name, Config $_config = null, PSQL $_sql = null) {
             $this->name = $_name;
             $this->directory = MISC::findFile('themes/' . $this->name); // Finds the theme directory.
 
@@ -42,7 +47,8 @@
                 // A loop that loops through the folders within the theme folder.
                 // This is what's getting the template files and inserting them into the templates array.
                 foreach(glob($this->directory . '/*', GLOB_ONLYDIR) as $dir) {
-                    $dir = end(explode('/', $dir));
+                    $dir = explode('/', $dir);
+                    $dir = end($dir);
 
                     $this->templates['page_' . $dir] = array();
 
@@ -59,6 +65,10 @@
                 // Checks if $_config is an instance of the class Config.
                 if($_config instanceof Config) {
                     $this->config = $_config;
+                }
+
+                if($_sql instanceof PSQL) {
+                    $this->sql = $_sql;
                 }
             }
         }
@@ -162,18 +172,50 @@
          *
          * @return string html
          */
-        public function getTemplate($_template, $_page = null, $_options = array()) {
+        public function getTemplate($_template, $_page = null) {
             if($_page) {
                 $tmp = $this->templates['page_' . $_page];
             } else {
                 $tmp = $this->templates;
             }
 
-            if($_page == 'forums' && !empty($_options)) {
-                return $this->parseTemplate(MISC::findKey($_template, $tmp), $_options);
+            return $this->parseTemplate(MISC::findKey($_template, $tmp));
+        }
+
+        private function parseTemplate2($_template) {
+            preg_match_all('/' . $this->pHolderWrapper[0] . '(.*?)' . $this->pHolderWrapper[1] . '/', $_template, $matches);
+
+            foreach($matches[1] as $match) {
+                $phldr = explode('::', $match);
+                switch($phldr[0]) {
+                    case 'structure':
+                        $_template = $this->replaceVariable($phldr[0], $phldr[1], $_template, $this->getTemplate($phldr[1]));
+                        break;
+                    case 'theme':
+                        switch($phldr[1]) {
+                            case 'imgDir':
+                                $_template = $this->replaceVariable($phldr[0], $phldr[1], $_template, '/' . $this->directory . '/_assets/img/');
+                                break;
+                            case 'dir':
+                                $_template = $this->replaceVariable($phldr[0], $phldr[1], $_template, '/' .$this->directory . '/');
+                                break;
+                        }
+                        break;
+                    case 'site':
+                        switch($phldr[1]) {
+                            case 'latestNews':
+                                $html = '';
+                                for($i = 0; $i < 5; $i++) {
+                                    $html .= $this->getTemplate('portal_news');
+                                }
+                                $_template = $this->replaceVariable($phldr[0], $phldr[1], $_template, $html);
+                                break;
+                        }
+                        break;
+                }
             }
 
-            return $this->parseTemplate(MISC::findKey($_template, $tmp));
+            return $_template;
         }
 
         /**
@@ -184,7 +226,7 @@
         private function parseTemplate($_template) {
             // Gets all the variable placeholders in the current template, so that we can parse them and fill them with
             // what they're supposed to have.
-            preg_match_all('/' . $this->pHolderWrapper[0] . '(.*)' . $this->pHolderWrapper[1] . '/', $_template, $matches);
+            preg_match_all('/' . $this->pHolderWrapper[0] . '(.*?)' . $this->pHolderWrapper[1] . '/', $_template, $matches);
 
             // Loops through all the placeholder variables in the template.
             foreach($matches[1] as $match) {
@@ -206,12 +248,18 @@
                         if($template[1] == 'tabTitle') {
                             $_template = $this->replaceVariable($template[0], $template[1], $_template, MISC::getTabTitle($_SERVER['SCRIPT_FILENAME']));
                         } else if($template[1] == 'latestNews') {
-                            // TODO: Clean up this stuff. No need to hardcode this stuff like this.
-                            $html = '';
-                            for($i = 0; $i < 5; $i++) {
-                                $html .= $this->getTemplate('portal_news');
+                            if($this->config instanceof Config) {
+                                $T = new Topic($this->sql);
+                                $top = $T->getTopic(MISC::findKey('newsForum', $this->config->config));
+                                $top->setThreads();
+
+                                $html = '';
+
+                                foreach($top->threads as $thread) {
+                                    $html .= $this->parseForum($this->getTemplate('portal_news'), $thread);
+                                }
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
                             }
-                            $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
                         } else if ($template[1] == 'stylesheets') {
                             $html = '';
                             foreach($this->styles as $style) {
@@ -231,6 +279,8 @@
                                 $html = $this->getTemplate('main_navigation_user');
                             }
                             $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
+                        } else if($template[1] == 'pagination') {
+                            $_template = $this->replaceVariable($template[0], $template[1], $_template, $this->getTemplate('pagination'));
                         }
                         break;
                     case 'structure':
@@ -247,6 +297,7 @@
                         }
                         break;
                     case 'forum':
+                        $C = new Category($this->sql);
                         $html = '';
 
                         if(strpos($template[1], '|')) {
@@ -256,27 +307,67 @@
                         }
 
                         if($template[1] == 'categories') {
-                            $html = '';
-                            for($i = 0; $i < rand(2,6); $i++) {
-                                $html .= $this->getTemplate('category_view', 'forums');
+                            $cats = $C->getCategories();
+
+                            foreach($cats as $cat) {
+                                $html .= $this->parseForum($this->getTemplate('category_view', 'forums'), $cat);
                             }
                         } else if($template[1] == 'topics') {
-                            $html = '';
-                            for($i = 0; $i < rand(1,3); $i++) {
-                                $html .= $this->getTemplate('topic_view', 'forums');
+                            $T = new Topic($this->sql);
+                            $tops = $T->getTopics();
+
+                            foreach($tops as $top) {
+                                $html .= $this->parseForum($this->getTemplate('topic_view', 'forums'), $top);
                             }
                         } else if($template[1] == 'category') {
                             $html = $this->getTemplate('category_view','forums');
                             $_template = $this->replaceVariable($template[0], $template[1].'|'.$template[2], $_template, $html);
-                        } else if($template[1] == 'getThreads') {
-                            $html = '';
-                            for($i = 0; $i < rand(5,20); $i++) {
-                                $html .= $this->getTemplate('thread_view','forums');
-                            }
-                            $_template = $this->replaceVariable($template[0], $template[1].'|'.$template[2], $_template, $html);
                         }
 
                         $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
+                        break;
+                    case 'content':
+                        $this->sql->prepareQuery($this->sql->replacePrefix('{{DBP}}', "
+                            SELECT
+                                `value`
+                            FROM `{{DBP}}content_strings`
+                            WHERE `key` = :key
+                        "));
+                        if($this->sql->executeQuery(array(
+                            ':key' => $template[1]
+                        ))) {
+                            $val = $this->sql->fetch();
+                            $_template = $this->replaceVariable($template[0], $template[1], $_template, $val['value']);
+                        } else {
+                            $this->lastError[] = 'Something went wrong while running query.';
+                            return false;
+                        }
+                        break;
+                    case 'threadList':
+                    case 'threadView':
+                        $C = new Category($this->sql);
+                        $cat = $C->getCategory($_GET['category'], false);
+
+                        $T = new Topic($this->sql);
+                        $top = $T->getTopic($_GET['topic'], false, $cat->id);
+
+                        $_template = $this->parseForum($_template, $top);
+                        break;
+                    case 'pagination':
+                        switch($template[1]) {
+                            case 'links':
+                                $html = '';
+
+                                $count = 1;
+                                foreach($_GET as $key => $value) {
+                                    $tmpl = ((count($_GET) > 1 && $count != count($_GET)) ? 'pagination_link' : 'pagination_active');
+                                    $html .= $this->parsePaginationLink($this->getTemplate($tmpl), $key, $value);
+                                    $count++;
+                                }
+
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
+                                break;
+                        }
                         break;
                     default:
                         break;
@@ -300,6 +391,282 @@
                 $_replacement,
                 $_template
             );
+        }
+
+        private function parsePaginationLink($_template, $key, $value) {
+            preg_match_all('/' . $this->pHolderWrapper[0] . '(.*?)' . $this->pHolderWrapper[1] . '/', $_template, $matches);
+
+            $cat = $top = $trd = null;
+
+            if(isset($_GET['category'])) {
+                $C = new Category($this->sql);
+                $cat = $C->getCategory($_GET['category'], false);
+            }
+
+            if(isset($_GET['topic'])) {
+                if($cat instanceof Category) {
+                    $T = new Topic($this->sql);
+                    $top = $T->getTopic($_GET['topic'], false, $cat->id);
+                }
+            }
+
+            if(isset($_GET['thread'])) {
+                if($top instanceof Topic) {
+                    $Tr = new Thread($this->sql);
+                    $trd = $Tr->getThread($_GET['thread'], false, $top->id);
+                }
+            }
+
+            foreach($matches[1] as $match) {
+                $template = explode('::', $match);
+
+                switch($template[1]) {
+                    case 'linkTitle':
+                        switch($key) {
+                            case 'category':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $cat->title);
+                                break;
+                            case 'topic':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $top->title);
+                                break;
+                            case 'thread':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $trd->title);
+                                break;
+                            default:
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, ucwords($value));
+                                break;
+                        }
+                        break;
+                    case 'linkURL':
+                        switch($key) {
+                            case 'category':
+                                $url = '/forums/';
+                                break;
+                            case 'topic':
+                                $url = '/forums/' . $cat->getURL() . '/' . $top->getURL();
+                                break;
+                            case 'thread':
+                                $url = '/forums/' . $cat->getURL() . '/' . $top->getURL() . '/' . $trd->getURL();
+                                break;
+                            default:
+                                $url = '/' . $value;
+                                break;
+                        }
+                        $_template = $this->replaceVariable($template[0], $template[1], $_template, $url);
+                        break;
+                }
+            }
+
+            return $_template;
+        }
+
+        private function parseForum($_template, $_fObject) {
+            preg_match_all('/' . $this->pHolderWrapper[0] . '(.*?)' . $this->pHolderWrapper[1] . '/', $_template, $matches);
+
+            foreach($matches[1] as $match) {
+                $template = explode('::', $match);
+
+                switch($template[0]) {
+                    case 'category':
+                        switch($template[1]) {
+                            case 'header':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->title);
+                                break;
+                            case 'description':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->description);
+                                break;
+                            case 'topics':
+                                $html = '';
+                                $T = new Topic($this->sql);
+                                $tops = $T->getTopics($_fObject->id);
+                                foreach($tops as $top) {
+                                    $html .= $this->parseForum($this->getTemplate('topic_view', 'forums'), $top);
+                                }
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
+                                break;
+                        }
+                        break;
+                    case 'topic':
+                        $C = new Category($this->sql);
+                        $cat = $C->getCategory($_fObject->categoryId);
+
+                        switch($template[1]) {
+                            case 'header':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->title);
+                                break;
+                            case 'description':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->description);
+                                break;
+                            case 'url':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template,
+                                    '/forums/' . $cat->getURL() . '/' . $_fObject->getURL()
+                                );
+                                break;
+                        }
+                        break;
+                    case 'thread':
+                        /** @var $_fObject Thread */
+                        switch($template[1]) {
+                            case 'title':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->title);
+                                break;
+                            case 'lastResponderAvatar':
+                                $avatar = $_fObject->author->avatar;
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $avatar);
+                                break;
+                            case 'poster':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->author->username);
+                                break;
+                            case 'postDate':
+                            case 'lastReplyDate':
+                                $date = MISC::parseDate($_fObject->posted, $this->config, array('howLongAgo' => true));
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $date);
+                                break;
+                            case 'viewCount':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, 0);
+                                break;
+                            case 'replyCount':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, 0);
+                                break;
+                            case 'lastResponder':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, 'Username');
+                                break;
+                            case 'url':
+                                $top = new Topic($this->sql);
+                                $top = $top->getTopic($_fObject->topicId);
+
+                                $cat = new Category($this->sql);
+                                $cat = $cat->getCategory($top->categoryId);
+
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template,
+                                    '/forums/' . $cat->getURL() . '/' . $top->getURL() . '/' . $_fObject->getURL());
+                                break;
+                        }
+                        break;
+                    case 'post':
+                        /** @val $_fObject Post */
+                        if($_fObject instanceof Post) {
+                            switch($template[1]) {
+                                case 'poster':
+                                    $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->author->username);
+                                    break;
+                                case 'posterAvatar':
+                                    $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->author->avatar);
+                                    break;
+                                case 'posterMemberSince':
+                                    $date = MISC::parseDate($_fObject->author->regDate, $this->config, array('howLongAgo' => true));
+                                    $_template = $this->replaceVariable($template[0], $template[1], $_template, $date);
+                                    break;
+                                case 'content':
+                                    $content = (isset($_fObject->post_html) ? $_fObject->post_html : '<p>' . $_fObject->post_text . '</p>');
+                                    $_template = $this->replaceVariable($template[0], $template[1], $_template, $content);
+                                    break;
+                                case 'posted':
+                                    $date = MISC::parseDate($_fObject->post_date, $this->config, array('howLongAgo' => true));
+                                    $_template = $this->replaceVariable($template[0], $template[1], $_template, $date);
+                                    break;
+                                case 'threadTitle':
+                                    $T = new Thread($this->sql);
+                                    $trd = $T->getThread($_fObject->threadId);
+                                    $_template = $this->replaceVariable($template[0], $template[1], $_template, $trd->title);
+                            }
+                        }
+                        break;
+                    case 'threadList':
+                        switch($template[1]) {
+                            case 'header':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->title);
+                                break;
+                            case 'description':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->description);
+                                break;
+                            case 'threads':
+                                $html = '';
+
+                                /** @var $_fObject Topic */
+                                $_fObject->setThreads();
+
+                                if(!empty($_fObject->threads)) {
+                                    foreach($_fObject->threads as $thread) {
+                                        $html .= $this->parseForum($this->getTemplate('thread_view', 'forums'), $thread);
+                                    }
+                                } else {
+                                    $html = $this->getTemplate('no_threads_msg', 'misc');
+                                }
+
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
+                                break;
+                        }
+                        break;
+                    case 'threadView':
+                        /** @val $_fObject Thread */
+
+                        $C = new Category($this->sql);
+                        $cat = $C->getCategory($_GET['category'], false);
+
+                        $T = new Topic($this->sql);
+                        $top = $T->getTopic($_GET['topic'], false, $cat->id);
+
+                        $TR = new Thread($this->sql);
+                        $trd = $TR->getThread($_GET['thread'], false, $top->id);
+                        $trd->setPosts();
+
+                        switch($template[1]) {
+                            case 'title':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $trd->title);
+                                break;
+                            case 'posts':
+                                $html = '';
+
+                                foreach($trd->posts as $post) {
+                                    $html .= $this->parseForum($this->getTemplate('post_view', 'forums'), $post);
+                                }
+
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
+                                break;
+                        }
+                        break;
+                    case 'news':
+                        switch($template[1]) {
+                            case 'title':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->title);
+                                break;
+                            case 'author':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->author->username);
+                                break;
+                            case 'authorAvatar':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->author->avatar);
+                                break;
+                            case 'posted':
+                                $date = MISC::parseDate($_fObject->posted, $this->config, array('howLongAgo' => true));
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $date);
+                                break;
+                            case 'content':
+                                /** @var Post $post */
+                                $_fObject->setPosts();
+                                $post = $_fObject->posts[0];
+
+                                $content = (!empty($post->post_html) ? $post->post_html : '<p>' . $post->post_text . '</p>');
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $content);
+                                break;
+                            case 'url':
+                                $T = new Topic($this->sql);
+                                $top = $T->getTopic($_fObject->topicId);
+
+                                $C = new Category($this->sql);
+                                $cat = $C->getCategory($top->categoryId);
+
+                                $url = '/forums/' . $cat->getURL() . '/' . $top->getURL() . '/' . $_fObject->getURL();
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $url);
+                                break;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            return $_template;
         }
 
         // Sets the theme's name.
