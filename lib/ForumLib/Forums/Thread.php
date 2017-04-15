@@ -14,6 +14,7 @@
     public $topicId;
     public $permissions;
     public $posts;
+    public $latestPost;
 
     public function __construct(PSQL $SQL) {
       if(!is_null($SQL)) {
@@ -164,6 +165,7 @@
           ->setSticky($tR['sticky'])
           ->setAuthor($tR['authorId'])
           ->setTopicId($tR['topicId'])
+          ->setLatestPost($tR['id'])
           ->setPosts($this->id);
 
         return $thread;
@@ -234,6 +236,22 @@
         }
         return false;
       }
+    }
+
+    public function setLatestPost($_threadId = null) {
+        if(is_null($_threadId)) $_threadId = $this->id;
+
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+          SELECT `id`, `postDate` FROM `for1234_posts` WHERE `threadId` = :threadId ORDER BY `postDate` DESC LIMIT 1
+        "));
+
+        $this->S->executeQuery(array(':threadId' => $_threadId));
+        $pst = $this->S->fetch();
+
+        $P = new Post($this->S);
+        $this->latestPost = $P->getPost($pst['id']);
+
+        return $this;
     }
 
     public function setAuthor($_uid) {

@@ -9,6 +9,8 @@
     public $categoryId;
     public $permissions;
     public $threads;
+    public $threadCount;
+    public $postCount;
 
     public function __construct(PSQL $SQL) {
       if(!is_null($SQL)) {
@@ -187,6 +189,63 @@
         return false;
       }
     }
+
+    public function getLatestPost($_topicId = null) {
+        if(is_null($_topicId)) $_topicId = $this->id;
+
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+            SELECT
+                 `P`.`id` `postId`
+                ,`T`.`id` `threadId`
+            FROM `{{DBP}}posts` `P`
+                INNER JOIN `{{DBP}}threads` `T` ON `P`.`threadId` = `T`.`id`
+                INNER JOIN `{{DBP}}topics` `F` ON `T`.`topicId` = `F`.`id`
+            WHERE `F`.`id` = :topicId
+            ORDER BY `P`.`postDate` DESC
+            LIMIT 1
+        "));
+        $this->S->executeQuery(array(':topicId' => $_topicId));
+        $result = $this->S->fetch();
+
+        $P = new Post($this->S);
+        $T = new Thread($this->S);
+
+        $post = $P->getPost($result['postId']);
+        $thread = $T->getThread($result['threadId']);
+
+        return array(
+            'thread' => $thread,
+            'post'   => $post
+        );
+    }
+
+      public function setThreadCount() {
+          $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+          SELECT COUNT(*) `count` FROM `{{DBP}}threads` WHERE `topicId` = :topicId
+        "));
+          $this->S->executeQuery(array('topicId' => $this->id));
+          $rslt = $this->S->fetch();
+
+          $this->threadCount = $rslt['count'];
+          return $this;
+      }
+
+      public function setPostCount() {
+          $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+            SELECT
+                COUNT(*) `count`
+            FROM `{{DBP}}posts` `P`
+                INNER JOIN `{{DBP}}threads` `T` ON `P`.`threadId` = `T`.`id`
+                INNER JOIN `{{DBP}}topics` `F` ON `T`.`topicId` = `F`.`id`
+            WHERE `F`.`id` = :topicId
+            ORDER BY `P`.`postDate` DESC
+        "));
+          $this->S->executeQuery(array('topicId' => $this->id));
+          $rslt = $this->S->fetch();
+
+          $this->postCount = $rslt['count'];
+          return $this;
+      }
 
     public function setCategoryId($_cid) {
       $this->categoryId = $_cid;

@@ -24,30 +24,35 @@
         }
 
         public function createPost() {
+            if(empty($this->post_html) && empty($this->post_text)) {
+                $this->lastError[] = 'Post content can\'t be empty.';
+                return false;
+            }
+
             $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        INSERT INTO `{{DBP}}posts` (
-           `post_content_html`
-          ,`post_content_text`
-          ,`authorId`
-          ,`threadId`
-          ,`postDate`
-          ,`editDate`
-        ) VALUES (
-           :post_content_html
-          ,:post_content_text
-          ,:authorId
-          ,:threadId
-          ,:postDate
-          ,:editDate
-        );
-      "));
+                INSERT INTO `{{DBP}}posts` (
+                   `post_content_html`
+                  ,`post_content_text`
+                  ,`authorId`
+                  ,`threadId`
+                  ,`postDate`
+                  ,`editDate`
+                ) VALUES (
+                   :post_content_html
+                  ,:post_content_text
+                  ,:authorId
+                  ,:threadId
+                  ,:postDate
+                  ,:editDate
+                );
+            "));
             if($this->S->executeQuery(array(
                   ':post_content_html' => $this->post_html,
                   ':post_content_text' => $this->post_text,
                   ':authorId'          => $this->author->id,
-                  ':threadId'          => $this->thread->id,
-                  ':postDate'          => date('Y-m-d H:i:s', time()),
-                  ':editDate'          => date('Y-m-d H:i:s', time())
+                  ':threadId'          => $this->threadId,
+                  ':postDate'          => date('Y-m-d H:i:s'),
+                  ':editDate'          => date('Y-m-d H:i:s')
               ))
             ) {
                 $this->lastMessage[] = 'Post successfully created.';
@@ -69,7 +74,7 @@
             if(is_null($threadId)) $threadId = $this->threadId;
 
             $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                SELECT * FROM `{{DBP}}posts` WHERE `threadId` = :threadId ORDER BY `postDate` DESC"
+                SELECT * FROM `{{DBP}}posts` WHERE `threadId` = :threadId ORDER BY `postDate` ASC"
             ));
 
             if($this->S->executeQuery(array(
@@ -116,7 +121,7 @@
             ) {
                 $post = $this->S->fetch();
 
-                $thePost = new Post($S);
+                $thePost = new Post($this->S);
                 $thePost->setId($post['id'])
                     ->setThreadId($post['threadId'])
                     ->setAuthor($post['authorId'])

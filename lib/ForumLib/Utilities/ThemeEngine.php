@@ -5,6 +5,8 @@
     use ForumLib\Forums\Topic;
     use ForumLib\Forums\Thread;
     use ForumLib\Forums\Post;
+    use ForumLib\Forums\Various;
+    use ForumLib\Users\User;
 
     class ThemeEngine {
         public $name;                   // Theme name
@@ -13,15 +15,19 @@
         public $scripts     = array();  // Theme scripts
         public $styles      = array();  // Theme styles
 
-        private $pHolderWrapper = array('{{', '}}'); // The placeholder wrappers that will be parsed from
+        protected $pHolderWrapper = array('{{', '}}'); // The placeholder wrappers that will be parsed from
                                                      // this class to show the actual content.
 
-        private $lastError      = array(); // Stores errors produced by this class.
-        private $lastMessage    = array(); // Stores messages produced by this class.
+        protected $lastError      = array(); // Stores errors produced by this class.
+        protected $lastMessage    = array(); // Stores messages produced by this class.
 
-        private $sql            = null; // Stores the PSQL object that will be used to run database queries.
-        private $config         = null; // Stores the Config object, if it was specified upon initializing the object.
-        private $themeConf      = null; // Stores the theme config, gotten from the theme root (theme.json file).
+        protected $sql            = null; // Stores the PSQL object that will be used to run database queries.
+        protected $config         = null; // Stores the Config object, if it was specified upon initializing the object.
+        protected $themeConf      = null; // Stores the theme config, gotten from the theme root (theme.json file).
+
+        public function customParse($_template) {
+            return $_template;
+        }
 
         /**
          * ThemeEngine constructor.
@@ -59,8 +65,8 @@
                     }
                 }
 
-                $this->styles = $this->getStyles();     // Getting theme stylesheets.
-                $this->scripts = $this->getScripts();   // Getting theme scripts.
+                //$this->styles = $this->getStyles();     // Getting theme stylesheets.
+                //$this->scripts = $this->getScripts();   // Getting theme scripts.
 
                 // Checks if $_config is an instance of the class Config.
                 if($_config instanceof Config) {
@@ -182,42 +188,6 @@
             return $this->parseTemplate(MISC::findKey($_template, $tmp));
         }
 
-        private function parseTemplate2($_template) {
-            preg_match_all('/' . $this->pHolderWrapper[0] . '(.*?)' . $this->pHolderWrapper[1] . '/', $_template, $matches);
-
-            foreach($matches[1] as $match) {
-                $phldr = explode('::', $match);
-                switch($phldr[0]) {
-                    case 'structure':
-                        $_template = $this->replaceVariable($phldr[0], $phldr[1], $_template, $this->getTemplate($phldr[1]));
-                        break;
-                    case 'theme':
-                        switch($phldr[1]) {
-                            case 'imgDir':
-                                $_template = $this->replaceVariable($phldr[0], $phldr[1], $_template, '/' . $this->directory . '/_assets/img/');
-                                break;
-                            case 'dir':
-                                $_template = $this->replaceVariable($phldr[0], $phldr[1], $_template, '/' .$this->directory . '/');
-                                break;
-                        }
-                        break;
-                    case 'site':
-                        switch($phldr[1]) {
-                            case 'latestNews':
-                                $html = '';
-                                for($i = 0; $i < 5; $i++) {
-                                    $html .= $this->getTemplate('portal_news');
-                                }
-                                $_template = $this->replaceVariable($phldr[0], $phldr[1], $_template, $html);
-                                break;
-                        }
-                        break;
-                }
-            }
-
-            return $_template;
-        }
-
         /**
          * @param $_template string - Name of the template file (without the .template.html extension)
          *
@@ -260,6 +230,17 @@
                                 }
                                 $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
                             }
+                        } else if($template[1] == 'recentPosts') {
+                            $V = new Various($this->sql);
+                            $threads = $V->getLatestPosts();
+
+                            $html = '';
+
+                            foreach($threads as $thread) {
+                                $html .= $this->parseForum($this->getTemplate('portal_latest_post_list_item', 'portal'), $thread);
+                            }
+
+                            $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
                         } else if ($template[1] == 'stylesheets') {
                             $html = '';
                             foreach($this->styles as $style) {
@@ -281,6 +262,8 @@
                             $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
                         } else if($template[1] == 'pagination') {
                             $_template = $this->replaceVariable($template[0], $template[1], $_template, $this->getTemplate('pagination'));
+                        } else if($template[1] == 'captchaPublicKey') {
+                            $_template = $this->replaceVariable($template[0], $template[1], $_template, MISC::findKey('captchaPublicKey', $this->config));
                         }
                         break;
                     case 'structure':
@@ -353,6 +336,12 @@
 
                         $_template = $this->parseForum($_template, $top);
                         break;
+                    case 'categoryView':
+                        $C = new Category($this->sql);
+                        $cat = $C->getCategory($_GET['category'], false);
+
+                        $_template = $this->parseForum($_template, $cat);
+                        break;
                     case 'pagination':
                         switch($template[1]) {
                             case 'links':
@@ -369,7 +358,75 @@
                                 break;
                         }
                         break;
-                    default:
+                    case 'user':
+                        $U = new User($this->sql);
+                        $usr = $U->getUser($_SESSION['user']['id']);
+
+                        switch($template[1]) {
+                            case 'username':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $usr->username);
+                                break;
+                            case 'avatar':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $usr->avatar);
+                                break;
+                            case 'email':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $usr->email);
+                                break;
+                        }
+                        break;
+                    case 'profile':
+                        $U = new User($this->sql);
+                        $usr = $U->getUser($_GET['username'], false);
+
+                        switch($template[1]) {
+                            case 'username':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $usr->username);
+                                break;
+                            case 'avatar':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $usr->avatar);
+                                break;
+                            case 'about':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, (empty($usr->about) ? 'This user hasn\'t said anything about themselves.' : $usr->about));
+                                break;
+                            case 'joined':
+                                $date = MISC::parseDate($usr->regDate, $this->config, array('howLongAgo' => true));
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $date);
+                                break;
+                            case 'location':
+                                $location = ($usr->location ? $usr->location : 'Unknown');
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $location);
+                                break;
+                            case 'website':
+                                // TODO: Add functionality.
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, 'Unknown');
+                                break;
+                            case 'hasWebsite':
+                                // TODO: Add functionality.
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, '-broken');
+                                break;
+                            case 'latestPosts':
+                                $usr->setSQL($this->sql);
+                                $posts = $usr->getLatestPosts();
+
+                                $html = '';
+                                for($i = 0; $i < count($posts); $i++) {
+                                    /** @val $post Post */
+                                    $html .= $this->getTemplate('profile_post', 'user');
+                                }
+
+                                if(count($posts) == 0) {
+                                    $html = $this->getTemplate('no_profile_posts', 'user');
+                                }
+
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
+                                break;
+                        }
+                        break;
+                    case 'custom':
+                        if(class_exists($template[1])) {
+                            eval('$plugin = new ' . $template[1] . '($this);');
+                            eval('$_template = $plugin->customParse($_template);');
+                        }
                         break;
                 }
             }
@@ -385,7 +442,7 @@
          *
          * @return mixed HTML after the placeholder is replaced.
          */
-        private function replaceVariable($_type, $_name, $_template, $_replacement) {
+        protected function replaceVariable($_type, $_name, $_template, $_replacement) {
             return str_replace(
                 $this->pHolderWrapper[0] . $_type . '::' . $_name . $this->pHolderWrapper[1],
                 $_replacement,
@@ -440,7 +497,7 @@
                     case 'linkURL':
                         switch($key) {
                             case 'category':
-                                $url = '/forums/';
+                                $url = '/forums/' . $cat->getURL();
                                 break;
                             case 'topic':
                                 $url = '/forums/' . $cat->getURL() . '/' . $top->getURL();
@@ -453,6 +510,22 @@
                                 break;
                         }
                         $_template = $this->replaceVariable($template[0], $template[1], $_template, $url);
+                        break;
+                }
+            }
+
+            return $_template;
+        }
+
+        private function parseProfilePosts($_template, $_array) {
+            preg_match_all('/' . $this->pHolderWrapper[0] . '(.*?)' . $this->pHolderWrapper[1] . '/', $_template, $matches);
+
+            foreach($matches[1] as $match) {
+                $template = explode('::', $match);
+
+                switch($template[0]) {
+                    case 'avatar':
+                        $_template = $this->replaceVariable($template[0], $template[1], $_template, $_array['post']->author->avatar);
                         break;
                 }
             }
@@ -487,8 +560,15 @@
                         }
                         break;
                     case 'topic':
+                        /** @var $_fObject Topic */
+
                         $C = new Category($this->sql);
                         $cat = $C->getCategory($_fObject->categoryId);
+
+                        $latest = $_fObject->getLatestPost();
+
+                        $_fObject->setThreadCount()
+                                 ->setPostCount();
 
                         switch($template[1]) {
                             case 'header':
@@ -502,10 +582,49 @@
                                     '/forums/' . $cat->getURL() . '/' . $_fObject->getURL()
                                 );
                                 break;
+                            case 'threadCount':
+                                $count = $_fObject->threadCount . ($_fObject->threadCount == 1 ? ' Thread' : ' Threads');
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $count);
+                                break;
+                            case 'postCount':
+                                $count = max(($_fObject->postCount - 1), 0) . (($_fObject->postCount - 1) == 1 ? ' Post' : ' Posts');
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $count);
+                                break;
+                            case 'lastThreadTitle':
+                                $title = ($latest['thread']->title ? $latest['thread']->title : 'No posts yet');
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $title);
+                                break;
+                            case 'lastThreadUrl':
+                                $url = '#';
+
+                                if($latest['thread'] instanceof Thread) {
+                                    $T = new Topic($this->sql);
+                                    $tpc = $T->getTopic($latest['thread']->id);
+                                    $url = '/forums/' . $cat->getURL() . '/' . $tpc->getURL() . '/' . $latest['thread']->getURL();
+                                }
+
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $url);
+                                break;
+                            case 'lastPoster':
+                                $username = ($latest['post']->author->username ? $latest['post']->author->username : 'N/A');
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $username);
+                                break;
+                            case 'lastPosterAvatar':
+                                $avatar = ($latest['post']->author->avatar ? $latest['post']->author->avatar : '/' . $this->directory . '/_assets/img/user/avatar.jpg');
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $avatar);
+                                break;
+                            case 'lastPosterUrl':
+                                $url = ($latest['post']->author->username ? '/profile/' . $latest['post']->author->username : '#');
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $url);
+                                break;
                         }
                         break;
                     case 'thread':
                         /** @var $_fObject Thread */
+                        if($_fObject instanceof Thread) {
+                            $_fObject->setLatestPost();
+                            $_fObject->setPosts();
+                        }
                         switch($template[1]) {
                             case 'title':
                                 $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->title);
@@ -517,19 +636,25 @@
                             case 'poster':
                                 $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->author->username);
                                 break;
-                            case 'postDate':
                             case 'lastReplyDate':
+                                $date = MISC::parseDate($_fObject->latestPost->post_date, $this->config, array('howLongAgo' => true));
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $date);
+                                break;
+                            case 'postDate':
                                 $date = MISC::parseDate($_fObject->posted, $this->config, array('howLongAgo' => true));
                                 $_template = $this->replaceVariable($template[0], $template[1], $_template, $date);
                                 break;
                             case 'viewCount':
-                                $_template = $this->replaceVariable($template[0], $template[1], $_template, 0);
+                                // TODO: Add functionality.
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, '0 Views');
                                 break;
                             case 'replyCount':
-                                $_template = $this->replaceVariable($template[0], $template[1], $_template, 0);
+                                $count = (count($_fObject->posts) - 1) . ((count($_fObject->posts) - 1) == 1 ? ' Reply' : ' Replies');
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $count);
                                 break;
                             case 'lastResponder':
-                                $_template = $this->replaceVariable($template[0], $template[1], $_template, 'Username');
+                                $username = ($_fObject->latestPost->author->username ? $_fObject->latestPost->author->username : 'Unknown');
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $username);
                                 break;
                             case 'url':
                                 $top = new Topic($this->sql);
@@ -540,6 +665,16 @@
 
                                 $_template = $this->replaceVariable($template[0], $template[1], $_template,
                                     '/forums/' . $cat->getURL() . '/' . $top->getURL() . '/' . $_fObject->getURL());
+                                break;
+                            case 'latestPostDate':
+                                $date = MISC::parseDate($_fObject->latestPost->post_date, $this->config, array('howLongAgo' => true));
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $date);
+                                break;
+                            case 'lastPosterAvatar':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->latestPost->author->avatar);
+                                break;
+                            case 'lastPosterUrl':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, '/profile/' . $_fObject->latestPost->author->username);
                                 break;
                         }
                         break;
@@ -569,6 +704,10 @@
                                     $T = new Thread($this->sql);
                                     $trd = $T->getThread($_fObject->threadId);
                                     $_template = $this->replaceVariable($template[0], $template[1], $_template, $trd->title);
+                                    break;
+                                case 'posterUrl':
+                                    $_template = $this->replaceVariable($template[0], $template[1], $_template, '/profile/' . $_fObject->author->username);
+                                    break;
                             }
                         }
                         break;
@@ -592,6 +731,36 @@
                                     }
                                 } else {
                                     $html = $this->getTemplate('no_threads_msg', 'misc');
+                                }
+
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
+                                break;
+                            case 'moderate':
+                                $html = '';
+                                if(!empty($_SESSION['user'])) {
+                                    $html = $this->getTemplate('topic_view_moderate', 'forums');
+                                }
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
+                                break;
+                        }
+                        break;
+                    case 'categoryView':
+                        /** @val $_fObject Category */
+                        switch($template[1]) {
+                            case 'header':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->title);
+                                break;
+                            case 'description':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->description);
+                                break;
+                            case 'topics':
+                                $T = new Topic($this->sql);
+                                $topics = $T->getTopics($_fObject->id);
+
+                                $html = '';
+
+                                foreach($topics as $topic) {
+                                    $html .= $this->parseForum($this->getTemplate('topic_view', 'forums'), $topic);
                                 }
 
                                 $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
@@ -624,6 +793,23 @@
 
                                 $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
                                 break;
+                            case 'reply':
+                                $html = '';
+                                if(!empty($_SESSION['user'])) {
+                                    $html = $this->getTemplate('thread_view_reply', 'forums');
+                                }
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
+                                break;
+                            case 'moderate':
+                                $html = '';
+                                if(!empty($_SESSION['user'])) {
+                                    $html = $this->getTemplate('thread_view_moderate', 'forums');
+                                }
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $html);
+                                break;
+                            case 'id':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, $trd->id);
+                                break;
                         }
                         break;
                     case 'news':
@@ -633,6 +819,9 @@
                                 break;
                             case 'author':
                                 $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->author->username);
+                                break;
+                            case 'authorUrl':
+                                $_template = $this->replaceVariable($template[0], $template[1], $_template, '/profile/' . $_fObject->author->username);
                                 break;
                             case 'authorAvatar':
                                 $_template = $this->replaceVariable($template[0], $template[1], $_template, $_fObject->author->avatar);
@@ -681,6 +870,10 @@
             $this->directory = $_directory;
 
             return $this;
+        }
+
+        public function getConfig() {
+            return $this->themeConf;
         }
 
 

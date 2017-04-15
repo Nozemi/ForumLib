@@ -2,6 +2,8 @@
   namespace ForumLib\Users;
 
   use ForumLib\Utilities\PSQL;
+  use ForumLib\Forums\Post;
+  use ForumLib\Forums\Thread;
 
   /*
     The User object requires the PSQL class in order to function.
@@ -34,6 +36,8 @@
     public $firstname; // First name.
     public $lastname;  // Last name.
     public $avatar;    // Avatar URL.
+    public $latestPosts;
+    public $location;
 
     private $password;
 
@@ -47,7 +51,7 @@
         $this->S = $SQL;
 
         // Getting IP address for the user.
-        $ipadr = (is_null($_SERVER['HTTP_CF_CONNECTING_IP'])) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['HTTP_CF_CONNECTING_IP'];
+        $ipadr = (!isset($_SERVER['HTTP_CF_CONNECTING_IP'])) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['HTTP_CF_CONNECTING_IP'];
         $this->lastlogin = array(
           'date'  => date('Y-m-d H:i:s', time()),
           'ip'    => $ipadr
@@ -83,7 +87,7 @@
 
         if(password_verify($this->password, $details['password'])) {
           $this->lastMessage[] = 'Successfully logged in.';
-          $user = $this->getUser();
+          $user = $this->getUser($details['id']);
 
           return $user;
         } else {
@@ -101,12 +105,17 @@
     }
 
     public function register() {
+      if($this->usernameExists($this->username)) {
+          $this->lastError[] = 'Username already in use.';
+          return false;
+      }
+
       if(is_null($this->password) || is_null($this->username)) {
         $this->lastError[] = 'Username and/or password is missing.';
         return false;
       } else {
         $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-          INSERT INTO `{{DPB}}users` (
+          INSERT INTO `{{DBP}}users` (
              `username`
             ,`password`
             ,`regdate`
@@ -153,11 +162,11 @@
       if($p1 == $p2) {
         // If $p1 and $p2 matches (both passwords provided), it'll hash the password, and store it in the object.
         $this->password = password_hash($p1, PASSWORD_BCRYPT);
-        return true;
-      } else if(is_null($p2) && $login = true) {
+        return $this;
+      } else if(is_null($p2) && $login == true) {
         // If password 2 is empty and $login is true, it'll store the clear text password in the object.
         $this->password = $p1;
-        return true;
+        return $this;
       } else {
         $this->lastError[] = 'Passwords doesn\'t match.';
         return false;
@@ -192,12 +201,13 @@
       }
     }
 
-    public function getUser($_id = null) {
-      if(!is_null($_id)) $this->id = $_id;
+    public function getUser($_id = null, $byId = true) {
+      if(is_null($_id)) $_id = $this->id;
 
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
         SELECT
-           `username`
+           `id`
+          ,`username`
           ,`avatar`
           ,`group`
           ,`firstname`
@@ -207,16 +217,18 @@
           ,`lastip`
           ,`regip`
           ,`email`
+          ,`about`
+          ,`location`
         FROM `{{DBP}}users`
-        WHERE `id` = :id
+        WHERE `" . ($byId ? 'id' : 'username') . "` = :id
       "));
 
       if($this->S->executeQuery(array(
-        ':id' => $this->id
+        ':id' => $_id
       ))) {
         $uR = $this->S->fetch();
         $user = new User($this->S);
-        $user->setId($this->id)
+        $user->setId($uR['id'])
           ->setAvatar($uR['avatar'])
           ->setGroup($uR['group'])
           ->setFirstname($uR['firstname'])
@@ -226,7 +238,10 @@
           ->setLastIP($uR['lastip'])
           ->setRegIP($uR['regip'])
           ->setEmail($uR['email'])
-          ->setUsername($uR['username']);
+          ->setUsername($uR['username'])
+          ->setAbout($uR['about'])
+          ->setLocation($uR['location'])
+          ->unsetSQL();
 
         return $user;
       } else {
@@ -239,6 +254,92 @@
       }
     }
 
+    public function usernameExists($_username = null) {
+        if(!$_username) {
+            $_username = $this->username;
+        }
+
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+            SELECT `id`, `username` FROM `{{DBP}}users` WHERE `username` = :username
+        "));
+        if($this->S->executeQuery(array(
+            ':username' => $_username
+        ))) {
+            $usr = $this->S->fetch();
+            if(!empty($usr)) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            if(defined('DEBUG')) {
+                $this->lastError[] = $this->S->getLastError();
+                return false;
+            } else {
+                $this->lastError[] = 'Something went wrong while checking username.';
+                return false;
+            }
+        }
+    }
+
+    public function getLatestPosts() {
+        if($this->id == null) {
+            $this->lastError[] = 'No user was specified. Please specify a user first.';
+            return false;
+        }
+
+        if(!$this->S instanceof PSQL) {
+            $this->lastError[] = 'No instance of PSQL was found in the User object instance.';
+            return false;
+        }
+
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+            SELECT
+                 `P`.`id` `postId`
+                ,`T`.`id` `threadId`
+            FROM `for1234_posts` `P`
+              INNER JOIN `for1234_threads` `T` ON `T`.`id` = `P`.`threadId`
+            WHERE `P`.`authorId` = :authorId
+            ORDER BY `P`.`postDate` DESC
+        "));
+
+        $this->S->executeQuery(array(':authorId' => $this->id));
+
+        $psts = $this->S->fetchAll();
+
+        $threads = array();
+
+        foreach($psts as $pst) {
+            $P = new Post($this->S);
+            $T = new Thread($this->S);
+
+            $thread = $T->getThread($pst['threadId']);
+            $post = $P->getPost($pst['postId']);
+
+            $threads[] = array(
+              'thread' => $thread,
+                'post' => $post
+            );
+        }
+
+        return $threads;
+    }
+
+    public function unsetSQL() {
+      $this->S = null;
+      return $this;
+    }
+
+    public function setSQL(PSQL $_SQL) {
+        if($_SQL instanceof PSQL) {
+            $this->S = $_SQL;
+            $this->lastMessage[] = 'SQL was successfully set.';
+        } else {
+            $this->lastError[] = 'Parameter was not provided as an instance of PSQL.';
+        }
+        return $this;
+    }
+
     public function setId($_id) {
       $this->id = $_id;
       return $this;
@@ -247,6 +348,11 @@
     public function setAvatar($_avatar) {
       $this->avatar = $_avatar;
       return $this;
+    }
+
+    public function setAbout($_about) {
+        $this->about = $_about;
+        return $this;
     }
 
     public function setGroupId($_gid) {
@@ -268,6 +374,11 @@
     public function setLastname($_lastname) {
       $this->lastname = $_lastname;
       return $this;
+    }
+
+    public function setLocation($_location) {
+        $this->location = $_location;
+        return $this;
     }
 
     public function setLastLogin($_date) {

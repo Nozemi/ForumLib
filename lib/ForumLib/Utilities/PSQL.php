@@ -2,6 +2,7 @@
   namespace ForumLib\Utilities;
 
   use \PDO;
+  use \PDOException;
 
   class PSQL {
     // Database Details - Filled with default information.

@@ -37,7 +37,8 @@
         $group->setId($gR['id'])
           ->setDescription($gR['description'])
           ->setName($gR['name'])
-          ->setBanned($gR['banned']);
+          ->setBanned($gR['banned'])
+          ->unsetSQL();
 
         $this->lastMessage[] = 'Successfully loaded group.';
         return $group;
@@ -49,6 +50,11 @@
         }
         return false;
       }
+    }
+
+    public function unsetSQL() {
+      $this->S = null;
+      return $this;
     }
 
     public function setId($_id) {

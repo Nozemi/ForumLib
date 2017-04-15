@@ -15,6 +15,13 @@
 
     abstract public function getType();
 
+
+
+    public function unsetSQL() {
+      $this->S = null;
+      return $this;
+    }
+
     public function setId($_id) {
       $this->id = $_id;
       return $this;

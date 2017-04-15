@@ -5,6 +5,8 @@
   use ForumLib\Forums\Topic;
   use ForumLib\Forums\Thread;
 
+  use ForumLib\Users\User;
+
   // MISC class - a collection of miscellaneous useful methods.
   class MISC {
 
@@ -24,25 +26,25 @@
 
     // Finds a key within an array. Which means you won't have to know where
     // in the array the key is, just that it exists in there somewhere.
-    public static function findKey($aKey, $array) {
-      // Check if an array is provided.
-			if(is_array($array)) {
-        // Loops through the array.
-				foreach($array as $key => $item) {
-          // Checks if it did find the matching key. If it doesn't, it continues looping until it does,
-          // or until the end of the array.
-					if($key == $aKey) {
-						return $item;
-					} else {
-						$result = self::FindKey($aKey, $item);
-						if($result != false) {
-							return $result;
-						}
-					}
-				}
-			}
-			return false;
-    }
+      public static function findKey($aKey, $array) {
+          // Check if an array is provided.
+          if(is_array($array)) {
+              // Loops through the array.
+              foreach($array as $key => $item) {
+                  // Checks if it did find the matching key. If it doesn't, it continues looping until it does,
+                  // or until the end of the array.
+                  if($key == $aKey) {
+                      return $item;
+                  } else {
+                      $result = self::findKey($aKey, $item);
+                      if($result != false) {
+                          return $result;
+                      }
+                  }
+              }
+          }
+          return false;
+      }
 
       /**
        * @param $_file string - Filename
@@ -64,6 +66,17 @@
         }
 
         $cat = $top = $trd = null;
+
+        if(isset($_GET['username'])) {
+            $U = new User($SQL);
+            $user = $U->getUser($_GET['username'], false);
+
+            if(empty($user->username)) {
+                $page = 'Profile Not Found';
+            } else {
+                $page = $user->username . '\'s Profile';
+            }
+        }
 
         if(isset($_GET['category'])) {
             $C = new Category($SQL);
@@ -88,9 +101,9 @@
             $page = $trd->title;
         }
 
-        $title .= ' - ' . $page;
+        $page .= ' - ' . $title;
 
-        return $title;
+        return $page;
     }
 
     public static function parseDate($dateString, Config $config = null, $options = array()) {
