@@ -16,7 +16,7 @@
     private $db;
 
     // Query Details
-    private $statment;
+    private $statement;
     private $result;
 
     private $lastError = array();
@@ -95,21 +95,24 @@
 
     // Prepares the query for execution.
     public function prepareQuery($query) {
-      if(is_null($this->db)) {
+      if(is_null($this->db) && !$this->db instanceof PDO) {
         $this->lastError[] = 'No database connection.';
         return false;
-      }
-      try {
-        $this->statement = $this->db->prepare($query);
-        return true;
-      } catch(PDOException $ex) {
-        // Handle prepare exception.
-        if(defined('DEBUG')) {
-          $this->lastError[] = $ex->getMessage();
-        } else {
-          $this->lastError[] = 'The database is having issues. Please try again.';
-        }
-        return false;
+      } else if($this->db instanceof PDO) {
+          try {
+              $this->statement = $this->db->prepare($query);
+
+              return true;
+          } catch(PDOException $ex) {
+              // Handle prepare exception.
+              if(defined('DEBUG')) {
+                  $this->lastError[] = $ex->getMessage();
+              } else {
+                  $this->lastError[] = 'The database is having issues. Please try again.';
+              }
+
+              return false;
+          }
       }
     }
 
@@ -136,6 +139,7 @@
     			/**/ }
 
           $this->result = $this->statement->execute($params);
+          $this->lastMessage[] = 'Query ran successfully.';
           return true;
         } catch(PDOException $ex) {
           // Handle result exception.

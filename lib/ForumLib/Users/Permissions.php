@@ -3,6 +3,11 @@
 
   use ForumLib\Utilities\PSQL;
 
+  use ForumLib\Forums\Category;
+  use ForumLib\Forums\Topic;
+  use ForumLib\Forums\Thread;
+  use ForumLib\Forums\Post;
+
   class Permissions {
     private $id;
     private $OI; // Object Instance.
@@ -26,7 +31,7 @@
     private $userId;    // This is defined whenever this is a user spesific permission.
     private $groupId;   // This is defined whenever this is a group spesific permission.
 
-    public function __construct(PSQL $_SQL, $_id = null, $_OI) {
+    public function __construct(PSQL $_SQL, $_id = null) {
       // We'll check if the required parameters are filled.
       if(!is_null($_SQL)) {
         $this->S = $_SQL;
@@ -38,6 +43,36 @@
       if(!is_null($_id)) {
         $this->id = $_id;
       }
+    }
+
+    public function checkPermissions(User $_user, $_object = null) {
+        if(is_null($_object)) $_object = $this->OI;
+
+        $query = 'No query.';
+
+        if($_object instanceof Category) {
+
+        }
+
+        if($_object instanceof Topic) {
+            $query = "SELECT * FROM `{{DBP}}permissions` WHERE `topicId` = :id AND `groupId` = :gid";
+        }
+
+        if($_object instanceof Thread) {
+
+        }
+
+        if($_object instanceof Post) {
+
+        }
+
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', $query));
+        $this->S->executeQuery(array(':id' => $_object->id, ':gid' => $_user->groupId));
+
+        if($this->S->getLastError()) {
+            return $this->S->getLastError();
+        }
+        return $this->S->fetch();
     }
 
     public function getPermissions($_id = null) {

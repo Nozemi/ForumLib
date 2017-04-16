@@ -240,12 +240,23 @@
             WHERE `F`.`id` = :topicId
             ORDER BY `P`.`postDate` DESC
         "));
-          $this->S->executeQuery(array('topicId' => $this->id));
-          $rslt = $this->S->fetch();
+        $this->S->executeQuery(array('topicId' => $this->id));
+        $rslt = $this->S->fetch();
 
-          $this->postCount = $rslt['count'];
-          return $this;
-      }
+        $this->postCount = $rslt['count'];
+        return $this;
+    }
+
+    public function checkThreadName($_title, Topic $_topic) {
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+            SELECT `id` FROM `{{DBP}}threads` WHERE `topicId` = :topicId AND MATCH(`title`) AGAINST(:title IN BOOLEAN MODE)
+        "));
+        $this->S->executeQuery(array(
+            ':topicId' => $_topic->id,
+            ':title' => $_title
+        ));
+        return count($this->S->fetchAll());
+    }
 
     public function setCategoryId($_cid) {
       $this->categoryId = $_cid;

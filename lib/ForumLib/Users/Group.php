@@ -33,11 +33,15 @@
       ))) {
         $gR = $this->S->fetch();
 
+        if(empty($gR)) {
+            $this->lastError[] = 'Failed to get group.';
+            return false;
+        }
+
         $group = new Group($this->S);
         $group->setId($gR['id'])
-          ->setDescription($gR['description'])
-          ->setName($gR['name'])
-          ->setBanned($gR['banned'])
+          ->setDescription($gR['desc'])
+          ->setName($gR['title'])
           ->unsetSQL();
 
         $this->lastMessage[] = 'Successfully loaded group.';

@@ -18,6 +18,7 @@
         }
     },
     "require": {
-      "ircmaxell/password-compat": "*"
+        "ircmaxell/password-compat": "*",
+        "google/recaptcha": "^1.1"
     }
 }

@@ -211,7 +211,7 @@
             $Forums = new Forums($this);
             // Gets all the variable placeholders in the current template, so that we can parse them and fill them with
             // what they're supposed to have.
-            preg_match_all('/' . $this->pHolderWrapper[0] . '(.*?)' . $this->pHolderWrapper[1] . '/', $_template, $matches);
+            $matches = $this->getPlaceholders($_template);
 
             // Loops through all the placeholder variables in the template.
             foreach($matches[1] as $match) {
@@ -233,6 +233,31 @@
                         switch($template[1]) {
                             case 'tabTitle':
                                 $_template = $this->replaceVariable($match, $_template, MISC::getTabTitle($_SERVER['SCRIPT_FILENAME']));
+                                break;
+                            case 'topicName':
+                                $C = new Category($this->sql);
+                                $T = new Topic($this->sql);
+                                $cat = $C->getCategory($_GET['category'], false);
+                                $top = $T->getTopic($_GET['topic'], false, $cat->id);
+
+                                $_template = $this->replaceVariable($match, $_template, $top->title);
+                                break;
+                            case 'topicUrl':
+                                $C = new Category($this->sql);
+                                $T = new Topic($this->sql);
+                                $cat = $C->getCategory($_GET['category'], false);
+                                $top = $T->getTopic($_GET['topic'], false, $cat->id);
+
+                                $url = '/forums/' . $cat->getURL() . '/' . $top->getURL() . '/';
+                                $_template = $this->replaceVariable($match, $_template, $url);
+                                break;
+                            case 'topicId':
+                                $C = new Category($this->sql);
+                                $T = new Topic($this->sql);
+                                $cat = $C->getCategory($_GET['category'], false);
+                                $top = $T->getTopic($_GET['topic'], false, $cat->id);
+
+                                $_template = $this->replaceVariable($match, $_template, $top->id);
                                 break;
                             case 'latestNews':
                                 if($this->config instanceof Config) {
@@ -286,7 +311,8 @@
                                 $_template = $this->replaceVariable($match, $_template, $this->getTemplate('pagination'));
                                 break;
                             case 'captchaPublicKey':
-                                $_template = $this->replaceVariable($match, $_template, MISC::findKey('captchaPublicKey', $this->config));
+                                $C = new Config;
+                                $_template = $this->replaceVariable($match, $_template, MISC::findKey('captchaPublicKey', $C->config));
                                 break;
                         }
                         break;
@@ -370,10 +396,18 @@
                                 $html = '';
 
                                 $count = 1;
+
+                                if($_GET['page'] == 'newthread') {
+                                    $_GET['page'] = 'forums';
+                                    $_GET['action'] = 'New Thread';
+                                }
+
                                 foreach($_GET as $key => $value) {
-                                    $tmpl = ((count($_GET) > 1 && $count != count($_GET)) ? 'pagination_link' : 'pagination_active');
-                                    $html .= $this->parsePaginationLink($this->getTemplate($tmpl), $key, $value);
-                                    $count++;
+                                    if($key != 'threadId') {
+                                        $tmpl = ((count($_GET) > 1 && $count != count($_GET)) ? 'pagination_link' : 'pagination_active');
+                                        $html .= $this->parsePaginationLink($this->getTemplate($tmpl), $key, $value);
+                                        $count++;
+                                    }
                                 }
 
                                 $_template = $this->replaceVariable($match, $_template, $html);
@@ -400,49 +434,8 @@
                         $U = new User($this->sql);
                         $usr = $U->getUser($_GET['username'], false);
 
-                        switch($template[1]) {
-                            case 'username':
-                                $_template = $this->replaceVariable($match, $_template, $usr->username);
-                                break;
-                            case 'avatar':
-                                $_template = $this->replaceVariable($match, $_template, $usr->avatar);
-                                break;
-                            case 'about':
-                                $_template = $this->replaceVariable($match, $_template, (empty($usr->about) ? 'This user hasn\'t said anything about themselves.' : $usr->about));
-                                break;
-                            case 'joined':
-                                $date = MISC::parseDate($usr->regDate, $this->config, array('howLongAgo' => true));
-                                $_template = $this->replaceVariable($match, $_template, $date);
-                                break;
-                            case 'location':
-                                $location = ($usr->location ? $usr->location : 'Unknown');
-                                $_template = $this->replaceVariable($match, $_template, $location);
-                                break;
-                            case 'website':
-                                // TODO: Add functionality.
-                                $_template = $this->replaceVariable($match, $_template, 'Unknown');
-                                break;
-                            case 'hasWebsite':
-                                // TODO: Add functionality.
-                                $_template = $this->replaceVariable($match, $_template, '-broken');
-                                break;
-                            case 'latestPosts':
-                                $usr->setSQL($this->sql);
-                                $posts = $usr->getLatestPosts();
-
-                                $html = '';
-                                for($i = 0; $i < count($posts); $i++) {
-                                    /** @val $post Post */
-                                    $html .= $this->getTemplate('profile_post', 'user');
-                                }
-
-                                if(count($posts) == 0) {
-                                    $html = $this->getTemplate('no_profile_posts', 'user');
-                                }
-
-                                $_template = $this->replaceVariable($match, $_template, $html);
-                                break;
-                        }
+                        $P = new Profile($this);
+                        $_template = $P->parseProfile($_template, $usr);
                         break;
                     case 'custom':
                         if(class_exists($template[1])) {
@@ -472,7 +465,7 @@
         }
 
         private function parsePaginationLink($_template, $key, $value) {
-            preg_match_all('/' . $this->pHolderWrapper[0] . '(.*?)' . $this->pHolderWrapper[1] . '/', $_template, $matches);
+            $matches = $this->getPlaceholders($_template);
 
             $cat = $top = $trd = null;
 
@@ -482,17 +475,15 @@
             }
 
             if(isset($_GET['topic'])) {
-                if($cat instanceof Category) {
-                    $T = new Topic($this->sql);
-                    $top = $T->getTopic($_GET['topic'], false, $cat->id);
-                }
+                $T = new Topic($this->sql);
+                $top = $T->getTopic($_GET['topic'], false, $cat->id);
             }
 
-            if(isset($_GET['thread'])) {
-                if($top instanceof Topic) {
-                    $Tr = new Thread($this->sql);
-                    $trd = $Tr->getThread($_GET['thread'], false, $top->id);
-                }
+            $Tr = new Thread($this->sql);
+            if(isset($_GET['thread']) && !isset($_GET['threadId'])) {
+                $trd = $Tr->getThread($_GET['thread'], false, $top->id);
+            } else if(isset($_GET['threadId'])) {
+                $trd = $Tr->getThread($_GET['threadId']);
             }
 
             foreach($matches[1] as $match) {
@@ -538,20 +529,10 @@
             return $_template;
         }
 
-        private function parseProfilePosts($_template, $_array) {
+        public function getPlaceholders($_template) {
             preg_match_all('/' . $this->pHolderWrapper[0] . '(.*?)' . $this->pHolderWrapper[1] . '/', $_template, $matches);
 
-            foreach($matches[1] as $match) {
-                $template = explode('::', $match);
-
-                switch($template[0]) {
-                    case 'avatar':
-                        $_template = $this->replaceVariable($match, $_template, $_array['post']->author->avatar);
-                        break;
-                }
-            }
-
-            return $_template;
+            return $matches;
         }
 
         // Sets the theme's name.

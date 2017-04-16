@@ -161,7 +161,7 @@
           ':username'   => $this->username,
           ':password'   => $this->password,
           ':regdate'    => date('Y-m-d H:i:s', time()),
-          ':regip'      => $this->lastlogin['ip'],
+          ':regip'      => $this->lastLogin['ip'],
           ':email'      => $this->email,
           ':firstname'  => $this->firstname,
           ':lastname'   => $this->lastname
@@ -253,6 +253,7 @@
         $user->setId($uR['id'])
           ->setAvatar($uR['avatar'])
           ->setGroup($uR['group'])
+          ->setGroupId(($user->group ? $user->group->id : 0))
           ->setFirstname($uR['firstname'])
           ->setLastname($uR['lastname'])
           ->setLastLogin($uR['lastlogindate'])

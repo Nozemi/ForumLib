@@ -29,7 +29,16 @@
       if(is_null($topicId)) $topicId = $this->topicId;
 
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        SELECT * FROM `{{DBP}}threads` WHERE `topicId` = :topicId
+        SELECT * FROM (
+            SELECT
+                 `T`.*
+                ,`P`.`postDate`
+            FROM `{{DBP}}posts` `P`
+                INNER JOIN `{{DBP}}threads` `T` ON `P`.`threadId` = `T`.`id`
+                INNER JOIN `{{DBP}}topics` `F` ON `T`.`topicId` = `F`.`id`
+            WHERE `F`.`id` = :topicId
+            ORDER BY `P`.`postDate` DESC ) `threads`
+        GROUP BY `id` ORDER BY `postDate` DESC
       "));
       if($this->S->executeQuery(array(
         ':topicId' => $topicId
@@ -93,8 +102,8 @@
         ) VALUES (
            :post_content_html
           ,:post_content_text
-          ,:authorId
-          ,:threadId
+          ,:pAuthorId
+          ,LAST_INSERT_ID()
           ,:postDate
           ,:editDate
         );
@@ -103,17 +112,16 @@
         ':title'        => $this->title,
         ':topicId'      => $this->topicId,
         ':authorId'     => $this->author->id,
-        ':dateCreated'  => date('Y-m-d H:i:s', time()),
-        ':lastEdited'   => date('Y-m-d H:i:s', time()),
+        ':dateCreated'  => date('Y-m-d H:i:s'),
+        ':lastEdited'   => date('Y-m-d H:i:s'),
         ':sticky'       => 0,
         ':closed'       => 0,
 
         ':post_content_html'  => $post->post_html,
         ':post_content_text'  => $post->post_text,
-        ':authorId'           => $post->author->id,
-        ':threadId'           => $this->S->getLastInsertId(),
-        ':postDate'           => date('Y-m-d H:i:s', time()),
-        ':editDate'           => date('Y-m-d H:i:s', time())
+        ':pAuthorId'           => $post->author->id,
+        ':postDate'           => date('Y-m-d H:i:s'),
+        ':editDate'           => date('Y-m-d H:i:s')
       ))) {
         $this->lastMessage[] = 'Successfully created thread.';
         return true;
@@ -304,5 +312,11 @@
 
     public function getType() {
       return __CLASS__;
+    }
+
+    public function getURL() {
+        $url = $this->id . '-' . strtolower(str_replace('--', '-', preg_replace("/[^a-z0-9._-]+/i", "", str_replace(' ', '-', $this->title))));
+
+        return $url;
     }
   }
