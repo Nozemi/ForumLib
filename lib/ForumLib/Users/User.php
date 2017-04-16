@@ -51,9 +51,22 @@
         $this->S = $SQL;
 
         // Getting IP address for the user.
-        $ipadr = (!isset($_SERVER['HTTP_CF_CONNECTING_IP'])) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['HTTP_CF_CONNECTING_IP'];
-        $this->lastlogin = array(
-          'date'  => date('Y-m-d H:i:s', time()),
+        $ipadr = '0.0.0.0';
+
+        if(isset($_SERVER['SERVER_ADDR'])) {
+            $ipadr = $_SERVER['SERVER_ADDR'];
+        }
+
+        if(isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ipadr = $_SERVER['HTTP_X_FORWARDED_FOR'];
+        }
+
+        if(isset($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+            $ipadr = $_SERVER['HTTP_CF_CONNECTING_IP'];
+        }
+
+        $this->lastLogin = array(
+          'date'  => date('Y-m-d H:i:s'),
           'ip'    => $ipadr
         );
       } else {
@@ -88,6 +101,15 @@
         if(password_verify($this->password, $details['password'])) {
           $this->lastMessage[] = 'Successfully logged in.';
           $user = $this->getUser($details['id']);
+
+          $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+            UPDATE `{{DBP}}users` SET `lastip` = :lastip,`lastlogindate` = :lastlogindate WHERE `id` = :id
+          "));
+          $this->S->executeQuery(array(
+              ':lastip' => $this->lastLogin['ip'],
+              ':lastlogindate' => $this->lastLogin['date'],
+              ':id' => $user->id
+          ));
 
           return $user;
         } else {
