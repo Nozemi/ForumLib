@@ -99,6 +99,7 @@
           ,`threadId`
           ,`postDate`
           ,`editDate`
+          ,`originalPost`
         ) VALUES (
            :post_content_html
           ,:post_content_text
@@ -106,6 +107,7 @@
           ,LAST_INSERT_ID()
           ,:postDate
           ,:editDate
+          ,1
         );
       "));
       if($this->S->executeQuery(array(
@@ -119,10 +121,16 @@
 
         ':post_content_html'  => $post->post_html,
         ':post_content_text'  => $post->post_text,
-        ':pAuthorId'           => $post->author->id,
+        ':pAuthorId'          => $post->author->id,
         ':postDate'           => date('Y-m-d H:i:s'),
         ':editDate'           => date('Y-m-d H:i:s')
       ))) {
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT `id` FROM `{{DBP}}threads` ORDER BY `dateCreated` DESC LIMIT 1;"));
+        $this->S->executeQuery();
+
+        $result = $this->S->fetch();
+        $this->setId($result['id']);
+
         $this->lastMessage[] = 'Successfully created thread.';
         return true;
       } else {
@@ -228,7 +236,10 @@
       if(is_null($id)) $id = $this->id;
 
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        DELETE FROM `{{DBP}}threads` WHERE `id` = :id
+        SET @threadId = :id;
+
+        DELETE FROM `{{DBP}}threads` WHERE `id` = @threadId;
+        DELETE FROM `{{DBP}}posts` WHERE `threadId` = @threadId;
       "));
 
       if($this->S->executeQuery(array(

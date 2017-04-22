@@ -51,14 +51,13 @@
        *
        * @return string
        */
-    public static function getTabTitle($_file) {
+    public static function getPageName($_file) {
         global $Config, $SQL;
 
         if(!$Config instanceof Config) {
             $Config = new Config;
         }
 
-        $title = MISC::findKey('name', $Config->config);
         $page = ucfirst(basename($_file, '.php'));
 
         if(isset($_GET['page'])) {
@@ -100,8 +99,6 @@
             }
             $page = $trd->title;
         }
-
-        $page .= ' - ' . $title;
 
         return $page;
     }

@@ -2,6 +2,9 @@
   namespace ForumLib\Users;
 
   use ForumLib\Utilities\PSQL;
+  use ForumLib\Utilities\MISC;
+  use ForumLib\Utilities\Config;
+
   use ForumLib\Forums\Post;
   use ForumLib\Forums\Thread;
 
@@ -38,6 +41,7 @@
     public $avatar;    // Avatar URL.
     public $latestPosts;
     public $location;
+    public $postCount;
 
     private $password;
 
@@ -156,6 +160,7 @@
           );
         "));
 
+        $C = new Config;
         // Check if the query executes alright, and return an error if it doesn't.
         if($this->S->executeQuery(array(
           ':username'   => $this->username,
@@ -164,7 +169,8 @@
           ':regip'      => $this->lastLogin['ip'],
           ':email'      => $this->email,
           ':firstname'  => $this->firstname,
-          ':lastname'   => $this->lastname
+          ':lastname'   => $this->lastname,
+          ':group'      => ($this->group->id ? $this->group->id : MISC::findKey('defaultGroup', $C->config))
         ))) {
           $this->lastMessage[] = 'Account was successfully registered.';
           return true;
@@ -264,6 +270,7 @@
           ->setUsername($uR['username'])
           ->setAbout($uR['about'])
           ->setLocation($uR['location'])
+          ->setPostCount($uR['id'])
           ->unsetSQL();
 
         return $user;
@@ -348,6 +355,23 @@
         return $threads;
     }
 
+    public function getRegisteredUsers() {
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+            SELECT
+               `U`.`id`
+              ,`U`.`username`
+              ,`U`.`regdate`
+              ,`U`.`lastlogindate`
+              ,`U`.`group`
+              ,`G`.`title`
+            FROM `{{DBP}}users` `U`
+              INNER JOIN `{{DBP}}groups` `G` ON `G`.`id` = `U`.`group`
+            ORDER BY `username` ASC
+        "));
+        $this->S->executeQuery();
+        return $this->S->fetchAll();
+    }
+
     public function unsetSQL() {
       $this->S = null;
       return $this;
@@ -366,6 +390,22 @@
     public function setId($_id) {
       $this->id = $_id;
       return $this;
+    }
+
+    public function setPostCount($_id = null) {
+        if(is_null($_id)) $_id = $this->id;
+
+        $this->postCount = 0;
+
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+            SELECT COUNT(`id`) `count` FROM `{{DBP}}posts` WHERE `authorId` = :userId
+        "));
+        $this->S->executeQuery(array(':userId' => $_id));
+
+        $result = $this->S->fetch();
+        $this->postCount = $result['count'];
+
+        return $this;
     }
 
     public function setAvatar($_avatar) {

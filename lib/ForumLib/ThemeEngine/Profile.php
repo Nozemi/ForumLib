@@ -21,6 +21,9 @@
                 $template = explode('::', $match);
 
                 switch($template[1]) {
+                    case 'id':
+                        $_template = $this->engine->replaceVariable($match, $_template, $_user->id);
+                        break;
                     case 'username':
                         $_template = $this->engine->replaceVariable($match, $_template, $_user->username);
                         break;
@@ -29,6 +32,10 @@
                         break;
                     case 'about':
                         $_template = $this->engine->replaceVariable($match, $_template, (empty($_user->about) ? 'This user hasn\'t said anything about themselves.' : $_user->about));
+                        break;
+                    case 'lastVisit':
+                        $date = MISC::parseDate($_user->lastLogin, $this->config, array('howLongAgo' => true));
+                        $_template = $this->engine->replaceVariable($match, $_template, $date);
                         break;
                     case 'joined':
                         $date = MISC::parseDate($_user->regDate, $this->config, array('howLongAgo' => true));
@@ -66,6 +73,12 @@
                         }
 
                         $_template = $this->engine->replaceVariable($match, $_template, $html);
+                        break;
+                    case 'groupName':
+                        $_template = $this->engine->replaceVariable($match, $_template, $_user->group->name);
+                        break;
+                    case 'postCount':
+                        $_template = $this->engine->replaceVariable($match, $_template, $_user->postCount);
                         break;
                 }
             }

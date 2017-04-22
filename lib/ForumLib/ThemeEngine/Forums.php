@@ -8,6 +8,9 @@
 
     use ForumLib\Utilities\MISC;
 
+    use ForumLib\Users\User;
+    use ForumLib\Users\Permissions;
+
     class Forums extends ThemeEngine {
         protected $engine;
 
@@ -96,6 +99,7 @@
 
                 switch($template[1]) {
                     case 'header':
+                    case 'title':
                         $_template = $this->engine->replaceVariable($match, $_template, $_category->title);
                         break;
                     case 'description':
@@ -108,6 +112,20 @@
                         foreach($tops as $top) {
                             $html .= $this->parseForum($this->engine->getTemplate('topic_view', 'forums'), $top);
                         }
+                        $_template = $this->engine->replaceVariable($match, $_template, $html);
+                        break;
+                    case 'adminMenu':
+                        $html = '';
+
+                        if(!empty($_SESSION['user'])) {
+                            $U = new User($this->engine->sql);
+                            $user = $U->getUser($_SESSION['user']['id']);
+
+                            if($user->group->admin) {
+                                $html = $this->engine->getTemplate('admin_categories', 'admin');
+                            }
+                        }
+
                         $_template = $this->engine->replaceVariable($match, $_template, $html);
                         break;
                 }
@@ -129,6 +147,7 @@
 
                 switch($template[1]) {
                     case 'header':
+                    case 'title':
                         $_template = $this->engine->replaceVariable($match, $_template, $_topic->title);
                         break;
                     case 'description':
@@ -144,8 +163,9 @@
                         $_template = $this->engine->replaceVariable($match, $_template, $count);
                         break;
                     case 'postCount':
-                        $count = max(($_topic->postCount - $_topic->threadCount), 0) . (($_topic->postCount - $_topic->threadCount) == 1 ? ' Post' : ' Posts');
-                        $_template = $this->engine->replaceVariable($match, $_template, $count);
+                        $count = max(($_topic->postCount - $_topic->threadCount), 0);
+                        if($template[2] == 'threadCount') { $count += max(($_topic->threadCount), 0); }
+                        $_template = $this->engine->replaceVariable($match, $_template, $count . (($_topic->postCount - $_topic->threadCount) == 1 ? ' Post' : ' Posts'));
                         break;
                     case 'lastThreadTitle':
                         $title = ($latest['thread']->title ? $latest['thread']->title : 'No posts yet');
@@ -170,12 +190,20 @@
                         $_template = $this->engine->replaceVariable($match, $_template, $username);
                         break;
                     case 'lastPosterAvatar':
-                        $avatar = ($latest['post']->author->avatar ? $latest['post']->author->avatar : '/' . $this->engine->directory . '/_assets/img/user/avatar.jpg');
+                        if(!empty($latest['post']->author->avatar)) {
+                            $avatar = ($latest['post']->author->avatar ? $latest['post']->author->avatar : '/' . $this->engine->directory . '/_assets/img/user/avatar.jpg');
+                        } else {
+                            $avatar = $this->engine->directory . '/_assets/img/' . $template[2];
+                        }
                         $_template = $this->engine->replaceVariable($match, $_template, $avatar);
                         break;
                     case 'lastPosterUrl':
                         $url = ($latest['post']->author->username ? '/profile/' . $latest['post']->author->username : '#');
                         $_template = $this->engine->replaceVariable($match, $_template, $url);
+                        break;
+                    case 'lastPostDate':
+                        $date = ($latest['post']->post_date ? MISC::parseDate($latest['post']->post_date, $this->engine->config, array('howLongAgo' => true)) : 'No posts...');
+                        $_template = $this->engine->replaceVariable($match, $_template, $date);
                         break;
                     case 'threads':
                         $html = '';
@@ -202,6 +230,20 @@
                     case 'newThreadUrl':
                         $url = '/newthread/' . $cat->getURL() . '/' . $_topic->getURL();
                         $_template = $this->engine->replaceVariable($match, $_template, $url);
+                        break;
+                    case 'adminMenu':
+                        $html = '';
+
+                        if(!empty($_SESSION['user'])) {
+                            $U = new User($this->engine->sql);
+                            $user = $U->getUser($_SESSION['user']['id']);
+
+                            if($user->group->admin) {
+                                $html = $this->engine->getTemplate('admin_topic', 'admin');
+                            }
+                        }
+
+                        $_template = $this->engine->replaceVariable($match, $_template, $html);
                         break;
                 }
             }
@@ -307,6 +349,9 @@
                 $template = explode('::', $match);
 
                 switch($template[1]) {
+                    case 'id':
+                        $_template = $this->engine->replaceVariable($match, $_template, $_post->id);
+                        break;
                     case 'poster':
                         $_template = $this->engine->replaceVariable($match, $_template, $_post->author->username);
                         break;
@@ -332,6 +377,30 @@
                         break;
                     case 'posterUrl':
                         $_template = $this->engine->replaceVariable($match, $_template, '/profile/' . $_post->author->username);
+                        break;
+                    case 'manage':
+                        $html = '';
+
+                        if(!empty($_SESSION['user'])) {
+                            $U = new User($this->engine->sql);
+                            $user = $U->getUser($_SESSION['user']['id']);
+
+                            if($_SESSION['user']['id'] == $_post->author->id
+                            || $user->group->admin) {
+                                $html = $this->engine->getTemplate('post_view_manage', 'forums');
+                            }
+                        }
+
+                        $_template = $this->engine->replaceVariable($match, $_template, $html);
+                        break;
+                    case 'originalPost':
+                        $html = '';
+
+                        if($_post->originalPost) {
+                            $html = 'originalPost';
+                        }
+
+                        $_template = $this->engine->replaceVariable($match, $_template, $html);
                         break;
                 }
             }

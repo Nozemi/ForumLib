@@ -12,6 +12,7 @@
         public $post_text;
         public $post_date;
         public $post_last_edit;
+        public $originalPost;
 
         public function __construct(PSQL $SQL) {
             if(!is_null($SQL)) {
@@ -93,7 +94,8 @@
                         ->setPostDate($posts[$i]['postDate'])
                         ->setEditDate($posts[$i]['editDate'])
                         ->setHTML($posts[$i]['post_content_html'])
-                        ->setText($posts[$i]['post_content_text']);
+                        ->setText($posts[$i]['post_content_text'])
+                        ->setOriginalPost($posts[$i]['originalPost']);
 
                     $thePosts[] = $thePost;
                 }
@@ -111,14 +113,12 @@
         }
 
         public function getPost($id = null) {
-            if(is_null($id))
-                $id = $this->id;
+            if(is_null($id)) $id = $this->id;
 
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}posts` WHERE `id` = :id ORDER BY `postDate` DESC"));
+            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}posts` WHERE `id` = :id"));
             if($this->S->executeQuery(array(
-                                          ':id' => $id
-                                      ))
-            ) {
+                  ':id' => $id
+            ))) {
                 $post = $this->S->fetch();
 
                 $thePost = new Post($this->S);
@@ -128,9 +128,10 @@
                     ->setPostDate($post['postDate'])
                     ->setEditDate($post['editDate'])
                     ->setHTML($post['post_content_html'])
-                    ->setText($post['post_content_text']);
+                    ->setText($post['post_content_text'])
+                    ->setOriginalPost($post['originalPost']);
 
-                $this->lastMessage = 'Successfully fetched posts.';
+                $this->lastMessage[] = 'Successfully fetched posts.';
 
                 return $thePost;
             } else {
@@ -146,22 +147,21 @@
 
         public function updatePost() {
             $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        UPDATE `{{DBP}}posts` SET
-           `post_content_html`  = :post_content_html
-          ,`post_content_text`  = :post_content_text
-          ,`authorId`           = :authorId
-          ,`threadId`           = :threadId
-          ,`editDate`           = :editDate
-        WHERE `postId` = :postId
-      "));
+                UPDATE `{{DBP}}posts` SET
+                   `post_content_html`  = :post_content_html
+                  ,`post_content_text`  = :post_content_text
+                  ,`authorId`           = :authorId
+                  ,`threadId`           = :threadId
+                  ,`editDate`           = :editDate
+                WHERE `postId` = :postId
+            "));
             if($this->S->executeQuery(array(
-                                          ':post_content_html' => $this->post_html,
-                                          ':post_content_text' => $this->post_text,
-                                          ':authorId'          => $this->author->id,
-                                          ':threadId'          => $this->threadId,
-                                          ':editDate'          => date('Y-m-d H:i:s', time())
-                                      ))
-            ) {
+                  ':post_content_html' => $this->post_html,
+                  ':post_content_text' => $this->post_text,
+                  ':authorId'          => $this->author->id,
+                  ':threadId'          => $this->threadId,
+                  ':editDate'          => date('Y-m-d H:i:s', time())
+            ))) {
                 $this->lastMessage[] = 'Successfully edited post.';
 
                 return true;
@@ -177,17 +177,15 @@
         }
 
         public function deletePost($id = null) {
-            if(is_null($id))
-                $id = $this->id;
+            if(is_null($id)) $id = $this->id;
 
             $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        DELETE FROM `{{DBP}}posts` WHERE `id` = :id
-      "));
+                DELETE FROM `{{DBP}}posts` WHERE `id` = :id
+            "));
 
             if($this->S->executeQuery(array(
-                                          ':id' => $id
-                                      ))
-            ) {
+                  ':id' => $id
+            ))) {
                 $this->lastMessage[] = 'Successfully deleted post.';
 
                 return true;
@@ -204,6 +202,12 @@
 
         public function setThreadId($_tid) {
             $this->threadId = $_tid;
+
+            return $this;
+        }
+
+        public function setOriginalPost($_originalPost) {
+            $this->originalPost = $_originalPost;
 
             return $this;
         }

@@ -191,9 +191,6 @@
          */
         public function getTemplate($_template, $_page = null) {
             if($_page) {
-                if(!isset($this->templates['page_forums'])) {
-                    print_r($this->templates);
-                }
                 $tmp = $this->templates['page_' . $_page];
             } else {
                 $tmp = $this->templates;
@@ -231,8 +228,14 @@
                     case 'site':
                         // TODO: Improve the way site variables are handled. Then document them all.
                         switch($template[1]) {
-                            case 'tabTitle':
-                                $_template = $this->replaceVariable($match, $_template, MISC::getTabTitle($_SERVER['SCRIPT_FILENAME']));
+                            case 'siteName':
+                                if(!$this->config instanceof Config) {
+                                    $this->config = new Config;
+                                }
+                                $_template = $this->replaceVariable($match, $_template, MISC::findKey('name', $this->config->config));
+                                break;
+                            case 'pageName':
+                                $_template = $this->replaceVariable($match, $_template, MISC::getPageName($_SERVER['SCRIPT_FILENAME']));
                                 break;
                             case 'topicName':
                                 $C = new Category($this->sql);
@@ -267,11 +270,27 @@
 
                                     $html = '';
 
-                                    foreach($top->threads as $thread) {
-                                        $html .= $Forums->parseForum($this->getTemplate('portal_news'), $thread);
+                                    $amount = ($template[2] ? $template[2] : 3);
+                                    $amount = ($amount > count($top->threads) ? count($top->threads) : $amount);
+
+                                    for($i = 0; $i < $amount; $i++) {
+                                        $html .= $Forums->parseForum($this->getTemplate('portal_news'), $top->threads[$i]);
                                     }
+
                                     $_template = $this->replaceVariable($match, $_template, $html);
                                 }
+                                break;
+                            case 'listMembers':
+                                $U = new User($this->sql);
+                                $P = new Profile($this);
+
+                                $html = '';
+                                foreach($U->getRegisteredUsers() as $user) {
+                                    $usr = $U->getUser($user['id']);
+                                    $html .= $P->parseProfile($this->getTemplate('member_item'), $usr);
+                                }
+
+                                $_template = $this->replaceVariable($match, $_template, $html);
                                 break;
                             case 'recentPosts':
                                 $V = new Various($this->sql);
@@ -279,8 +298,11 @@
 
                                 $html = '';
 
-                                foreach($threads as $thread) {
-                                    $html .= $Forums->parseForum($this->getTemplate('portal_latest_post_list_item', 'portal'), $thread);
+                                $amount = ($template[2] ? $template[2] : 10);
+                                $amount = ($amount > count($threads) ? count($threads) : $amount);
+
+                                for($i = 0; $i < $amount; $i++) {
+                                    $html .= $Forums->parseForum($this->getTemplate('portal_latest_post_list_item', 'portal'), $threads[$i]);
                                 }
 
                                 $_template = $this->replaceVariable($match, $_template, $html);
@@ -439,8 +461,8 @@
                         break;
                     case 'custom':
                         if(class_exists($template[1])) {
-                            eval('$plugin = new ' . $template[1] . '($this);');
-                            eval('$_template = $plugin->customParse($_template);');
+                            $plugin = new $template[1]($this);
+                            $_template = $plugin->customParse($_template);
                         }
                         break;
                 }

@@ -8,6 +8,7 @@
     public $name;
     public $description;
     public $banned;
+    public $admin;
 
     private $S;
 
@@ -42,6 +43,7 @@
         $group->setId($gR['id'])
           ->setDescription($gR['desc'])
           ->setName($gR['title'])
+          ->setAdmin($gR['admin'])
           ->unsetSQL();
 
         $this->lastMessage[] = 'Successfully loaded group.';
@@ -78,6 +80,11 @@
 
     public function setBanned($_banned) {
       $this->banned = $_banned;
+      return $this;
+    }
+
+    public function setAdmin($_admin) {
+      $this->admin = $_admin;
       return $this;
     }
 

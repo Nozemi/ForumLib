@@ -156,7 +156,15 @@
     // Fetch single row from the query.
     public function fetch() {
       if(!is_null($this->statement)) {
-        return $this->statement->fetch();
+          try {
+              return $this->statement->fetch();
+          } catch(PDOException $ex) {
+              if(defined('DEBUG')) {
+                  $this->lastError[] = $ex->getMessage();
+              } else {
+                  $this->lastError[] = 'Something went wrong while trying to fetch data.';
+              }
+          }
       } else {
         $this->lastError[] = 'There is nothing to fetch.';
         return false;
