@@ -10,7 +10,7 @@
     public $topics;
 
     public function __construct(PSQL $SQL) {
-      // Let's check if the $SQL is not a null.
+      // Let's check if the $Database is not a null.
       if(!is_null($SQL)) {
         $this->S = $SQL;
       } else {

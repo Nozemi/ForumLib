@@ -1,5 +1,5 @@
 <?php
-  namespace ForumLib\Utilities;
+  namespace ForumLib\Database;
 
   use \PDO;
   use \PDOException;

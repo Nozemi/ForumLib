@@ -1,7 +1,8 @@
 <?php
   namespace ForumLib\Users;
 
-  use ForumLib\Utilities\PSQL;
+  use ForumLib\Database\PSQL;
+
   use ForumLib\Utilities\MISC;
   use ForumLib\Utilities\Config;
 
@@ -380,7 +381,7 @@
     public function setSQL(PSQL $_SQL) {
         if($_SQL instanceof PSQL) {
             $this->S = $_SQL;
-            $this->lastMessage[] = 'SQL was successfully set.';
+            $this->lastMessage[] = 'Database was successfully set.';
         } else {
             $this->lastError[] = 'Parameter was not provided as an instance of PSQL.';
         }
