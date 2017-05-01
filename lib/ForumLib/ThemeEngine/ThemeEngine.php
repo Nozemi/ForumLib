@@ -8,6 +8,10 @@
 
     use ForumLib\Users\User;
 
+    use ForumLib\Forums\Thread;
+    use ForumLib\Forums\Topic;
+    use ForumLib\Forums\Category;
+
     /**
      * @var  $_SQL PSQL
      * @var  $_Config Config
@@ -29,6 +33,8 @@
 
         protected $lastError; // Array of last error messages
         protected $lastMessage; // Array of last info messages
+
+        abstract protected function customParse($_template);
 
         /**
          * NewThemeEngine constructor.
@@ -55,17 +61,6 @@
             // TODO: Check if theme directory is found.
 
             return true;
-        }
-
-        /**
-         * This method does nothing, until it's overridden by a plugin.
-         *
-         * @param $_template
-         *
-         * @return mixed
-         */
-        protected function customParse($_template) {
-            return $_template;
         }
 
         private function setTemplates() {
@@ -114,9 +109,41 @@
 
                 switch($template[0]) {
                     case 'forum':
+                    case 'forums':
+                        switch($template[1]) {
+                            case 'latestNews':
+                                break;
+                            case 'latestPosts':
+                                break;
+                            default:
+                                $fItem = null;
+
+                                if(isset($_GET['category']) && isset($_GET['topic']) && isset($_GET['thread'])) {
+                                    $Thread = new Thread($this->_SQL);
+                                    $fItem = $Thread->getThread($_GET['threadId']);
+                                }
+
+                                if(isset($_GET['category']) && isset($_GET['topic']) && !isset($_GET['thread'])) {
+                                    $Topic      = new Topic($this->_SQL);
+                                    $Category   = new Category($this->_SQL);
+
+                                    $cat = $Category->getCategory($_GET['category'], false);
+
+                                    $fItem = $Topic->getTopic($_GET['topic'], false, $cat->id);
+                                }
+
+                                if(isset($_GET['category']) && !isset($_GET['topic']) && !isset($_GET['thread'])) {
+                                    $Category   = new Category($this->_SQL);
+                                    $fItem = $Category->getCategory($_GET['category'], false);
+                                }
+
+                                $fParser  = new Forums($this);
+                                $_template = $fParser->parseForum($_template, $fItem);
+                                break;
+                        }
                         break;
                     case 'user':
-                        if($_GET['username']) {
+                        if(isset($_GET['username'])) {
                             $Profile    = new Profile($this);
                             $User       = new User($this->_SQL);
                             $user       = $User->getUser($_GET['user'], false);
@@ -129,15 +156,20 @@
                     case 'theme':
                         switch($template[1]) {
                             case 'name':
+                                $_template = $this->replaceVariable($match, $_template, $this->name);
                                 break;
                             case 'dir':
+                                $_template = $this->replaceVariable($match, $_template, $this->directory);
                                 break;
                             case 'assets':
                             case 'assetsDir':
+                                $_template = $this->replaceVariable($match, $_template, $this->directory . '/_assets/');
                                 break;
+                            case 'imgDir':
                             case 'img':
                             case 'imgs':
                             case 'images':
+                                $_template = $this->replaceVariable($match, $_template, $this->directory . '/_assets/img/');
                                 break;
                         }
                         break;
@@ -145,15 +177,40 @@
                         switch($template[1]) {
                             case 'name':
                             case 'siteName':
+                                if(!$this->_Config instanceof Config) {
+                                    $_template = $this->replaceVariable($match, $_template, MISC::findKey('name', $this->_Config->config));
+                                }
                                 break;
                             case 'desc':
                             case 'description':
+                                if(!$this->_Config instanceof Config) {
+                                    $_template = $this->replaceVariable($match, $_template, MISC::findKey('description', $this->_Config->config));
+                                }
                                 break;
                             case 'rootDir':
                             case 'rootDirectory':
+                                $rootDir = MISC::findFile('themes');
+                                $rootDir = $rootDir . '../';
+
+                                $_template = $this->replaceVariable($match, $_template, $rootDir);
                                 break;
                             case 'currPage':
                             case 'currentPage':
+                                $_template = $this->replaceVariable($match, $_template, MISC::getPageName($_SERVER['SCRIPT_FILENAME']));
+                                break;
+                            case 'members':
+                            case 'membersList':
+                            case 'listMembers':
+                                $U = new User($this->_SQL);
+                                $P = new Profile($this);
+
+                                $html = '';
+                                foreach($U->getRegisteredUsers() as $user) {
+                                    $usr = $U->getUser($user['id']);
+                                    $html .= $P->parseProfile($this->getTemplate('member_item'), $usr);
+                                }
+
+                                $_template = $this->replaceVariable($match, $_template, $html);
                                 break;
                         }
                         break;
