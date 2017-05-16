@@ -1,7 +1,7 @@
 <?php
   namespace ForumLib\Users;
 
-  use ForumLib\Utilities\PSQL;
+  use ForumLib\Database\PSQL;
 
   use ForumLib\Forums\Category;
   use ForumLib\Forums\Topic;

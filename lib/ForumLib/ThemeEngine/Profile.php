@@ -15,7 +15,7 @@
         }
 
         public function parseProfile($_template, User $_user) {
-            $matches = $this->engine->getPlaceholders($_template);
+            $matches = $this->engine->findPlaceholders($_template);
 
             foreach($matches[1] as $match) {
                 $template = explode('::', $match);
@@ -26,6 +26,9 @@
                         break;
                     case 'username':
                         $_template = $this->engine->replaceVariable($match, $_template, $_user->username);
+                        break;
+                    case 'profileUrl':
+                        $_template = $this->engine->replaceVariable($match, $_template, $_user->getURL());
                         break;
                     case 'avatar':
                         $_template = $this->engine->replaceVariable($match, $_template, $_user->avatar);

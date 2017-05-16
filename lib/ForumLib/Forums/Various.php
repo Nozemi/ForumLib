@@ -1,7 +1,7 @@
 <?php
     namespace ForumLib\Forums;
 
-    use ForumLib\Utilities\PSQL;
+    use ForumLib\Database\PSQL;
 
     class Various {
 

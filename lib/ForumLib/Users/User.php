@@ -475,6 +475,14 @@
       return $this;
     }
 
+    public function getURL() {
+        $url = $this->username;
+
+        $url = str_replace(' ', '_', $url);
+
+        return $url;
+    }
+
     public function getLastMessage() {
       return end($this->lastMessage);
     }

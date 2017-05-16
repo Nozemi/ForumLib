@@ -2,7 +2,7 @@
 
     namespace ForumLib\Forums;
 
-    use ForumLib\Utilities\PSQL;
+    use ForumLib\Database\PSQL;
     use ForumLib\Users\User;
 
     class Post extends Base {

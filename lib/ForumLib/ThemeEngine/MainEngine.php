@@ -11,6 +11,7 @@
     use ForumLib\Forums\Thread;
     use ForumLib\Forums\Topic;
     use ForumLib\Forums\Category;
+    use ForumLib\Forums\Various;
 
     /**
      * @var  $_SQL PSQL
@@ -18,15 +19,15 @@
      *
      */
 
-    class ThemeEngine {
+    class MainEngine {
         public $name; // Theme name
         public $directory; // Theme directory
 
         protected $config; // Theme config (theme.json file within the theme folder)
 
         protected $templates; // Templates loaded from the HTML files.
-        protected $varWrapper1;
-        protected $varWrapper2;
+        protected $varWrapperStart;
+        protected $varWrapperEnd;
 
         protected $_SQL; // PSQL object
         protected $_Config; // Config object
@@ -34,7 +35,9 @@
         protected $lastError; // Array of last error messages
         protected $lastMessage; // Array of last info messages
 
-        abstract protected function customParse($_template);
+        protected function customParse($_template) {
+            return $_template;
+        }
 
         /**
          * NewThemeEngine constructor.
@@ -49,7 +52,16 @@
             $this->directory    = MISC::findFile('themes/' . $this->name);
 
             if($this->validateTheme()) {
+                $this->setConfig();
+                $this->setTemplates();
 
+                if($this->config) {
+                    $this->varWrapperStart = MISC::findKey('varWrapper1', $this->config);
+                    $this->varWrapperEnd = MISC::findKey('varWrapper2', $this->config);
+                } else {
+                    $this->varWrapperStart = '{{';
+                    $this->varWrapperEnd = '}}';
+                }
             } else {
                 $this->lastError[] = 'Failed to create object.';
                 return false;
@@ -59,6 +71,10 @@
         private function validateTheme() {
             // TODO: Check if name is specified
             // TODO: Check if theme directory is found.
+            if(!$this->_Config instanceof Config) {
+                $this->lastError[] = 'Config was not successfully provided.';
+                return false;
+            }
 
             return true;
         }
@@ -82,7 +98,7 @@
             $configFile = $this->directory . '/theme.json';
             if(file_exists($configFile)) {
                 $this->lastMessage[] = 'Theme config was successfully loaded.';
-                $this->config = json_decode(file_get_contents($configFile));
+                $this->config = json_decode(file_get_contents($configFile), true);
             } else {
                 $this->lastMessage[] = 'No theme config was present.';
                 $this->config = false;
@@ -91,7 +107,11 @@
             return $this;
         }
 
-        protected function getTemplate($_template, $_page = null) {
+        public function getConfig() {
+            return $this->config;
+        }
+
+        public function getTemplate($_template, $_page = null) {
             $tmp = $this->templates;
 
             if($_page) {
@@ -108,12 +128,42 @@
                 $template = explode('::', $match);
 
                 switch($template[0]) {
+                    case 'structure':
+                        $_template = $this->replaceVariable($match, $_template, $this->getTemplate($template[1]));
+                        break;
                     case 'forum':
                     case 'forums':
+                        $Forums = new Forums($this);
+
                         switch($template[1]) {
                             case 'latestNews':
+                                // TODO: Implement a way to decide between a blogging kind of system, or use a forum topic.
+                                if($this->_Config instanceof Config) {
+                                    $Forums = new Forums($this);
+
+                                    $T = new Topic($this->_SQL);
+                                    $top = $T->getTopic(MISC::findKey('newsForum', $this->_Config->config));
+                                    $top->setThreads();
+                                    $html = '';
+                                    $amount = (isset($template[2]) ? $template[2] : 3);
+                                    $amount = ($amount > count($top->threads) ? count($top->threads) : $amount);
+                                    for($i = 0; $i < $amount; $i++) {
+                                        $html .= $Forums->parseForum($this->getTemplate('portal_news'), $top->threads[$i]);
+                                    }
+                                    $_template = $this->replaceVariable($match, $_template, $html);
+                                }
                                 break;
                             case 'latestPosts':
+                            case 'recentPosts':
+                                $V = new Various($this->_SQL);
+                                $threads = $V->getLatestPosts();
+                                $html = '';
+                                $amount = (isset($template[2]) ? $template[2] : 10);
+                                $amount = ($amount > count($threads) ? count($threads) : $amount);
+                                for($i = 0; $i < $amount; $i++) {
+                                    $html .= $Forums->parseForum($this->getTemplate('portal_latest_post_list_item', 'portal'), $threads[$i]);
+                                }
+                                $_template = $this->replaceVariable($match, $_template, $html);
                                 break;
                             default:
                                 $fItem = null;
@@ -159,7 +209,7 @@
                                 $_template = $this->replaceVariable($match, $_template, $this->name);
                                 break;
                             case 'dir':
-                                $_template = $this->replaceVariable($match, $_template, $this->directory);
+                                $_template = $this->replaceVariable($match, $_template, $this->directory . '/');
                                 break;
                             case 'assets':
                             case 'assetsDir':
@@ -177,8 +227,10 @@
                         switch($template[1]) {
                             case 'name':
                             case 'siteName':
-                                if(!$this->_Config instanceof Config) {
+                                if($this->_Config instanceof Config) {
                                     $_template = $this->replaceVariable($match, $_template, MISC::findKey('name', $this->_Config->config));
+                                } else {
+                                    $_template = $this->replaceVariable($match, $_template, 'Undefined');
                                 }
                                 break;
                             case 'desc':
@@ -212,6 +264,33 @@
 
                                 $_template = $this->replaceVariable($match, $_template, $html);
                                 break;
+                            case 'pageName':
+                                $_template = $this->replaceVariable($match, $_template, MISC::getPageName($_SERVER['SCRIPT_FILENAME']));
+                                break;
+                            case 'userNav':
+                                if(empty($_SESSION)) {
+                                    $html = $this->getTemplate('main_navigation_guest');
+                                } else {
+                                    $html = $this->getTemplate('main_navigation_user');
+                                }
+                                $_template = $this->replaceVariable($match, $_template, $html);
+                                break;
+                            case 'pagination':
+                                $html = '';
+                                $count = 1;
+                                if($_GET['page'] == 'newthread') {
+                                    $_GET['page'] = 'forums';
+                                    $_GET['action'] = 'New Thread';
+                                }
+                                foreach($_GET as $key => $value) {
+                                    if($key != 'threadId') {
+                                        $tmpl = ((count($_GET) > 1 && $count != count($_GET)) ? 'pagination_link' : 'pagination_active');
+                                        $html .= $this->parsePaginationLink($this->getTemplate($tmpl), $key, $value);
+                                        $count++;
+                                    }
+                                }
+                                $_template = $this->replaceVariable($match, $_template, $html);
+                                break;
                         }
                         break;
                     case 'pagination':
@@ -224,6 +303,9 @@
                     case 'custom':
                         if(class_exists($template[1])) {
                             $plugin = new $template[1]($this);
+                            $_template = $plugin->customParse($_template);
+                        } else if(class_exists($template[2])) {
+                            $plugin = new $template[2]($this);
                             $_template = $plugin->customParse($_template);
                         }
                         break;
@@ -239,20 +321,86 @@
          * @return mixed
          */
         protected function findPlaceholders($_template) {
-            if($this->config) {
-                $varWrapperStart = MISC::findKey('varWrapper1', $this->config);
-                $varWrapperEnd = MISC::findKey('varWrapper2', $this->config);
-            } else {
-                $varWrapperStart = '{{';
-                $varWrapperEnd = '}}';
-            }
-
-            preg_match_all('/' . $varWrapperStart . '(.*?)' . $varWrapperEnd . '/', $_template, $matches);
+            preg_match_all('/' . $this->varWrapperStart . '(.*?)' . $this->varWrapperEnd . '/', $_template, $matches);
 
             return $matches;
         }
 
         protected function replaceVariable($_match, $_template, $_replacement) {
-            return str_replace($this->varWrapper1 . $_match . $this->varWrapper2, $_replacement, $_template);
+            return str_replace($this->varWrapperStart . $_match . $this->varWrapperEnd, $_replacement, $_template);
+        }
+
+        // Validate the themes that are loaded.
+        public static function getThemes() {
+            $validThemes = array();
+
+            foreach(glob('themes/*', GLOB_ONLYDIR) as $dir) {
+                $validThemes[] = dirname($dir);
+            }
+
+            return $validThemes;
+        }
+
+        private function parsePaginationLink($_template, $key, $value) {
+            $matches = $this->findPlaceholders($_template);
+
+            $cat = $top = $trd = null;
+
+            if(isset($_GET['category'])) {
+                $C = new Category($this->_SQL);
+                $cat = $C->getCategory($_GET['category'], false);
+            }
+            if(isset($_GET['topic'])) {
+                $T = new Topic($this->_SQL);
+                $top = $T->getTopic($_GET['topic'], false, $cat->id);
+            }
+
+            $Tr = new Thread($this->_SQL);
+
+            if(isset($_GET['thread']) && !isset($_GET['threadId'])) {
+                $trd = $Tr->getThread($_GET['thread'], false, $top->id);
+            } else if(isset($_GET['threadId'])) {
+                $trd = $Tr->getThread($_GET['threadId']);
+            }
+
+            foreach($matches[1] as $match) {
+                $template = explode('::', $match);
+                switch($template[1]) {
+                    case 'linkTitle':
+                        switch($key) {
+                            case 'category':
+                                $_template = $this->replaceVariable($match, $_template, $cat->title);
+                                break;
+                            case 'topic':
+                                $_template = $this->replaceVariable($match, $_template, $top->title);
+                                break;
+                            case 'thread':
+                                $_template = $this->replaceVariable($match, $_template, $trd->title);
+                                break;
+                            default:
+                                $_template = $this->replaceVariable($match, $_template, ucwords($value));
+                                break;
+                        }
+                        break;
+                    case 'linkURL':
+                        switch($key) {
+                            case 'category':
+                                $url = '/forums/' . $cat->getURL();
+                                break;
+                            case 'topic':
+                                $url = '/forums/' . $cat->getURL() . '/' . $top->getURL();
+                                break;
+                            case 'thread':
+                                $url = '/forums/' . $cat->getURL() . '/' . $top->getURL() . '/' . $trd->getURL();
+                                break;
+                            default:
+                                $url = '/' . $value;
+                                break;
+                        }
+                        $_template = $this->replaceVariable($match, $_template, $url);
+                        break;
+                }
+            }
+            return $_template;
         }
     }

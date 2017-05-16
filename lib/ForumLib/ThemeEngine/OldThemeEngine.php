@@ -4,7 +4,7 @@
     use ForumLib\Users\User;
 
     use ForumLib\Utilities\Config;
-    use ForumLib\Utilities\PSQL;
+    use ForumLib\Database\PSQL;
     use ForumLib\Utilities\MISC;
 
     use ForumLib\Forums\Various;
@@ -12,7 +12,7 @@
     use ForumLib\Forums\Topic;
     use ForumLib\Forums\Thread;
 
-    class ThemeEngine {
+    class OldThemeEngine {
         public $name;                   // Theme name
         public $directory;              // Theme directory
         public $templates   = array();  // Theme template files
