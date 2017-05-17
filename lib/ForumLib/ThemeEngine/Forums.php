@@ -11,11 +11,11 @@
     use ForumLib\Users\User;
     use ForumLib\Users\Permissions;
 
-    class Forums extends ThemeEngine {
+    class Forums extends MainEngine {
         protected $engine;
 
-        public function __construct(ThemeEngine $_engine) {
-            if($_engine instanceof ThemeEngine) {
+        public function __construct(MainEngine $_engine) {
+            if($_engine instanceof MainEngine) {
                 $this->engine = $_engine;
             } else {
                 $this->__destruct();
@@ -29,63 +29,32 @@
         public function parseForum($_template, $_fObject) {
             $matches = $this->engine->findPlaceholders($_template);
 
-            foreach($matches[1] as $match) {
-                $template = explode('::', $match);
+            if($_fObject instanceof Category) {
+                $_template = $this->parseCategory($_template, $_fObject);
+            }
 
-                switch($template[0]) {
-                    case 'category':
-                    case 'categoryView':
-                        if($_fObject instanceof Category) {
-                            $_template = $this->parseCategory($_template, $_fObject);
-                        }
-                        break;
-                    case 'topic':
-                    case 'threadList':
-                        if($_fObject instanceof Topic) {
-                            $_fObject->setThreadCount()
-                                ->setPostCount();
+            if($_fObject instanceof Topic) {
+                $_fObject->setThreadCount()
+                    ->setPostCount();
 
-                            $_template = $this->parseTopic($_template, $_fObject);
-                        }
-                        break;
-                    case 'thread':
-                        if($_fObject instanceof Thread) {
-                            $_fObject->setLatestPost();
-                            $_fObject->setPosts();
+                $_template = $this->parseTopic($_template, $_fObject);
+            }
 
-                            $_template = $this->parseThread($_template, $_fObject);
-                        }
-                        break;
-                    case 'threadView':
-                        $C = new Category($this->engine->_SQL);
-                        $cat = $C->getCategory($_GET['category'], false);
+            if($_GET['page'] == 'portal' && $_fObject instanceof Thread) {
+                $P = new Post($this->engine->_SQL);
+                $posts = $P->getPosts($_fObject->id);
+                $_template = $this->parseThread($this->parsePost($_template, $posts[0]), $_fObject);
+            }
 
-                        $T = new Topic($this->engine->_SQL);
-                        $top = $T->getTopic($_GET['topic'], false, $cat->id);
+            if($_fObject instanceof Thread) {
+                $_fObject->setLatestPost();
+                $_fObject->setPosts();
 
-                        $TR = new Thread($this->engine->_SQL);
-                        if(isset($_GET['threadId'])) {
-                            $trd = $TR->getThread($_GET['threadId']);
-                        } else {
-                            $trd = $TR->getThread($_GET['thread'], false, $top->id);
-                        }
-                        $trd->setPosts();
+                $_template = $this->parseThread($_template, $_fObject);
+            }
 
-                        $_template = $this->parseThread($_template, $trd);
-                        break;
-                    case 'post':
-                        if($_fObject instanceof Post) {
-                            $_template = $this->parsePost($_template, $_fObject);
-                        }
-                        break;
-                    case 'news':
-                        if($_fObject instanceof Thread) {
-                            $P = new Post($this->engine->_SQL);
-                            $posts = $P->getPosts($_fObject->id);
-                            $_template = $this->parseThread($this->parsePost($_template, $posts[0]), $_fObject);
-                        }
-                        break;
-                }
+            if($_fObject instanceof Post) {
+                $_template = $this->parsePost($_template, $_fObject);
             }
 
             return $_template;
@@ -193,7 +162,7 @@
                         if(!empty($latest['post']->author->avatar)) {
                             $avatar = ($latest['post']->author->avatar ? $latest['post']->author->avatar : '/' . $this->engine->directory . '/_assets/img/user/avatar.jpg');
                         } else {
-                            $avatar = $this->engine->directory . '/_assets/img/' . $template[2];
+                            $avatar = '/' . $this->engine->directory . '/_assets/img/' . $template[2];
                         }
                         $_template = $this->engine->replaceVariable($match, $_template, $avatar);
                         break;
@@ -350,10 +319,17 @@
 
                 switch($template[1]) {
                     case 'id':
+                    case 'pid':
                         $_template = $this->engine->replaceVariable($match, $_template, $_post->id);
                         break;
                     case 'poster':
                         $_template = $this->engine->replaceVariable($match, $_template, $_post->author->username);
+                        break;
+                    case 'posterStatus':
+                        $U = new User($this->engine->_SQL);
+
+                        $status = ($U->getStatus($_post->author->id) ? 'success' : 'danger');
+                        $_template = $this->engine->replaceVariable($match, $_template, $status);
                         break;
                     case 'posterAvatar':
                         $_template = $this->engine->replaceVariable($match, $_template, $_post->author->avatar);

@@ -4,12 +4,12 @@
     use ForumLib\Users\User;
     use ForumLib\Utilities\MISC;
 
-    class Profile extends ThemeEngine {
+    class Profile extends MainEngine {
 
         private $engine;
 
-        public function __construct(ThemeEngine $_engine) {
-            if($_engine instanceof ThemeEngine) {
+        public function __construct(MainEngine $_engine) {
+            if($_engine instanceof MainEngine) {
                 $this->engine = $_engine;
             }
         }
@@ -26,6 +26,9 @@
                         break;
                     case 'username':
                         $_template = $this->engine->replaceVariable($match, $_template, $_user->username);
+                        break;
+                    case 'email':
+                        $_template = $this->engine->replaceVariable($match, $_template, $_user->email);
                         break;
                     case 'profileUrl':
                         $_template = $this->engine->replaceVariable($match, $_template, $_user->getURL());
@@ -59,7 +62,7 @@
                     case 'latestPosts':
                         $F = new Forums($this->engine);
 
-                        $_user->setSQL($this->engine->sql);
+                        $_user->setSQL($this->engine->_SQL);
                         $posts = $_user->getLatestPosts();
 
                         $html = '';
