@@ -74,6 +74,8 @@
           'date'  => date('Y-m-d H:i:s'),
           'ip'    => $ipadr
         );
+
+        $this->lastIp = $ipadr;
       } else {
         $this->lastError[] = 'Something went wrong with the user.';
         return false;
@@ -150,6 +152,7 @@
             ,`email`
             ,`firstname`
             ,`lastname`
+            ,`group`
           ) VALUES (
              :username
             ,:password
@@ -158,6 +161,7 @@
             ,:email
             ,:firstname
             ,:lastname
+            ,:group
           );
         "));
 
@@ -310,6 +314,126 @@
                 $this->lastError[] = 'Something went wrong while checking username.';
                 return false;
             }
+        }
+    }
+
+    public function sessionController() {
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+            INSERT INTO `{{DBP}}users_session` SET
+               `uid` = :uid
+              ,`lastActive` = :lastActive
+              ,`ipAddress` = :ipAddress
+              ,`created` = :created
+              ,`lastPage` = :lastPage
+              ,`phpSessId` = :phpSessId
+              ,`userAgent` = :userAgent
+            ON DUPLICATE KEY UPDATE
+               `uid` = :uid
+              ,`lastActive` = :lastActive
+              ,`ipAddress` = :ipAddress
+              ,`lastPage` = :lastPage
+              ,`phpSessId` = :phpSessId
+              ,`userAgent` = :userAgent;
+        "));
+
+        if($this->S->executeQuery(array(
+            ':uid'          => ($this->id ? $this->id : 0),
+            ':lastActive'   => date('Y-m-d H:i:s'),
+            ':ipAddress'    => $this->lastIp,
+            ':created'      => date('Y-m-d H:i:s'),
+            ':lastPage'     => 'N/A',
+            ':phpSessId'    => session_id(),
+            ':userAgent'    => $_SERVER['HTTP_USER_AGENT']
+        ))) {
+
+        } else {
+            if(defined('DEBUG')) {
+                $this->lastError[] = $this->S->getLastError();
+                return false;
+            } else {
+                $this->lastError[] = 'Something went wrong while running session controller.';
+                return false;
+            }
+        }
+    }
+
+    public function getStatus($_uid = null) {
+        if(is_null($_uid)) $_uid = $this->id;
+
+        if($_uid == 0) {
+            $this->lastError[] = 'No valid user to get status from.';
+            return false;
+        }
+
+        $status = 0;
+
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+          SELECT
+            *
+          FROM `{{DBP}}users_session`
+          WHERE `uid` = :uid
+          ORDER BY `lastActive` DESC
+          LIMIT 1
+        "));
+
+        if($this->S->executeQuery(array(
+            ':uid' => $_uid
+        ))) {
+            $result = $this->S->fetch();
+
+            if((strtotime($result['lastActive']) + 180) >= time()) {
+                $status = 1;
+            }
+        } else {
+            if(defined('DEBUG')) {
+                $this->lastError[] = $this->S->getLastError();
+                return false;
+            } else {
+                $this->lastError[] = 'Something went wrong while getting current status for user with ID ' . $_uid . '.';
+                return false;
+            }
+        }
+
+        return $status;
+    }
+
+    public function getCurrentPage($_uid = null) {
+
+    }
+
+    public function getOnlineCount() {
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+            SELECT
+                *
+            FROM (
+                SELECT * FROM `{{DBP}}users_session` ORDER BY `lastActive` DESC
+            ) `sessions`
+            GROUP BY `uid`
+        "));
+        if($this->S->executeQuery()) {
+            $sessions = $this->S->fetchAll();
+
+            $guestCount = 0;
+            $onlineUsers = array();
+            foreach($sessions as $session) {
+                if((strtotime($session['lastActive']) + 180) >= time()) {
+                    if($session['uid'] == 0) {
+                        $guestCount++;
+                    } else {
+                        $onlineUsers[] = array(
+                            'lastActive' => $session['lastActive'],
+                            'userId'     => $session['uid']
+                        );
+                    }
+                }
+            }
+
+            return array(
+                'members' => $onlineUsers,
+                'memberCount' => count($onlineUsers),
+                'guestCount' => $guestCount,
+                'total' => (count($onlineUsers) + $guestCount)
+            );
         }
     }
 

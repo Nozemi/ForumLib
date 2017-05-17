@@ -68,7 +68,7 @@
 
         if(isset($_GET['username'])) {
             $U = new User($SQL);
-            $user = $U->getUser($_GET['username'], false);
+            $user = $U->getUser(str_replace('_', ' ', $_GET['username']), false);
 
             if(empty($user->username)) {
                 $page = 'Profile Not Found';
