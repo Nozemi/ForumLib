@@ -25,6 +25,31 @@
       }
     }
 
+    public function getGroups() {
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+            SELECT * FROM `{{DBP}}groups`
+        "));
+
+        if($this->S->executeQuery()) {
+            $gRps = $this->S->fetchAll();
+
+            $groups = array();
+            foreach($gRps as $group) {
+                $gR = new Group($this->S);
+                $groups[] = $gR->getGroup($group['id']);
+            }
+
+            return $groups;
+        } else {
+            if(defined('DEBUG')) {
+                $this->lastError[] = $this->S->getLastError();
+            } else {
+                $this->lastError[] = 'Something went wrong while getting groups.';
+            }
+            return false;
+        }
+    }
+
     public function getGroup($_id) {
       $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
         SELECT * FROM `{{DBP}}groups` WHERE `id` = :id

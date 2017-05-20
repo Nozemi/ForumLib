@@ -67,6 +67,13 @@
                 $template = explode('::', $match);
 
                 switch($template[1]) {
+                    case 'id':
+                    case 'cid':
+                    $_template = $this->engine->replaceVariable($match, $_template, $_category->id);
+                        break;
+                    case 'safeName':
+                        $_template = $this->engine->replaceVariable($match, $_template, str_replace('\'', "\'", $_category->title));
+                        break;
                     case 'header':
                     case 'title':
                         $_template = $this->engine->replaceVariable($match, $_template, $_category->title);
@@ -91,7 +98,7 @@
                             $user = $U->getUser($_SESSION['user']['id']);
 
                             if($user->group->admin) {
-                                $html = $this->engine->getTemplate('admin_categories', 'admin');
+                                $html = $this->parseCategory($this->engine->getTemplate('admin_categories', 'admin'), $_category);
                             }
                         }
 
@@ -363,7 +370,7 @@
 
                             if($_SESSION['user']['id'] == $_post->author->id
                             || $user->group->admin) {
-                                $html = $this->engine->getTemplate('post_view_manage', 'forums');
+                                $html = $this->parsePost($this->engine->getTemplate('post_view_manage', 'forums'), $_post);
                             }
                         }
 

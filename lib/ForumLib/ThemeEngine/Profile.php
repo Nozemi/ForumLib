@@ -2,6 +2,8 @@
     namespace ForumLib\ThemeEngine;
 
     use ForumLib\Users\User;
+    use ForumLib\Users\Group;
+
     use ForumLib\Utilities\MISC;
 
     class Profile extends MainEngine {
@@ -12,6 +14,27 @@
             if($_engine instanceof MainEngine) {
                 $this->engine = $_engine;
             }
+        }
+
+        public function parseGroup($_template, Group $_group) {
+            $matches = $this->engine->findPlaceholders($_template);
+
+            foreach($matches[1] as $match) {
+                $template = explode('::', $match);
+
+                switch($template[1]) {
+                    case 'id':
+                    case 'gid':
+                        $_template = $this->engine->replaceVariable($match, $_template, $_group->id);
+                        break;
+                    case 'name':
+                        $_template = $this->engine->replaceVariable($match, $_template, $_group->name);
+                        break;
+                }
+            }
+
+
+            return $_template;
         }
 
         public function parseProfile($_template, User $_user) {

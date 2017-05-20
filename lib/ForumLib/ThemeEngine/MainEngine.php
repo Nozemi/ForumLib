@@ -7,6 +7,7 @@
     use ForumLib\Utilities\MISC;
 
     use ForumLib\Users\User;
+    use ForumLib\Users\Group;
 
     use ForumLib\Forums\Thread;
     use ForumLib\Forums\Topic;
@@ -173,6 +174,20 @@
 
                                 foreach($cats as $cat) {
                                     $html .= $Forums->parseForum($this->getTemplate('category_view', 'forums'), $cat);
+                                }
+
+                                $_template = $this->replaceVariable($match, $_template, $html);
+                                break;
+                            case 'groupPerms':
+                                $G = new Group($this->_SQL);
+                                $P = new Profile($this);
+
+                                $groups = $G->getGroups();
+
+                                $html = '';
+
+                                foreach($groups as $group) {
+                                    $html .= $P->parseGroup($this->getTemplate('admin_categories_group_perms', 'admin'), $group);
                                 }
 
                                 $_template = $this->replaceVariable($match, $_template, $html);
