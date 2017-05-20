@@ -1,7 +1,7 @@
 <?php
   namespace ForumLib\Forums;
 
-  use ForumLib\Utilities\PSQL;
+  use ForumLib\Database\PSQL;
   use ForumLib\Users\Permissions;
 
   class Category Extends Base {
@@ -10,7 +10,7 @@
     public $topics;
 
     public function __construct(PSQL $SQL) {
-      // Let's check if the $SQL is not a null.
+      // Let's check if the $Database is not a null.
       if(!is_null($SQL)) {
         $this->S = $SQL;
       } else {

@@ -11,11 +11,11 @@
     use ForumLib\Users\User;
     use ForumLib\Users\Permissions;
 
-    class Forums extends ThemeEngine {
+    class Forums extends MainEngine {
         protected $engine;
 
-        public function __construct(ThemeEngine $_engine) {
-            if($_engine instanceof ThemeEngine) {
+        public function __construct(MainEngine $_engine) {
+            if($_engine instanceof MainEngine) {
                 $this->engine = $_engine;
             } else {
                 $this->__destruct();
@@ -27,77 +27,53 @@
         }
 
         public function parseForum($_template, $_fObject) {
-            $matches = $this->engine->getPlaceholders($_template);
+            $matches = $this->engine->findPlaceholders($_template);
 
-            foreach($matches[1] as $match) {
-                $template = explode('::', $match);
+            if($_fObject instanceof Category) {
+                $_template = $this->parseCategory($_template, $_fObject);
+            }
 
-                switch($template[0]) {
-                    case 'category':
-                    case 'categoryView':
-                        if($_fObject instanceof Category) {
-                            $_template = $this->parseCategory($_template, $_fObject);
-                        }
-                        break;
-                    case 'topic':
-                    case 'threadList':
-                        if($_fObject instanceof Topic) {
-                            $_fObject->setThreadCount()
-                                ->setPostCount();
+            if($_fObject instanceof Topic) {
+                $_fObject->setThreadCount()
+                    ->setPostCount();
 
-                            $_template = $this->parseTopic($_template, $_fObject);
-                        }
-                        break;
-                    case 'thread':
-                        if($_fObject instanceof Thread) {
-                            $_fObject->setLatestPost();
-                            $_fObject->setPosts();
+                $_template = $this->parseTopic($_template, $_fObject);
+            }
 
-                            $_template = $this->parseThread($_template, $_fObject);
-                        }
-                        break;
-                    case 'threadView':
-                        $C = new Category($this->engine->sql);
-                        $cat = $C->getCategory($_GET['category'], false);
+            if($_GET['page'] == 'portal' && $_fObject instanceof Thread) {
+                $P = new Post($this->engine->_SQL);
+                $posts = $P->getPosts($_fObject->id);
+                $_template = $this->parseThread($this->parsePost($_template, $posts[0]), $_fObject);
+            }
 
-                        $T = new Topic($this->engine->sql);
-                        $top = $T->getTopic($_GET['topic'], false, $cat->id);
+            if($_fObject instanceof Thread) {
+                $_fObject->setLatestPost();
+                $_fObject->setPosts();
 
-                        $TR = new Thread($this->engine->sql);
-                        if(isset($_GET['threadId'])) {
-                            $trd = $TR->getThread($_GET['threadId']);
-                        } else {
-                            $trd = $TR->getThread($_GET['thread'], false, $top->id);
-                        }
-                        $trd->setPosts();
+                $_template = $this->parseThread($_template, $_fObject);
+            }
 
-                        $_template = $this->parseThread($_template, $trd);
-                        break;
-                    case 'post':
-                        if($_fObject instanceof Post) {
-                            $_template = $this->parsePost($_template, $_fObject);
-                        }
-                        break;
-                    case 'news':
-                        if($_fObject instanceof Thread) {
-                            $P = new Post($this->engine->sql);
-                            $posts = $P->getPosts($_fObject->id);
-                            $_template = $this->parseThread($this->parsePost($_template, $posts[0]), $_fObject);
-                        }
-                        break;
-                }
+            if($_fObject instanceof Post) {
+                $_template = $this->parsePost($_template, $_fObject);
             }
 
             return $_template;
         }
 
         public function parseCategory($_template, Category $_category) {
-            $matches = $this->engine->getPlaceholders($_template);
+            $matches = $this->engine->findPlaceholders($_template);
 
             foreach($matches[1] as $match) {
                 $template = explode('::', $match);
 
                 switch($template[1]) {
+                    case 'id':
+                    case 'cid':
+                    $_template = $this->engine->replaceVariable($match, $_template, $_category->id);
+                        break;
+                    case 'safeName':
+                        $_template = $this->engine->replaceVariable($match, $_template, str_replace('\'', "\'", $_category->title));
+                        break;
                     case 'header':
                     case 'title':
                         $_template = $this->engine->replaceVariable($match, $_template, $_category->title);
@@ -107,7 +83,7 @@
                         break;
                     case 'topics':
                         $html = '';
-                        $T = new Topic($this->engine->sql);
+                        $T = new Topic($this->engine->_SQL);
                         $tops = $T->getTopics($_category->id);
                         foreach($tops as $top) {
                             $html .= $this->parseForum($this->engine->getTemplate('topic_view', 'forums'), $top);
@@ -118,11 +94,11 @@
                         $html = '';
 
                         if(!empty($_SESSION['user'])) {
-                            $U = new User($this->engine->sql);
+                            $U = new User($this->engine->_SQL);
                             $user = $U->getUser($_SESSION['user']['id']);
 
                             if($user->group->admin) {
-                                $html = $this->engine->getTemplate('admin_categories', 'admin');
+                                $html = $this->parseCategory($this->engine->getTemplate('admin_categories', 'admin'), $_category);
                             }
                         }
 
@@ -135,9 +111,9 @@
         }
 
         public function parseTopic($_template, Topic $_topic) {
-            $matches = $this->engine->getPlaceholders($_template);
+            $matches = $this->engine->findPlaceholders($_template);
 
-            $C = new Category($this->engine->sql);
+            $C = new Category($this->engine->_SQL);
             $cat = $C->getCategory($_topic->categoryId);
 
             $latest = $_topic->getLatestPost();
@@ -175,7 +151,7 @@
                         $url = '#';
 
                         if($latest['thread'] instanceof Thread && $cat instanceof Category) {
-                            $T = new Topic($this->engine->sql);
+                            $T = new Topic($this->engine->_SQL);
                             $tpc = $T->getTopic($latest['thread']->id);
 
                             if($tpc instanceof Topic) {
@@ -193,7 +169,7 @@
                         if(!empty($latest['post']->author->avatar)) {
                             $avatar = ($latest['post']->author->avatar ? $latest['post']->author->avatar : '/' . $this->engine->directory . '/_assets/img/user/avatar.jpg');
                         } else {
-                            $avatar = $this->engine->directory . '/_assets/img/' . $template[2];
+                            $avatar = '/' . $this->engine->directory . '/_assets/img/' . $template[2];
                         }
                         $_template = $this->engine->replaceVariable($match, $_template, $avatar);
                         break;
@@ -202,7 +178,7 @@
                         $_template = $this->engine->replaceVariable($match, $_template, $url);
                         break;
                     case 'lastPostDate':
-                        $date = ($latest['post']->post_date ? MISC::parseDate($latest['post']->post_date, $this->engine->config, array('howLongAgo' => true)) : 'No posts...');
+                        $date = ($latest['post']->post_date ? MISC::parseDate($latest['post']->post_date, $this->engine->_Config, array('howLongAgo' => true)) : 'No posts...');
                         $_template = $this->engine->replaceVariable($match, $_template, $date);
                         break;
                     case 'threads':
@@ -235,7 +211,7 @@
                         $html = '';
 
                         if(!empty($_SESSION['user'])) {
-                            $U = new User($this->engine->sql);
+                            $U = new User($this->engine->_SQL);
                             $user = $U->getUser($_SESSION['user']['id']);
 
                             if($user->group->admin) {
@@ -252,7 +228,7 @@
         }
 
         public function parseThread($_template, Thread $_thread) {
-            $matches = $this->engine->getPlaceholders($_template);
+            $matches = $this->engine->findPlaceholders($_template);
 
             foreach($matches[1] as $match) {
                 $template = explode('::', $match);
@@ -295,11 +271,11 @@
                         $_template = $this->engine->replaceVariable($match, $_template, $_thread->author->username);
                         break;
                     case 'lastReplyDate':
-                        $date = MISC::parseDate($_thread->latestPost->post_date, $this->engine->config, array('howLongAgo' => true));
+                        $date = MISC::parseDate($_thread->latestPost->post_date, $this->engine->_Config, array('howLongAgo' => true));
                         $_template = $this->engine->replaceVariable($match, $_template, $date);
                         break;
                     case 'postDate':
-                        $date = MISC::parseDate($_thread->posted, $this->engine->config, array('howLongAgo' => true));
+                        $date = MISC::parseDate($_thread->posted, $this->engine->_Config, array('howLongAgo' => true));
                         $_template = $this->engine->replaceVariable($match, $_template, $date);
                         break;
                     case 'viewCount':
@@ -315,11 +291,11 @@
                         $_template = $this->engine->replaceVariable($match, $_template, $username);
                         break;
                     case 'url':
-                        $T = new Topic($this->engine->sql);
+                        $T = new Topic($this->engine->_SQL);
                         $top = $T->getTopic($_thread->topicId);
 
                         if($top instanceof Topic) {
-                            $C = new Category($this->engine->sql);
+                            $C = new Category($this->engine->_SQL);
                             $cat = $C->getCategory($top->categoryId);
 
                             $_template = $this->engine->replaceVariable($match, $_template,
@@ -327,7 +303,7 @@
                         }
                         break;
                     case 'latestPostDate':
-                        $date = MISC::parseDate($_thread->latestPost->post_date, $this->engine->config, array('howLongAgo' => true));
+                        $date = MISC::parseDate($_thread->latestPost->post_date, $this->engine->_Config, array('howLongAgo' => true));
                         $_template = $this->engine->replaceVariable($match, $_template, $date);
                         break;
                     case 'lastPosterAvatar':
@@ -343,23 +319,30 @@
         }
 
         public function parsePost($_template, Post $_post) {
-            $matches = $this->engine->getPlaceholders($_template);
+            $matches = $this->engine->findPlaceholders($_template);
 
             foreach($matches[1] as $match) {
                 $template = explode('::', $match);
 
                 switch($template[1]) {
                     case 'id':
+                    case 'pid':
                         $_template = $this->engine->replaceVariable($match, $_template, $_post->id);
                         break;
                     case 'poster':
                         $_template = $this->engine->replaceVariable($match, $_template, $_post->author->username);
                         break;
+                    case 'posterStatus':
+                        $U = new User($this->engine->_SQL);
+
+                        $status = ($U->getStatus($_post->author->id) ? 'success' : 'danger');
+                        $_template = $this->engine->replaceVariable($match, $_template, $status);
+                        break;
                     case 'posterAvatar':
                         $_template = $this->engine->replaceVariable($match, $_template, $_post->author->avatar);
                         break;
                     case 'posterMemberSince':
-                        $date = MISC::parseDate($_post->author->regDate, $this->engine->config, array('howLongAgo' => true));
+                        $date = MISC::parseDate($_post->author->regDate, $this->engine->_Config, array('howLongAgo' => true));
                         $_template = $this->engine->replaceVariable($match, $_template, $date);
                         break;
                     case 'content':
@@ -367,11 +350,11 @@
                         $_template = $this->engine->replaceVariable($match, $_template, $content);
                         break;
                     case 'posted':
-                        $date = MISC::parseDate($_post->post_date, $this->engine->config, array('howLongAgo' => true));
+                        $date = MISC::parseDate($_post->post_date, $this->engine->_Config, array('howLongAgo' => true));
                         $_template = $this->engine->replaceVariable($match, $_template, $date);
                         break;
                     case 'threadTitle':
-                        $T = new Thread($this->engine->sql);
+                        $T = new Thread($this->engine->_SQL);
                         $trd = $T->getThread($_post->threadId);
                         $_template = $this->engine->replaceVariable($match, $_template, $trd->title);
                         break;
@@ -382,12 +365,12 @@
                         $html = '';
 
                         if(!empty($_SESSION['user'])) {
-                            $U = new User($this->engine->sql);
+                            $U = new User($this->engine->_SQL);
                             $user = $U->getUser($_SESSION['user']['id']);
 
                             if($_SESSION['user']['id'] == $_post->author->id
                             || $user->group->admin) {
-                                $html = $this->engine->getTemplate('post_view_manage', 'forums');
+                                $html = $this->parsePost($this->engine->getTemplate('post_view_manage', 'forums'), $_post);
                             }
                         }
 

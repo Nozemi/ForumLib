@@ -19,6 +19,7 @@
     },
     "require": {
         "ircmaxell/password-compat": "*",
-        "google/recaptcha": "^1.1"
+        "google/recaptcha": "^1.1",
+        "php": "^7.0"
     }
 }

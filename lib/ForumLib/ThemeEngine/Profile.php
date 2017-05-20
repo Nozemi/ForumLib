@@ -2,20 +2,43 @@
     namespace ForumLib\ThemeEngine;
 
     use ForumLib\Users\User;
+    use ForumLib\Users\Group;
+
     use ForumLib\Utilities\MISC;
 
-    class Profile extends ThemeEngine {
+    class Profile extends MainEngine {
 
         private $engine;
 
-        public function __construct(ThemeEngine $_engine) {
-            if($_engine instanceof ThemeEngine) {
+        public function __construct(MainEngine $_engine) {
+            if($_engine instanceof MainEngine) {
                 $this->engine = $_engine;
             }
         }
 
+        public function parseGroup($_template, Group $_group) {
+            $matches = $this->engine->findPlaceholders($_template);
+
+            foreach($matches[1] as $match) {
+                $template = explode('::', $match);
+
+                switch($template[1]) {
+                    case 'id':
+                    case 'gid':
+                        $_template = $this->engine->replaceVariable($match, $_template, $_group->id);
+                        break;
+                    case 'name':
+                        $_template = $this->engine->replaceVariable($match, $_template, $_group->name);
+                        break;
+                }
+            }
+
+
+            return $_template;
+        }
+
         public function parseProfile($_template, User $_user) {
-            $matches = $this->engine->getPlaceholders($_template);
+            $matches = $this->engine->findPlaceholders($_template);
 
             foreach($matches[1] as $match) {
                 $template = explode('::', $match);
@@ -26,6 +49,12 @@
                         break;
                     case 'username':
                         $_template = $this->engine->replaceVariable($match, $_template, $_user->username);
+                        break;
+                    case 'email':
+                        $_template = $this->engine->replaceVariable($match, $_template, $_user->email);
+                        break;
+                    case 'profileUrl':
+                        $_template = $this->engine->replaceVariable($match, $_template, $_user->getURL());
                         break;
                     case 'avatar':
                         $_template = $this->engine->replaceVariable($match, $_template, $_user->avatar);
@@ -56,7 +85,7 @@
                     case 'latestPosts':
                         $F = new Forums($this->engine);
 
-                        $_user->setSQL($this->engine->sql);
+                        $_user->setSQL($this->engine->_SQL);
                         $posts = $_user->getLatestPosts();
 
                         $html = '';
