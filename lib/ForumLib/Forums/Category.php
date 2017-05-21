@@ -126,13 +126,13 @@
            `title`        = :title
           ,`description`  = :description
           ,`order`        = :order
-        WHERE `cid` = :cid;
+        WHERE `id` = :id;
       "));
       if($this->S->executeQuery(array(
         ':title'        => $this->title,
         ':description'  => $this->description,
         ':order'        => $this->order,
-        ':cid'          => $this->id
+        ':id'          => $this->id
       ))) {
         $this->lastMessage[] = 'Successfully updated the category.';
         return true;

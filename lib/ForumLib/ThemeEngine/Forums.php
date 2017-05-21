@@ -69,10 +69,17 @@
                 switch($template[1]) {
                     case 'id':
                     case 'cid':
-                    $_template = $this->engine->replaceVariable($match, $_template, $_category->id);
+                        $_template = $this->engine->replaceVariable($match, $_template, $_category->id);
+                        break;
+                    case 'safeDesc':
+                    case 'safeDescription':
+                        $_template = $this->engine->replaceVariable($match, $_template, str_replace('\'', "\'", $_category->description));
                         break;
                     case 'safeName':
                         $_template = $this->engine->replaceVariable($match, $_template, str_replace('\'', "\'", $_category->title));
+                        break;
+                    case 'order':
+                        $_template = $this->engine->replaceVariable($match, $_template, $_category->order);
                         break;
                     case 'header':
                     case 'title':
@@ -152,7 +159,7 @@
 
                         if($latest['thread'] instanceof Thread && $cat instanceof Category) {
                             $T = new Topic($this->engine->_SQL);
-                            $tpc = $T->getTopic($latest['thread']->id);
+                            $tpc = $T->getTopic($latest['thread']->topicId);
 
                             if($tpc instanceof Topic) {
                                 $url = '/forums/' . $cat->getURL() . '/' . $tpc->getURL() . '/' . $latest['thread']->getURL();

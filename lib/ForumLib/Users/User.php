@@ -139,6 +139,11 @@
           return false;
       }
 
+      if(!preg_match('/^[^\W_]+$/', $this->username)) {
+          $this->lastError[] = 'Sorry, username may only contain alphanumeric characters. (A-Z,a-z,0-9)';
+          return false;
+      }
+
       if(is_null($this->password) || is_null($this->username)) {
         $this->lastError[] = 'Username and/or password is missing.';
         return false;
