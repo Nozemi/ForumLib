@@ -129,12 +129,17 @@
                 $template = explode('::', $match);
 
                 switch($template[1]) {
+                    case 'id':
+                        $_template = $this->engine->replaceVariable($match, $_template, $_topic->id);
                     case 'header':
                     case 'title':
                         $_template = $this->engine->replaceVariable($match, $_template, $_topic->title);
                         break;
                     case 'description':
                         $_template = $this->engine->replaceVariable($match, $_template, $_topic->description);
+                        break;
+                    case 'order':
+                        $_template = $this->engine->replaceVariable($match, $_template, $_topic->order);
                         break;
                     case 'url':
                         $_template = $this->engine->replaceVariable($match, $_template,
