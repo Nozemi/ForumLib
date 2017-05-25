@@ -30,13 +30,15 @@
           ,`title`        = :title
           ,`description`  = :description
           ,`enabled`      = :enabled
+          ,`order`        = :order
       "));
 
       if($this->S->executeQuery(array(
         ':categoryId'   => $categoryId,
         ':title'        => $this->title,
         ':description'  => $this->description,
-        ':enabled'      => $this->enabled
+        ':enabled'      => $this->enabled,
+        ':order'        => $this->order
       ))) {
         $this->lastMessage[] = 'Successfully created new topic.';
         return true;
@@ -146,6 +148,7 @@
           ,`title`        = :title
           ,`description`  = :description
           ,`enabled`      = :enabled
+          ,`order`        = :order
         WHERE `id` = :id
       "));
 
@@ -154,6 +157,7 @@
         ':title'        => $this->title,
         ':description'  => $this->description,
         ':enabled'      => $this->enabled,
+        ':order'        => $this->order,
         ':id'           => $id
       ))) {
         $this->lastMessage[] = 'Successfully updated topic.';
