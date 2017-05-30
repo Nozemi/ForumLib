@@ -1,40 +1,39 @@
 <?php
     namespace ForumLib\Integration\vB3;
 
-    use ForumLib\Forums\Category;
     use ForumLib\Forums\Topic;
     use ForumLib\Integration\IntegrationBaseTopic;
 
     class vB3Topic extends IntegrationBaseTopic {
-        public function createTopic($categoryId, Category $cat) {
+        public function createTopic($categoryId, Topic $top) {
             // TODO: Implement createTopic() method.
         }
 
-        public function getTopics($categoryId, Category $cat) {
+        public function getTopics($categoryId, Topic $top) {
             // TODO: Implement getTopics() method.
         }
 
-        public function getTopic($id, $byId, $categoryId, Category $cat) {
+        public function getTopic($id, $byId, $categoryId, Topic $top) {
             // TODO: Implement getTopic() method.
         }
 
-        public function updateTopic($categoryId, Category $cat) {
+        public function updateTopic($categoryId, Topic $top) {
             // TODO: Implement updateTopic() method.
         }
 
-        public function deleteTopic($categoryId, Category $cat) {
+        public function deleteTopic($categoryId, Topic $top) {
             // TODO: Implement deleteTopic() method.
         }
 
-        public function getLatestPost($topId, Category $cat) {
+        public function getLatestPost($topId, Topic $top) {
             // TODO: Implement getLatestPost() method.
         }
 
-        public function setThreadCount(Category $cat) {
+        public function setThreadCount(Topic $top) {
             // TODO: Implement setThreadCount() method.
         }
 
-        public function setPostCount(Category $cat) {
+        public function setPostCount(Topic $top) {
             // TODO: Implement setPostCount() method.
         }
 

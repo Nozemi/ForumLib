@@ -8,14 +8,6 @@
     use ForumLib\Integration\IntegrationBaseTopic;
 
     class NozumTopic extends IntegrationBaseTopic {
-        protected $lastMessage;
-        protected $lastError;
-
-        protected $S;
-
-        public function __construct(PSQL $sql) {
-            $this->S = $sql;
-        }
 
         public function createTopic($categoryId, Topic $top) {
             if(is_null($categoryId)) $categoryId = $this->$top;

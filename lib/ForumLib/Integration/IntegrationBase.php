@@ -1,6 +1,8 @@
 <?php
     namespace ForumLib\Integration;
 
+    use ForumLib\Database\PSQL;
+
     abstract class IntegrationBase {
         protected $lastMessage;
         protected $lastError;
