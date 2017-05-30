@@ -7,17 +7,20 @@
   use ForumLib\Forums\Topic;
   use ForumLib\Forums\Thread;
   use ForumLib\Forums\Post;
+  use ForumLib\Integration\Nozum\NozumPermissions;
+  use ForumLib\Integration\vB3\vB3Permissions;
+  use ForumLib\Utilities\Config;
 
   class Permissions {
-    private $id;
-    private $OI; // Object Instance.
+    public $id;
+    public $OI; // Object Instance.
 
     private $S; // PSQL Object Instance.
 
     private $lastError = array();
     private $lastMessage = array();
 
-    private $type; // Helps us decide where to get the permissions from. Whether we're talking about a category, topic or thread.
+    public $type; // Helps us decide where to get the permissions from. Whether we're talking about a category, topic or thread.
 
     private $canRead;   // true/false - Decides whether or not a user can read the category/topic/thread.
     private $canPost;   // true/false - Decides whether or not a user can post in the category/topic/thread.
@@ -35,6 +38,17 @@
       // We'll check if the required parameters are filled.
       if(!is_null($_SQL)) {
         $this->S = $_SQL;
+          $C = new Config;
+          $this->config = $C->config;
+          switch(array_column($this->config, 'integration')[0]) {
+              case 'vB3':
+                  $this->integration = new vB3Permissions($this->S);
+                  break;
+              case 'Nozum':
+              default:
+                  $this->integration = new NozumPermissions($this->S);
+                  break;
+          }
       } else {
         $this->lastError[] = 'Failed to make comment object.';
         return false;
@@ -46,106 +60,11 @@
     }
 
     public function checkPermissions(User $_user, $_object = null) {
-        if(is_null($_object)) $_object = $this->OI;
-        $query = 'No query.';
-
-        if($_object instanceof Category) {
-
-        }
-
-        if($_object instanceof Topic) {
-            $query = "SELECT * FROM `{{DBP}}permissions` WHERE `topicId` = :id AND `groupId` = :gid";
-        }
-
-        if($_object instanceof Thread) {
-
-        }
-
-        if($_object instanceof Post) {
-
-        }
-
-        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', $query));
-        if($this->S->executeQuery(array(':id' => $_object->id, ':gid' => $_user->groupId))) {
-            return $this->S->fetch();
-        } else {
-            return $this->S->getLastError();
-        }
+        return $this->integration->checkPermissions($_user, $_object, $this);
     }
 
     public function getPermissions($_id = null) {
-      if(is_null($this->id) && !is_null($_id)) {
-        $this->id = $_id;
-      } else {
-        $this->lastError[] = 'Something went wrong while getting permissions. [1]';
-        return false;
-      }
-
-      /*
-        We'll need to know where to get the permissions from, wheter it's a category, topic or thread.
-        To do this, we have the method getType() in those three objects, to tell us what the object is.
-      */
-      switch($this->OI->getType()) {
-        case 'ForumLib\Forums\Thread':
-          $this->type = 2;
-          $query = "SELECT * FROM `{{DBP}}permissions` WHERE `threadId` = :id";
-          break;
-        case 'ForumLib\Forums\Topic':
-          $this->type = 1;
-          $query = "SELECT * FROM `{{DBP}}permissions` WHERE `topicId` = :id";
-          break;
-        case 'ForumLib\Forums\Category':
-        default:
-          $this->type = 0;
-          $query = "SELECT * FROM `{{DBP}}permissions` WHERE `categoryId` = :id";
-          break;
-      }
-
-      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', $query));
-      if($this->S->executeQuery(array(
-        ':id' => $this->id
-      ))) {
-        $perms = $this->S->fetchAll(); // Let's get the query results.
-
-        $users = array(); $groups = array();
-
-        for($i = 0; $i < count($perms); $i++) {
-          $P = new permissions($this->S);
-
-          if(is_null($perms['userId'])) {
-            $P->setUserId(null)
-              ->setGroupId($perms[$i]['groupId']);
-          } else {
-            $P->setGroupId(null)
-              ->setUserId($perms[$i]['userId']);
-          }
-
-          $P->setPost($perms[$i]['post'])
-            ->setRead($perms[$i]['read'])
-            ->setMod($perms[$i]['mod'])
-            ->setAdmin($perms[$i]['admin']);
-
-          if(is_null($P->getUserId)) {
-            $groups[] = $P;
-          } else {
-            $users[] = $P;
-          }
-        }
-
-        $this->lastMessage[] = 'Successfully loaded permissions.';
-
-        return array(
-          'users'   => $users,
-          'groups'  => $groups
-        );
-      } else {
-        if(defined('DEBUG')) {
-          $this->lastError[] = $this->S->getLastError();
-        } else {
-          $this->lastError[] = 'Something went wrong while getting permissions. [2]';
-        }
-        return false;
-      }
+        return $this->integration->getPermissions($_id, $this);
     }
 
     public function canRead() {

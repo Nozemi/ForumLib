@@ -2,8 +2,11 @@
   namespace ForumLib\Forums;
 
   use ForumLib\Database\PSQL;
+  use ForumLib\Integration\Nozum\NozumThread;
+  use ForumLib\Integration\vB3\vB3Thread;
   use ForumLib\Users\Permissions;
   use ForumLib\Users\User;
+  use ForumLib\Utilities\Config;
 
   class Thread extends Base {
     public $author;
@@ -17,12 +20,24 @@
     public $latestPost;
 
     public function __construct(PSQL $SQL) {
-      if(!is_null($SQL)) {
+        if(!is_null($SQL)) {
         $this->S = $SQL;
-      } else {
+
+        $C = new Config;
+            $this->config = $C->config;
+            switch(array_column($this->config, 'integration')[0]) {
+                case 'vB3':
+                    $this->integration = new vB3Thread($this->S);
+                    break;
+                case 'Nozum':
+                default:
+                    $this->integration = new NozumThread($this->S);
+                    break;
+            }
+        } else {
         $this->lastError[] = 'Something went wrong while creating the thread object.';
         return false;
-      }
+        }
     }
 
     public function getThreads($topicId = null) {
@@ -218,7 +233,7 @@
         ':lastEdited'   => $this->edited,
         ':sticky'       => $this->sticky,
         ':closed'       => $this->closed,
-        ':id'           => $this->id
+        ':id'           => $id
       ))) {
         $this->lastMessage[] = 'Successfully updated thread.';
         return true;
