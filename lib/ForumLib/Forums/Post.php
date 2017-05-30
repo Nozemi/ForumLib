@@ -2,7 +2,7 @@
 
     namespace ForumLib\Forums;
 
-    use ForumLib\Utilities\PSQL;
+    use ForumLib\Database\PSQL;
     use ForumLib\Users\User;
 
     class Post extends Base {
@@ -178,6 +178,15 @@
 
         public function deletePost($id = null) {
             if(is_null($id)) $id = $this->id;
+
+            $P = new Post($this->S);
+            $post = $P->getPost($id);
+
+            if($post->originalPost) {
+                $T = new Thread($this->S);
+                $thread = $T->getThread($post->threadId);
+                $thread->deleteThread();
+            }
 
             $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
                 DELETE FROM `{{DBP}}posts` WHERE `id` = :id

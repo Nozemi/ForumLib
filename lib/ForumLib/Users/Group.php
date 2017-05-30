@@ -1,7 +1,7 @@
 <?php
   namespace ForumLib\Users;
 
-  use ForumLib\Utilities\PSQL;
+  use ForumLib\Database\PSQL;
 
   class Group {
     public $id;
@@ -23,6 +23,31 @@
         $this->lastError[] = 'Something went wrong while creating the category object.';
         return false;
       }
+    }
+
+    public function getGroups() {
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+            SELECT * FROM `{{DBP}}groups`
+        "));
+
+        if($this->S->executeQuery()) {
+            $gRps = $this->S->fetchAll();
+
+            $groups = array();
+            foreach($gRps as $group) {
+                $gR = new Group($this->S);
+                $groups[] = $gR->getGroup($group['id']);
+            }
+
+            return $groups;
+        } else {
+            if(defined('DEBUG')) {
+                $this->lastError[] = $this->S->getLastError();
+            } else {
+                $this->lastError[] = 'Something went wrong while getting groups.';
+            }
+            return false;
+        }
     }
 
     public function getGroup($_id) {

@@ -1,7 +1,7 @@
 <?php
   namespace ForumLib\Users;
 
-  use ForumLib\Utilities\PSQL;
+  use ForumLib\Database\PSQL;
 
   use ForumLib\Forums\Category;
   use ForumLib\Forums\Topic;
@@ -47,7 +47,6 @@
 
     public function checkPermissions(User $_user, $_object = null) {
         if(is_null($_object)) $_object = $this->OI;
-
         $query = 'No query.';
 
         if($_object instanceof Category) {
@@ -67,12 +66,11 @@
         }
 
         $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', $query));
-        $this->S->executeQuery(array(':id' => $_object->id, ':gid' => $_user->groupId));
-
-        if($this->S->getLastError()) {
+        if($this->S->executeQuery(array(':id' => $_object->id, ':gid' => $_user->groupId))) {
+            return $this->S->fetch();
+        } else {
             return $this->S->getLastError();
         }
-        return $this->S->fetch();
     }
 
     public function getPermissions($_id = null) {

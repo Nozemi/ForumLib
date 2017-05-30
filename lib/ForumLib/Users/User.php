@@ -1,7 +1,8 @@
 <?php
   namespace ForumLib\Users;
 
-  use ForumLib\Utilities\PSQL;
+  use ForumLib\Database\PSQL;
+
   use ForumLib\Utilities\MISC;
   use ForumLib\Utilities\Config;
 
@@ -73,6 +74,8 @@
           'date'  => date('Y-m-d H:i:s'),
           'ip'    => $ipadr
         );
+
+        $this->lastIp = $ipadr;
       } else {
         $this->lastError[] = 'Something went wrong with the user.';
         return false;
@@ -136,6 +139,11 @@
           return false;
       }
 
+      if(!preg_match('/^[^\W_]+$/', $this->username)) {
+          $this->lastError[] = 'Sorry, username may only contain alphanumeric characters. (A-Z,a-z,0-9)';
+          return false;
+      }
+
       if(is_null($this->password) || is_null($this->username)) {
         $this->lastError[] = 'Username and/or password is missing.';
         return false;
@@ -149,6 +157,7 @@
             ,`email`
             ,`firstname`
             ,`lastname`
+            ,`group`
           ) VALUES (
              :username
             ,:password
@@ -157,6 +166,7 @@
             ,:email
             ,:firstname
             ,:lastname
+            ,:group
           );
         "));
 
@@ -312,6 +322,142 @@
         }
     }
 
+    public function sessionController() {
+        $C = new Config;
+        if(array_column($C->config, 'integration')[0] == 'vB3') return false;
+
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+            INSERT INTO `{{DBP}}users_session` SET
+               `uid` = :uid
+              ,`lastActive` = :lastActive
+              ,`ipAddress` = :ipAddress
+              ,`created` = :created
+              ,`lastPage` = :lastPage
+              ,`phpSessId` = :phpSessId
+              ,`userAgent` = :userAgent
+            ON DUPLICATE KEY UPDATE
+               `uid` = :uid
+              ,`lastActive` = :lastActive
+              ,`ipAddress` = :ipAddress
+              ,`lastPage` = :lastPage
+              ,`phpSessId` = :phpSessId
+              ,`userAgent` = :userAgent;
+        "));
+
+        if($this->S->executeQuery(array(
+            ':uid'          => ($this->id ? $this->id : 0),
+            ':lastActive'   => date('Y-m-d H:i:s'),
+            ':ipAddress'    => $this->lastIp,
+            ':created'      => date('Y-m-d H:i:s'),
+            ':lastPage'     => 'N/A',
+            ':phpSessId'    => session_id(),
+            ':userAgent'    => $_SERVER['HTTP_USER_AGENT']
+        ))) {
+
+        } else {
+            if(defined('DEBUG')) {
+                $this->lastError[] = $this->S->getLastError();
+                return false;
+            } else {
+                $this->lastError[] = 'Something went wrong while running session controller.';
+                return false;
+            }
+        }
+    }
+
+    public function getStatus($_uid = null) {
+        $C = new Config;
+        if(array_column($C->config, 'integration')[0] == 'vB3') return false;
+
+        if(is_null($_uid)) $_uid = $this->id;
+
+        if($_uid == 0) {
+            $this->lastError[] = 'No valid user to get status from.';
+            return false;
+        }
+
+        $status = 0;
+
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+          SELECT
+            *
+          FROM `{{DBP}}users_session`
+          WHERE `uid` = :uid
+          ORDER BY `lastActive` DESC
+          LIMIT 1
+        "));
+
+        if($this->S->executeQuery(array(
+            ':uid' => $_uid
+        ))) {
+            $result = $this->S->fetch();
+
+            if((strtotime($result['lastActive']) + 180) >= time()) {
+                $status = 1;
+            }
+        } else {
+            if(defined('DEBUG')) {
+                $this->lastError[] = $this->S->getLastError();
+                return false;
+            } else {
+                $this->lastError[] = 'Something went wrong while getting current status for user with ID ' . $_uid . '.';
+                return false;
+            }
+        }
+
+        return $status;
+    }
+
+    public function getCurrentPage($_uid = null) {
+
+    }
+
+    public function getOnlineCount() {
+        $C = new Config;
+        if(array_column($C->config, 'integration')[0] == 'vB3') {
+            return array(
+                'members' => 0,
+                'memberCount' => 0,
+                'guestCount' => 0,
+                'total' => 0
+            );
+        }
+
+        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+            SELECT
+                *
+            FROM (
+                SELECT * FROM `{{DBP}}users_session` ORDER BY `lastActive` DESC
+            ) `sessions`
+            GROUP BY `uid`
+        "));
+        if($this->S->executeQuery()) {
+            $sessions = $this->S->fetchAll();
+
+            $guestCount = 0;
+            $onlineUsers = array();
+            foreach($sessions as $session) {
+                if((strtotime($session['lastActive']) + 180) >= time()) {
+                    if($session['uid'] == 0) {
+                        $guestCount++;
+                    } else {
+                        $onlineUsers[] = array(
+                            'lastActive' => $session['lastActive'],
+                            'userId'     => $session['uid']
+                        );
+                    }
+                }
+            }
+
+            return array(
+                'members' => $onlineUsers,
+                'memberCount' => count($onlineUsers),
+                'guestCount' => $guestCount,
+                'total' => (count($onlineUsers) + $guestCount)
+            );
+        }
+    }
+
     public function getLatestPosts() {
         if($this->id == null) {
             $this->lastError[] = 'No user was specified. Please specify a user first.';
@@ -380,7 +526,7 @@
     public function setSQL(PSQL $_SQL) {
         if($_SQL instanceof PSQL) {
             $this->S = $_SQL;
-            $this->lastMessage[] = 'SQL was successfully set.';
+            $this->lastMessage[] = 'Database was successfully set.';
         } else {
             $this->lastError[] = 'Parameter was not provided as an instance of PSQL.';
         }
@@ -472,6 +618,14 @@
     public function setUsername($_username) {
       $this->username = $_username;
       return $this;
+    }
+
+    public function getURL() {
+        $url = $this->username;
+
+        $url = str_replace(' ', '_', $url);
+
+        return $url;
     }
 
     public function getLastMessage() {
