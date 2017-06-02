@@ -215,9 +215,9 @@
             "));
 
             if($this->S->executeQuery(array(
-                ':uid'          => ($this->id ? $this->id : 0),
+                ':uid'          => ($user->id ? $user->id : 0),
                 ':lastActive'   => date('Y-m-d H:i:s'),
-                ':ipAddress'    => $this->lastIp,
+                ':ipAddress'    => $user->lastIp,
                 ':created'      => date('Y-m-d H:i:s'),
                 ':lastPage'     => 'N/A',
                 ':phpSessId'    => session_id(),

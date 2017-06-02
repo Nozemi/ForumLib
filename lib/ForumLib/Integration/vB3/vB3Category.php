@@ -1,22 +1,13 @@
 <?php
     namespace ForumLib\Integration\vB3;
 
-    use ForumLib\Database\PSQL;
     use ForumLib\Forums\Category;
     use ForumLib\Integration\IntegrationBaseCategory;
 
     class vB3Category extends IntegrationBaseCategory {
-        protected $lastMessage;
-        protected $lastError;
-
-        protected $S;
-
-        public function __construct(PSQL $sql) {
-            $this->S = $sql;
-        }
 
         public function getCategories() {
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `forum` WHERE `parentid` = -1"));
+            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}forum` WHERE `parentid` = -1"));
 
             if($this->S->executeQuery()) {
                 $this->lastMessage[] = 'Successfully fetched categories.';
@@ -31,13 +22,13 @@
                         ->setTitle($qR[$i]['title'])
                         ->setDescription($qR[$i]['description_clean'])
                         ->setOrder($qR[$i]['displayorder'])
-                        ->setTopics($qR[$i]['id']);
+                        ->setTopics($qR[$i]['forumid']);
                 }
 
                 return $theCategories;
             } else {
                 if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
+                    $this->lastError[] = 'Err:' . $this->S->getLastError();
                 } else {
                     $this->lastError[] = 'Something went wrong while fetching the categories.';
                 }
@@ -50,11 +41,11 @@
 
             if($byId) {
                 $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                  SELECT * FROM `{{DBP}}categories` WHERE `id` = :id;
+                  SELECT * FROM `{{DBP}}forum` WHERE `forumid` = :id AND `parentid` = -1;
                 "));
             } else {
                 $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                  SELECT * FROM `{{DBP}}categories` WHERE MATCH(`title`) AGAINST(:id IN BOOLEAN MODE);
+                  SELECT * FROM `{{DBP}}forum` WHERE MATCH(`title`) AGAINST(:id IN BOOLEAN MODE) AND `parentid` = -1;
                 "));
 
                 $id = str_replace('-', ' +', $id);

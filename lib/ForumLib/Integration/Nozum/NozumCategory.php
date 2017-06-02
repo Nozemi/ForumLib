@@ -1,19 +1,10 @@
 <?php
     namespace ForumLib\Integration\Nozum;
 
-    use ForumLib\Database\PSQL;
     use ForumLib\Forums\Category;
     use ForumLib\Integration\IntegrationBaseCategory;
 
     class NozumCategory extends IntegrationBaseCategory {
-        protected $lastMessage;
-        protected $lastError;
-
-        protected $S;
-
-        public function __construct(PSQL $sql) {
-            $this->S = $sql;
-        }
 
         public function getCategories() {
             $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}categories` ORDER BY `order` ASC"));

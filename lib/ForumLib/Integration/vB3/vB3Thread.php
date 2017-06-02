@@ -8,7 +8,43 @@
     class vB3Thread extends IntegrationBaseThread {
 
         public function getThreads($topicId, Thread $thread) {
-            // TODO: Implement getThreads() method.
+            if(is_null($topicId)) $topicId = $thread->topicId;
+
+            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+                SELECT
+                  *
+                FROM `thread`
+                WHERE `forumid` = :topicId
+                ORDER BY `dateline` DESC
+            "));
+
+            if($this->S->executeQuery(array(
+                ':topicId' => $topicId
+            ))) {
+                $tR = $this->S->fetchAll();
+
+                $threads = array();
+
+                for($i = 0; $i < count($tR); $i++) {
+                    $T = new Thread($this->S);
+                    $T->setId($tR[$i]['threadid'])
+                        ->setTitle($tR[$i]['title'])
+                        ->setAuthor($tR[$i]['postuserid'])
+                        ->setPosted($tR[$i]['dateline'])
+                        ->setTopicId($tR[$i]['forumid']);
+                    $threads[] = $T;
+                }
+
+                $this->lastMessage[] = 'Successfully loaded threads.';
+                return $threads;
+            } else {
+                if(defined('DEBUG')) {
+                    $this->lastError[] = $this->S->getLastError();
+                } else {
+                    $this->lastError[] = 'Something went wrong while getting threads.';
+                }
+                return false;
+            }
         }
 
         public function createThread(Post $post) {

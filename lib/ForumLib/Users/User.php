@@ -148,8 +148,8 @@
     }
 
     public function unsetSQL() {
-      $this->S = null;
-      return $this;
+        $this->S = null;
+        return $this;
     }
 
     public function setSQL(PSQL $_SQL) {
@@ -168,6 +168,8 @@
     }
 
     public function setPostCount($_id = null) {
+        $this->postCount = $this->integration->setPostCount($_id, $this);
+        return $this;
     }
 
     public function setAvatar($_avatar) {
