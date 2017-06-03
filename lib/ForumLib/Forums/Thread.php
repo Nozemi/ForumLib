@@ -2,8 +2,10 @@
   namespace ForumLib\Forums;
 
   use ForumLib\Database\PSQL;
+
   use ForumLib\Integration\Nozum\NozumThread;
   use ForumLib\Integration\vB3\vB3Thread;
+
   use ForumLib\Users\Permissions;
   use ForumLib\Users\User;
   use ForumLib\Utilities\Config;

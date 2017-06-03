@@ -3,8 +3,10 @@
     namespace ForumLib\Forums;
 
     use ForumLib\Database\PSQL;
+
     use ForumLib\Integration\Nozum\NozumPost;
     use ForumLib\Integration\vB3\vB3Post;
+
     use ForumLib\Users\User;
     use ForumLib\Utilities\Config;
 
