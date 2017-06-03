@@ -25,6 +25,7 @@
         public $directory; // Theme directory
 
         protected $config; // Theme config (theme.json file within the theme folder)
+        protected $rootDir;
 
         protected $templates; // Templates loaded from the HTML files.
         protected $varWrapperStart;
@@ -51,6 +52,7 @@
             $this->_Config      = $Config;
             $this->name         = $_name;
             $this->directory    = MISC::findFile('themes/' . $this->name);
+            $this->rootDir      = array_column($Config->config, 'siteRoot')[0];
 
             if($this->validateTheme()) {
                 $this->setConfig();
@@ -145,6 +147,7 @@
                                     $T = new Topic($this->_SQL);
                                     $top = $T->getTopic(MISC::findKey('newsForum', $this->_Config->config));
                                     $top->setThreads();
+
                                     $html = '';
                                     $amount = (isset($template[2]) ? $template[2] : 3);
                                     $amount = ($amount > count($top->threads) ? count($top->threads) : $amount);
@@ -238,17 +241,18 @@
                                 $_template = $this->replaceVariable($match, $_template, $this->name);
                                 break;
                             case 'dir':
-                                $_template = $this->replaceVariable($match, $_template, '/' . $this->directory . '/');
+
+                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? '/' . $this->rootDir : '') . '/' . $this->directory . '/');
                                 break;
                             case 'assets':
                             case 'assetsDir':
-                                $_template = $this->replaceVariable($match, $_template, '/' . $this->directory . '/_assets/');
+                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? '/' . $this->rootDir : '') . '/' . $this->directory . '/_assets/');
                                 break;
                             case 'imgDir':
                             case 'img':
                             case 'imgs':
                             case 'images':
-                                $_template = $this->replaceVariable($match, $_template, '/' . $this->directory . '/_assets/img/');
+                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? '/' . $this->rootDir : '') . '/' . $this->directory . '/_assets/img/');
                                 break;
                         }
                         break;
@@ -403,9 +407,11 @@
                         break;
                     default:
                     case 'custom':
-                        if(class_exists($template[1])) {
-                            $plugin = new $template[1]($this);
-                            $_template = $plugin->customParse($_template);
+                        if(isset($template[1])) {
+                            if (class_exists($template[1])) {
+                                $plugin = new $template[1]($this);
+                                $_template = $plugin->customParse($_template);
+                            }
                         }
                         break;
                 }

@@ -3,13 +3,15 @@
     "description": "Nozemi's Forum Framework",
     "keywords": ["Nozemi","ForumLib","PHP","OOP"],
     "type": "library",
-    "license": "Apache-2.0",
+    "license": "GPL-3.0",
     "homepage": "https://wdnsbn.com/",
     "version": "0.2",
     "authors": [
         {
             "name": "Nozemi",
-            "homepage": "https://github.com/Nozemi"
+            "email": "btmediaa@gmail.com",
+            "homepage": "https://github.com/Nozemi",
+            "role": "Project Leader & Developer"
         }
     ],
     "autoload": {

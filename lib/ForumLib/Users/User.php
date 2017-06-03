@@ -3,6 +3,8 @@
 
   use ForumLib\Database\PSQL;
 
+  use ForumLib\Integration\Nozum\NozumUser;
+  use ForumLib\Integration\vB3\vB3User;
   use ForumLib\Utilities\MISC;
   use ForumLib\Utilities\Config;
 
@@ -44,467 +46,110 @@
     public $location;
     public $postCount;
 
-    private $password;
+    public $password;
+
+    private $integration;
 
     private $S;
     private $lastError = array();
     private $lastMessage = array();
 
     public function __construct(PSQL $SQL, $_uid = null) {
-      // We'll check if the required parameters are filled.
-      if(!is_null($SQL)) {
-        $this->S = $SQL;
+        // We'll check if the required parameters are filled.
+        if(!is_null($SQL)) {
+            $this->S = $SQL;
 
-        // Getting IP address for the user.
-        $ipadr = '0.0.0.0';
+            // Getting IP address for the user.
+            $ipadr = '0.0.0.0';
 
-        if(isset($_SERVER['SERVER_ADDR'])) {
-            $ipadr = $_SERVER['SERVER_ADDR'];
+            if(isset($_SERVER['SERVER_ADDR'])) {
+                $ipadr = $_SERVER['SERVER_ADDR'];
+            }
+
+            if(isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                $ipadr = $_SERVER['HTTP_X_FORWARDED_FOR'];
+            }
+
+            if(isset($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+                $ipadr = $_SERVER['HTTP_CF_CONNECTING_IP'];
+            }
+
+            $this->lastLogin = array(
+                'date'  => date('Y-m-d H:i:s'),
+                'ip'    => $ipadr
+            );
+
+            $this->lastIp = $ipadr;
+
+            $C = new Config;
+            $this->config = $C->config;
+            switch(array_column($this->config, 'integration')[0]) {
+                case 'vB3':
+                    $this->integration = new vB3User($this->S);
+                    break;
+                case 'Nozum':
+                default:
+                    $this->integration = new NozumUser($this->S);
+                    break;
+            }
+        } else {
+            $this->lastError[] = 'Something went wrong with the user.';
+            return false;
         }
-
-        if(isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $ipadr = $_SERVER['HTTP_X_FORWARDED_FOR'];
-        }
-
-        if(isset($_SERVER['HTTP_CF_CONNECTING_IP'])) {
-            $ipadr = $_SERVER['HTTP_CF_CONNECTING_IP'];
-        }
-
-        $this->lastLogin = array(
-          'date'  => date('Y-m-d H:i:s'),
-          'ip'    => $ipadr
-        );
-
-        $this->lastIp = $ipadr;
-      } else {
-        $this->lastError[] = 'Something went wrong with the user.';
-        return false;
-      }
     }
 
     public function login($uname = 0) {
-      /*
-        If $uname is provided in the method as 1, it will use email as username.
-        If $uname is provided in the method as 2, both username and email will be checked for a match.
-        If $uname isn't provided, it'll treat the username as a username.
-      */
-      switch($uname) {
-        case 1:
-          $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}users` WHERE `email` = :username"));
-          break;
-        case 2:
-          break;
-        default:
-          $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}users` WHERE `username` = :username"));
-          break;
-      }
-
-      // Check if the query executes alright, and return an error if it doesn't.
-      if($this->S->executeQuery(array(
-        ':username' => $this->username
-      ))) {
-        $details = $this->S->fetch();
-
-        if(password_verify($this->password, $details['password'])) {
-          $this->lastMessage[] = 'Successfully logged in.';
-          $user = $this->getUser($details['id']);
-
-          $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-            UPDATE `{{DBP}}users` SET `lastip` = :lastip,`lastlogindate` = :lastlogindate WHERE `id` = :id
-          "));
-          $this->S->executeQuery(array(
-              ':lastip' => $this->lastLogin['ip'],
-              ':lastlogindate' => $this->lastLogin['date'],
-              ':id' => $user->id
-          ));
-
-          return $user;
-        } else {
-          $this->lastError[] = 'Incorrect username or password.';
-          return false;
-        }
-      } else {
-        if(defined('DEBUG')) {
-          $this->lastError[] = $this->S->getLastError();
-        } else {
-          $this->lastError[] = 'Something went wrong during login.';
-        }
-        return false;
-      }
+        return $this->integration->login($uname, $this);
     }
 
     public function register() {
-      if($this->usernameExists($this->username)) {
-          $this->lastError[] = 'Username already in use.';
-          return false;
-      }
-
-      if(!preg_match('/^[^\W_]+$/', $this->username)) {
-          $this->lastError[] = 'Sorry, username may only contain alphanumeric characters. (A-Z,a-z,0-9)';
-          return false;
-      }
-
-      if(is_null($this->password) || is_null($this->username)) {
-        $this->lastError[] = 'Username and/or password is missing.';
-        return false;
-      } else {
-        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-          INSERT INTO `{{DBP}}users` (
-             `username`
-            ,`password`
-            ,`regdate`
-            ,`regip`
-            ,`email`
-            ,`firstname`
-            ,`lastname`
-            ,`group`
-          ) VALUES (
-             :username
-            ,:password
-            ,:regdate
-            ,:regip
-            ,:email
-            ,:firstname
-            ,:lastname
-            ,:group
-          );
-        "));
-
-        $C = new Config;
-        // Check if the query executes alright, and return an error if it doesn't.
-        if($this->S->executeQuery(array(
-          ':username'   => $this->username,
-          ':password'   => $this->password,
-          ':regdate'    => date('Y-m-d H:i:s', time()),
-          ':regip'      => $this->lastLogin['ip'],
-          ':email'      => $this->email,
-          ':firstname'  => $this->firstname,
-          ':lastname'   => $this->lastname,
-          ':group'      => ($this->group->id ? $this->group->id : MISC::findKey('defaultGroup', $C->config))
-        ))) {
-          $this->lastMessage[] = 'Account was successfully registered.';
-          return true;
-        } else {
-          if(defined('DEBUG')) {
-            $this->lastError[] = $this->S->getLastError();
-          } else {
-            $this->lastError[] = 'Something went wrong during registration.';
-          }
-          return false;
-        }
-      }
+        return $this->integration->register($this);
     }
 
     // Set the password if the passwords match.
     public function setPassword($p1, $p2 = null, $login = false) {
-      if($p1 == $p2) {
-        // If $p1 and $p2 matches (both passwords provided), it'll hash the password, and store it in the object.
-        $this->password = password_hash($p1, PASSWORD_BCRYPT);
-        return $this;
-      } else if(is_null($p2) && $login == true) {
-        // If password 2 is empty and $login is true, it'll store the clear text password in the object.
-        $this->password = $p1;
-        return $this;
-      } else {
-        $this->lastError[] = 'Passwords doesn\'t match.';
-        return false;
-      }
+        return $this->integration->setPassword($p1, $p2, $login, $this);
     }
 
     public function updateAccount() {
-      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        UPDATE `{{DBP}}users` SET
-           `email`      = :email
-          ,`password`   = :password
-          ,`firstname`  = :firstname
-          ,`lastname`   = :lastname
-          ,`avatar`     = :avatar
-          ,`group`      = :group
-        WHERE `username` = :username;
-      "));
-      if($this->S->executeQuery(array(
-        ':email'      => $this->email,
-        ':password'   => $this->password,
-        ':firstname'  => $this->firstname,
-        ':lastname'   => $this->lastname,
-        ':avatar'     => $this->avatar,
-        ':group'      => $this->group,
-        ':username'   => $this->username
-      ))) {
-        $this->lastMessage[] = 'Account was successfully updated.';
-        return true;
-      } else {
-        $this->lastError[] = $this->S->getLastError();
-        return false;
-      }
+        return $this->integration->updateAccount($this);
     }
 
     public function getUser($_id = null, $byId = true) {
-      if(is_null($_id)) $_id = $this->id;
-
-      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        SELECT
-           `id`
-          ,`username`
-          ,`avatar`
-          ,`group`
-          ,`firstname`
-          ,`lastname`
-          ,`lastlogindate`
-          ,`regdate`
-          ,`lastip`
-          ,`regip`
-          ,`email`
-          ,`about`
-          ,`location`
-        FROM `{{DBP}}users`
-        WHERE `" . ($byId ? 'id' : 'username') . "` = :id
-      "));
-
-      if($this->S->executeQuery(array(
-        ':id' => $_id
-      ))) {
-        $uR = $this->S->fetch();
-        $user = new User($this->S);
-        $user->setId($uR['id'])
-          ->setAvatar($uR['avatar'])
-          ->setGroup($uR['group'])
-          ->setGroupId(($user->group ? $user->group->id : 0))
-          ->setFirstname($uR['firstname'])
-          ->setLastname($uR['lastname'])
-          ->setLastLogin($uR['lastlogindate'])
-          ->setRegDate($uR['regdate'])
-          ->setLastIP($uR['lastip'])
-          ->setRegIP($uR['regip'])
-          ->setEmail($uR['email'])
-          ->setUsername($uR['username'])
-          ->setAbout($uR['about'])
-          ->setLocation($uR['location'])
-          ->setPostCount($uR['id'])
-          ->unsetSQL();
-
-        return $user;
-      } else {
-        if(defined('DEBUG')) {
-          $this->lastError[] = $this->S->getLastError();
-        } else {
-          $this->lastError[] = 'Something went wrong while getting the user.';
-        }
-        return false;
-      }
+        return $this->integration->getUser($_id, $byId, $this);
     }
 
     public function usernameExists($_username = null) {
-        if(!$_username) {
-            $_username = $this->username;
-        }
-
-        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-            SELECT `id`, `username` FROM `{{DBP}}users` WHERE `username` = :username
-        "));
-        if($this->S->executeQuery(array(
-            ':username' => $_username
-        ))) {
-            $usr = $this->S->fetch();
-            if(!empty($usr)) {
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            if(defined('DEBUG')) {
-                $this->lastError[] = $this->S->getLastError();
-                return false;
-            } else {
-                $this->lastError[] = 'Something went wrong while checking username.';
-                return false;
-            }
-        }
+        return $this->integration->usernameExists($_username, $this);
     }
 
     public function sessionController() {
-        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-            INSERT INTO `{{DBP}}users_session` SET
-               `uid` = :uid
-              ,`lastActive` = :lastActive
-              ,`ipAddress` = :ipAddress
-              ,`created` = :created
-              ,`lastPage` = :lastPage
-              ,`phpSessId` = :phpSessId
-              ,`userAgent` = :userAgent
-            ON DUPLICATE KEY UPDATE
-               `uid` = :uid
-              ,`lastActive` = :lastActive
-              ,`ipAddress` = :ipAddress
-              ,`lastPage` = :lastPage
-              ,`phpSessId` = :phpSessId
-              ,`userAgent` = :userAgent;
-        "));
-
-        if($this->S->executeQuery(array(
-            ':uid'          => ($this->id ? $this->id : 0),
-            ':lastActive'   => date('Y-m-d H:i:s'),
-            ':ipAddress'    => $this->lastIp,
-            ':created'      => date('Y-m-d H:i:s'),
-            ':lastPage'     => 'N/A',
-            ':phpSessId'    => session_id(),
-            ':userAgent'    => $_SERVER['HTTP_USER_AGENT']
-        ))) {
-
-        } else {
-            if(defined('DEBUG')) {
-                $this->lastError[] = $this->S->getLastError();
-                return false;
-            } else {
-                $this->lastError[] = 'Something went wrong while running session controller.';
-                return false;
-            }
-        }
+        return $this->integration->sessionController($this);
     }
 
     public function getStatus($_uid = null) {
-        if(is_null($_uid)) $_uid = $this->id;
-
-        if($_uid == 0) {
-            $this->lastError[] = 'No valid user to get status from.';
-            return false;
-        }
-
-        $status = 0;
-
-        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-          SELECT
-            *
-          FROM `{{DBP}}users_session`
-          WHERE `uid` = :uid
-          ORDER BY `lastActive` DESC
-          LIMIT 1
-        "));
-
-        if($this->S->executeQuery(array(
-            ':uid' => $_uid
-        ))) {
-            $result = $this->S->fetch();
-
-            if((strtotime($result['lastActive']) + 180) >= time()) {
-                $status = 1;
-            }
-        } else {
-            if(defined('DEBUG')) {
-                $this->lastError[] = $this->S->getLastError();
-                return false;
-            } else {
-                $this->lastError[] = 'Something went wrong while getting current status for user with ID ' . $_uid . '.';
-                return false;
-            }
-        }
-
-        return $status;
+        return $this->integration->getStatus($_uid, $this);
     }
 
     public function getCurrentPage($_uid = null) {
-
+        return $this->integration->getCurrentPage($_uid, $this);
     }
 
     public function getOnlineCount() {
-        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-            SELECT
-                *
-            FROM (
-                SELECT * FROM `{{DBP}}users_session` ORDER BY `lastActive` DESC
-            ) `sessions`
-            GROUP BY `uid`
-        "));
-        if($this->S->executeQuery()) {
-            $sessions = $this->S->fetchAll();
-
-            $guestCount = 0;
-            $onlineUsers = array();
-            foreach($sessions as $session) {
-                if((strtotime($session['lastActive']) + 180) >= time()) {
-                    if($session['uid'] == 0) {
-                        $guestCount++;
-                    } else {
-                        $onlineUsers[] = array(
-                            'lastActive' => $session['lastActive'],
-                            'userId'     => $session['uid']
-                        );
-                    }
-                }
-            }
-
-            return array(
-                'members' => $onlineUsers,
-                'memberCount' => count($onlineUsers),
-                'guestCount' => $guestCount,
-                'total' => (count($onlineUsers) + $guestCount)
-            );
-        }
+        return $this->integration->getOnlineCount($this);
     }
 
     public function getLatestPosts() {
-        if($this->id == null) {
-            $this->lastError[] = 'No user was specified. Please specify a user first.';
-            return false;
-        }
-
-        if(!$this->S instanceof PSQL) {
-            $this->lastError[] = 'No instance of PSQL was found in the User object instance.';
-            return false;
-        }
-
-        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-            SELECT
-                 `P`.`id` `postId`
-                ,`T`.`id` `threadId`
-            FROM `for1234_posts` `P`
-              INNER JOIN `for1234_threads` `T` ON `T`.`id` = `P`.`threadId`
-            WHERE `P`.`authorId` = :authorId
-            ORDER BY `P`.`postDate` DESC
-        "));
-
-        $this->S->executeQuery(array(':authorId' => $this->id));
-
-        $psts = $this->S->fetchAll();
-
-        $threads = array();
-
-        foreach($psts as $pst) {
-            $P = new Post($this->S);
-            $T = new Thread($this->S);
-
-            $thread = $T->getThread($pst['threadId']);
-            $post = $P->getPost($pst['postId']);
-
-            $threads[] = array(
-              'thread' => $thread,
-                'post' => $post
-            );
-        }
-
-        return $threads;
+        return $this->integration->getLatestPosts($this);
     }
 
     public function getRegisteredUsers() {
-        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-            SELECT
-               `U`.`id`
-              ,`U`.`username`
-              ,`U`.`regdate`
-              ,`U`.`lastlogindate`
-              ,`U`.`group`
-              ,`G`.`title`
-            FROM `{{DBP}}users` `U`
-              INNER JOIN `{{DBP}}groups` `G` ON `G`.`id` = `U`.`group`
-            ORDER BY `username` ASC
-        "));
-        $this->S->executeQuery();
-        return $this->S->fetchAll();
+        return $this->integration->getRegisteredUsers($this);
     }
 
     public function unsetSQL() {
-      $this->S = null;
-      return $this;
+        $this->S = null;
+        return $this;
     }
 
     public function setSQL(PSQL $_SQL) {
@@ -523,18 +168,7 @@
     }
 
     public function setPostCount($_id = null) {
-        if(is_null($_id)) $_id = $this->id;
-
-        $this->postCount = 0;
-
-        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-            SELECT COUNT(`id`) `count` FROM `{{DBP}}posts` WHERE `authorId` = :userId
-        "));
-        $this->S->executeQuery(array(':userId' => $_id));
-
-        $result = $this->S->fetch();
-        $this->postCount = $result['count'];
-
+        $this->postCount = $this->integration->setPostCount($_id, $this);
         return $this;
     }
 
