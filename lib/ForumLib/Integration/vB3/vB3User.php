@@ -51,7 +51,47 @@
         }
 
         public function getUser($id = null, $byId = true, User $user) {
-            // TODO: Implement getUser() method.
+            if(is_null($id)) $id = $user->id;
+
+            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
+                SELECT
+                     `username`
+                    ,`userid`
+                    ,`avatarrevision`
+                    ,`usergroupid`
+                    ,`lastvisit`
+                    ,`joindate`
+                    ,`ipaddress`
+                    ,`email`
+                    ,`ipaddress`
+                FROM `{{DBP}}user`
+                WHERE `" . ($byId ? 'userid' : 'username') . "` = :id
+            "));
+
+            if($this->S->executeQuery(array(
+                ':id' => $id
+            ))) {
+                $uR = $this->S->fetch();
+                $user = new User($this->S);
+                $user->setId($uR['userid'])
+                    ->setAvatar('/customavatars/avatar' . $uR['userid'] . '_' . $uR['avatarrevision'] . '.gif')
+                    ->setGroupId(($user->group ? $user->group->id : 0))
+                    ->setLastLogin($uR['lastvisit'])
+                    ->setRegDate($uR['joindate'])
+                    ->setLastIP($uR['ipaddress'])
+                    ->setEmail($uR['email'])
+                    ->setUsername($uR['username'])
+                    ->unsetSQL();
+
+                return $user;
+            } else {
+                if(defined('DEBUG')) {
+                    $this->lastError[] = $this->S->getLastError();
+                } else {
+                    $this->lastError[] = 'Something went wrong while getting the user.';
+                }
+                return false;
+            }
         }
 
         public function getRegisteredUsers(User $user) {
