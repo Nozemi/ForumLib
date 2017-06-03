@@ -3,7 +3,15 @@
     namespace ForumLib\Forums;
 
     use ForumLib\Database\PSQL;
+<<<<<<< HEAD
+=======
+
+    use ForumLib\Integration\Nozum\NozumPost;
+    use ForumLib\Integration\vB3\vB3Post;
+
+>>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
     use ForumLib\Users\User;
+    use ForumLib\Utilities\Config;
 
     class Post extends Base {
         public $threadId;
@@ -14,169 +22,48 @@
         public $post_last_edit;
         public $originalPost;
 
+        private $integration;
+
         public function __construct(PSQL $SQL) {
             if(!is_null($SQL)) {
                 $this->S = $SQL;
+
+                $C = new Config;
+                $this->config = $C->config;
+                switch(array_column($this->config, 'integration')[0]) {
+                    case 'vB3':
+                        $this->integration = new vB3Post($this->S);
+                        break;
+                    case 'Nozum':
+                    default:
+                        $this->integration = new NozumPost($this->S);
+                        break;
+                }
             } else {
                 $this->lastError[] = 'Something went wrong while creating the post object.';
-
                 return false;
             }
         }
 
         public function createPost() {
-            if(empty($this->post_html) && empty($this->post_text)) {
-                $this->lastError[] = 'Post content can\'t be empty.';
-                return false;
-            }
-
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                INSERT INTO `{{DBP}}posts` (
-                   `post_content_html`
-                  ,`post_content_text`
-                  ,`authorId`
-                  ,`threadId`
-                  ,`postDate`
-                  ,`editDate`
-                ) VALUES (
-                   :post_content_html
-                  ,:post_content_text
-                  ,:authorId
-                  ,:threadId
-                  ,:postDate
-                  ,:editDate
-                );
-            "));
-            if($this->S->executeQuery(array(
-                  ':post_content_html' => $this->post_html,
-                  ':post_content_text' => $this->post_text,
-                  ':authorId'          => $this->author->id,
-                  ':threadId'          => $this->threadId,
-                  ':postDate'          => date('Y-m-d H:i:s'),
-                  ':editDate'          => date('Y-m-d H:i:s')
-              ))
-            ) {
-                $this->lastMessage[] = 'Post successfully created.';
-
-                return true;
-            } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                } else {
-                    $this->lastError[] = 'Something went wrong while submitting post.';
-                }
-
-                return false;
-            }
+            return $this->integration->createPost($this);
         }
 
         // Takes one parameter, which would be the thread ID.
         public function getPosts($threadId = null) {
-            if(is_null($threadId)) $threadId = $this->threadId;
-
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                SELECT * FROM `{{DBP}}posts` WHERE `threadId` = :threadId ORDER BY `postDate` ASC"
-            ));
-
-            if($this->S->executeQuery(array(
-                ':threadId' => $threadId
-            ))) {
-                $this->lastMessage[] = 'Successfully fetched posts.';
-
-                $posts = $this->S->fetchAll();
-                $thePosts = array();
-
-                for($i = 0; $i < count($posts); $i++) {
-                    $thePost = new Post($this->S);
-                    $thePost->setId($posts[$i]['id'])
-                        ->setThreadId($posts[$i]['threadId'])
-                        ->setAuthor($posts[$i]['authorId'])
-                        ->setPostDate($posts[$i]['postDate'])
-                        ->setEditDate($posts[$i]['editDate'])
-                        ->setHTML($posts[$i]['post_content_html'])
-                        ->setText($posts[$i]['post_content_text'])
-                        ->setOriginalPost($posts[$i]['originalPost']);
-
-                    $thePosts[] = $thePost;
-                }
-
-                return $thePosts;
-            } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                } else {
-                    $this->lastError[] = 'Something went wrong while fetching posts.';
-                }
-
-                return false;
-            }
+            return $this->integration->getPosts($threadId, $this);
         }
 
         public function getPost($id = null) {
-            if(is_null($id)) $id = $this->id;
-
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}posts` WHERE `id` = :id"));
-            if($this->S->executeQuery(array(
-                  ':id' => $id
-            ))) {
-                $post = $this->S->fetch();
-
-                $thePost = new Post($this->S);
-                $thePost->setId($post['id'])
-                    ->setThreadId($post['threadId'])
-                    ->setAuthor($post['authorId'])
-                    ->setPostDate($post['postDate'])
-                    ->setEditDate($post['editDate'])
-                    ->setHTML($post['post_content_html'])
-                    ->setText($post['post_content_text'])
-                    ->setOriginalPost($post['originalPost']);
-
-                $this->lastMessage[] = 'Successfully fetched posts.';
-
-                return $thePost;
-            } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                } else {
-                    $this->lastError[] = 'Something went wrong while fetching post.';
-                }
-
-                return false;
-            }
+            return $this->integration->getPost($id, $this);
         }
 
         public function updatePost() {
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                UPDATE `{{DBP}}posts` SET
-                   `post_content_html`  = :post_content_html
-                  ,`post_content_text`  = :post_content_text
-                  ,`authorId`           = :authorId
-                  ,`threadId`           = :threadId
-                  ,`editDate`           = :editDate
-                WHERE `postId` = :postId
-            "));
-            if($this->S->executeQuery(array(
-                  ':post_content_html' => $this->post_html,
-                  ':post_content_text' => $this->post_text,
-                  ':authorId'          => $this->author->id,
-                  ':threadId'          => $this->threadId,
-                  ':editDate'          => date('Y-m-d H:i:s', time())
-            ))) {
-                $this->lastMessage[] = 'Successfully edited post.';
-
-                return true;
-            } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                } else {
-                    $this->lastError[] = 'Something went wrong while updating post.';
-                }
-
-                return false;
-            }
+            return $this->integration->updatePost($this);
         }
 
         public function deletePost($id = null) {
+<<<<<<< HEAD
             if(is_null($id)) $id = $this->id;
 
             $P = new Post($this->S);
@@ -207,6 +94,9 @@
 
                 return false;
             }
+=======
+            return $this->integration->deletePost($id, $this);
+>>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
         }
 
         public function setThreadId($_tid) {

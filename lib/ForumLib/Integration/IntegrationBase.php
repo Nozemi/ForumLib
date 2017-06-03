@@ -1,6 +1,11 @@
 <?php
     namespace ForumLib\Integration;
 
+<<<<<<< HEAD
+=======
+    use ForumLib\Database\PSQL;
+
+>>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
     abstract class IntegrationBase {
         protected $lastMessage;
         protected $lastError;

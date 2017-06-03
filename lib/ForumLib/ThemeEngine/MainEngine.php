@@ -147,6 +147,10 @@
                                     $T = new Topic($this->_SQL);
                                     $top = $T->getTopic(MISC::findKey('newsForum', $this->_Config->config));
                                     $top->setThreads();
+<<<<<<< HEAD
+=======
+
+>>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
                                     $html = '';
                                     $amount = (isset($template[2]) ? $template[2] : 3);
                                     $amount = ($amount > count($top->threads) ? count($top->threads) : $amount);
@@ -406,9 +410,17 @@
                         break;
                     default:
                     case 'custom':
+<<<<<<< HEAD
                         if(class_exists($template[1])) {
                             $plugin = new $template[1]($this);
                             $_template = $plugin->customParse($_template);
+=======
+                        if(isset($template[1])) {
+                            if (class_exists($template[1])) {
+                                $plugin = new $template[1]($this);
+                                $_template = $plugin->customParse($_template);
+                            }
+>>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
                         }
                         break;
                 }

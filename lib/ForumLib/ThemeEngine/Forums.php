@@ -27,6 +27,7 @@
         }
 
         public function parseForum($_template, $_fObject) {
+<<<<<<< HEAD
             $matches = $this->engine->findPlaceholders($_template);
 
             if($_fObject instanceof Category) {
@@ -37,6 +38,16 @@
                 $_fObject->setThreadCount()
                     ->setPostCount();
 
+=======
+            if($_fObject instanceof Category) {
+                $_template = $this->parseCategory($_template, $_fObject);
+            }
+
+            if($_fObject instanceof Topic) {
+                $_fObject->setThreadCount()
+                    ->setPostCount();
+
+>>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
                 $_template = $this->parseTopic($_template, $_fObject);
             }
 
@@ -280,7 +291,9 @@
                         $_template = $this->engine->replaceVariable($match, $_template, $avatar);
                         break;
                     case 'poster':
-                        $_template = $this->engine->replaceVariable($match, $_template, $_thread->author->username);
+                        if($_thread->author instanceof User) {
+                            $_template = $this->engine->replaceVariable($match, $_template, $_thread->author->username);
+                        }
                         break;
                     case 'lastReplyDate':
                         $date = MISC::parseDate($_thread->latestPost->post_date, $this->engine->_Config, array('howLongAgo' => true));
@@ -342,7 +355,15 @@
                         $_template = $this->engine->replaceVariable($match, $_template, $_post->id);
                         break;
                     case 'poster':
-                        $_template = $this->engine->replaceVariable($match, $_template, $_post->author->username);
+                        if($_post->author instanceof User) {
+                            $_template = $this->engine->replaceVariable($match, $_template, $_post->author->username);
+                        }
+                        break;
+                    case 'posterStatus':
+                        $U = new User($this->engine->_SQL);
+
+                        $status = ($U->getStatus($_post->author->id) ? 'success' : 'danger');
+                        $_template = $this->engine->replaceVariable($match, $_template, $status);
                         break;
                     case 'posterStatus':
                         $U = new User($this->engine->_SQL);
@@ -351,7 +372,9 @@
                         $_template = $this->engine->replaceVariable($match, $_template, $status);
                         break;
                     case 'posterAvatar':
-                        $_template = $this->engine->replaceVariable($match, $_template, $_post->author->avatar);
+                        if($_post->author instanceof User) {
+                            $_template = $this->engine->replaceVariable($match, $_template, $_post->author->avatar);
+                        }
                         break;
                     case 'posterMemberSince':
                         $date = MISC::parseDate($_post->author->regDate, $this->engine->_Config, array('howLongAgo' => true));
@@ -371,7 +394,9 @@
                         $_template = $this->engine->replaceVariable($match, $_template, $trd->title);
                         break;
                     case 'posterUrl':
-                        $_template = $this->engine->replaceVariable($match, $_template, '/profile/' . $_post->author->username);
+                        if($_post->author instanceof User) {
+                            $_template = $this->engine->replaceVariable($match, $_template, '/profile/' . $_post->author->username);
+                        }
                         break;
                     case 'manage':
                         $html = '';

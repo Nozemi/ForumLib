@@ -2,6 +2,13 @@
   namespace ForumLib\Users;
 
   use ForumLib\Database\PSQL;
+<<<<<<< HEAD
+=======
+
+  use ForumLib\Integration\Nozum\NozumGroup;
+  use ForumLib\Integration\vB3\vB3Group;
+  use ForumLib\Utilities\Config;
+>>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
 
   class Group {
     public $id;
@@ -12,6 +19,8 @@
 
     private $S;
 
+    private $integration;
+
     private $lastError = array();
     private $lastMessage = array();
 
@@ -19,6 +28,17 @@
       // Let's check if the $SQL is not a null.
       if(!is_null($SQL)) {
         $this->S = $SQL;
+          $C = new Config;
+          $this->config = $C->config;
+          switch(array_column($this->config, 'integration')[0]) {
+              case 'vB3':
+                  $this->integration = new vB3Group($this->S);
+                  break;
+              case 'Nozum':
+              default:
+                  $this->integration = new NozumGroup($this->S);
+                  break;
+          }
       } else {
         $this->lastError[] = 'Something went wrong while creating the category object.';
         return false;
@@ -26,6 +46,7 @@
     }
 
     public function getGroups() {
+<<<<<<< HEAD
         $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
             SELECT * FROM `{{DBP}}groups`
         "));
@@ -48,39 +69,13 @@
             }
             return false;
         }
+=======
+        return $this->integration->getGroups($this);
+>>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
     }
 
     public function getGroup($_id) {
-      $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-        SELECT * FROM `{{DBP}}groups` WHERE `id` = :id
-      "));
-      if($this->S->executeQuery(array(
-        ':id' => $_id
-      ))) {
-        $gR = $this->S->fetch();
-
-        if(empty($gR)) {
-            $this->lastError[] = 'Failed to get group.';
-            return false;
-        }
-
-        $group = new Group($this->S);
-        $group->setId($gR['id'])
-          ->setDescription($gR['desc'])
-          ->setName($gR['title'])
-          ->setAdmin($gR['admin'])
-          ->unsetSQL();
-
-        $this->lastMessage[] = 'Successfully loaded group.';
-        return $group;
-      } else {
-        if(defined('DEBUG')) {
-          $this->lastError[] = $this->S->getLastError();
-        } else {
-          $this->lastError[] = 'Something went wrong while getting group.';
-        }
-        return false;
-      }
+        return $this->integration->getGroup($_id, $this);
     }
 
     public function unsetSQL() {

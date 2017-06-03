@@ -2,10 +2,19 @@
     namespace ForumLib\Forums;
 
     use ForumLib\Database\PSQL;
+<<<<<<< HEAD
+=======
+
+    use ForumLib\Integration\Nozum\NozumVarious;
+    use ForumLib\Integration\vB3\vB3Various;
+    use ForumLib\Utilities\Config;
+>>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
 
     class Various {
 
         private $S;
+
+        private $integration;
 
         private $lastError = array();
         private $lastMessage = array();
@@ -13,6 +22,18 @@
         public function __construct(PSQL $_SQL) {
             if($_SQL instanceof PSQL) {
                 $this->S = $_SQL;
+                $C = new Config;
+                $this->config = $C->config;
+                switch(array_column($this->config, 'integration')[0]) {
+                    case 'vB3':
+                        $this->integration = new vB3Various($this->S);
+                        break;
+                    case 'Nozum':
+                    default:
+                        $this->integration = new NozumVarious($this->S);
+                        break;
+                }
+                $this->lastMessage[] = 'Successfully created an object instance.';
             } else {
                 $this->lastError[] = 'The parameter provided wasn\'t an instance of PSQL.';
                 $this->__destruct();
@@ -24,31 +45,6 @@
         }
 
         public function getLatestPosts() {
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                SELECT 
-                    *
-                FROM (
-                    SELECT
-                         `P`.`id` `postId`
-                        ,`P`.`postDate` `postDate`
-                        ,`T`.`id` `threadId`
-                    FROM `{{DBP}}posts` `P`
-                        INNER JOIN `{{DBP}}threads` `T` ON `T`.`id` = `P`.`threadId`
-                    ORDER BY `P`.`postDate` DESC
-                ) `latestThreads`
-                GROUP BY `threadId`
-                    ORDER BY `postDate` DESC
-            "));
-            $this->S->executeQuery();
-
-            $trds = $this->S->fetchAll();
-
-            $threads = array();
-            foreach($trds as $trd) {
-                $T = new Thread($this->S);
-                $threads[] = $T->getThread($trd['threadId']);
-            }
-
-            return $threads;
+            return $this->integration->getLatestPosts($this);
         }
     }
