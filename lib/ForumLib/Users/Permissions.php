@@ -60,35 +60,7 @@
     }
 
     public function checkPermissions(User $_user, $_object = null) {
-<<<<<<< HEAD
-        if(is_null($_object)) $_object = $this->OI;
-        $query = 'No query.';
-
-        if($_object instanceof Category) {
-
-        }
-
-        if($_object instanceof Topic) {
-            $query = "SELECT * FROM `{{DBP}}permissions` WHERE `topicId` = :id AND `groupId` = :gid";
-        }
-
-        if($_object instanceof Thread) {
-
-        }
-
-        if($_object instanceof Post) {
-
-        }
-
-        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', $query));
-        if($this->S->executeQuery(array(':id' => $_object->id, ':gid' => $_user->groupId))) {
-            return $this->S->fetch();
-        } else {
-            return $this->S->getLastError();
-        }
-=======
         return $this->integration->checkPermissions($_user, $_object, $this);
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
     }
 
     public function getPermissions($_id = null) {

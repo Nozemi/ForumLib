@@ -3,13 +3,10 @@
     namespace ForumLib\Forums;
 
     use ForumLib\Database\PSQL;
-<<<<<<< HEAD
-=======
 
     use ForumLib\Integration\Nozum\NozumPost;
     use ForumLib\Integration\vB3\vB3Post;
 
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
     use ForumLib\Users\User;
     use ForumLib\Utilities\Config;
 
@@ -63,40 +60,7 @@
         }
 
         public function deletePost($id = null) {
-<<<<<<< HEAD
-            if(is_null($id)) $id = $this->id;
-
-            $P = new Post($this->S);
-            $post = $P->getPost($id);
-
-            if($post->originalPost) {
-                $T = new Thread($this->S);
-                $thread = $T->getThread($post->threadId);
-                $thread->deleteThread();
-            }
-
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                DELETE FROM `{{DBP}}posts` WHERE `id` = :id
-            "));
-
-            if($this->S->executeQuery(array(
-                  ':id' => $id
-            ))) {
-                $this->lastMessage[] = 'Successfully deleted post.';
-
-                return true;
-            } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                } else {
-                    $this->lastError[] = 'Something went wrong while deleting post.';
-                }
-
-                return false;
-            }
-=======
             return $this->integration->deletePost($id, $this);
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
         }
 
         public function setThreadId($_tid) {

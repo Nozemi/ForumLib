@@ -8,23 +8,9 @@
     use ForumLib\Integration\IntegrationBaseTopic;
 
     class NozumTopic extends IntegrationBaseTopic {
-<<<<<<< HEAD
-        protected $lastMessage;
-        protected $lastError;
-
-        protected $S;
-
-        public function __construct(PSQL $sql) {
-            $this->S = $sql;
-        }
-
-        public function createTopic($categoryId, Topic $top) {
-            if(is_null($categoryId)) $categoryId = $this->$top;
-=======
 
         public function createTopic($categoryId, Topic $top) {
             if(is_null($categoryId)) $categoryId = $top->categoryId;
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
 
             $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
                 INSERT INTO `{{DBP}}topics` SET
@@ -126,13 +112,8 @@
                     ->setOrder($topic['order'])
                     ->setEnabled($topic['enabled'])
                     ->setCategoryId($topic['categoryId'])
-<<<<<<< HEAD
-                    ->setPermissions($this->id)
-                    ->setThreads($this->id);
-=======
                     ->setPermissions($topic['id'])
                     ->setThreads($topic['id']);
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
 
                 $this->lastMessage[] = 'Successfully fetched topic.';
                 return $T;
@@ -260,11 +241,7 @@
             return $this;
         }
 
-<<<<<<< HEAD
-        public function checkThreadName($_title, $_topic) {
-=======
         public function checkThreadName($_title, Topic $_topic) {
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
             $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
                 SELECT `id` FROM `{{DBP}}threads` WHERE `topicId` = :topicId AND MATCH(`title`) AGAINST(:title IN BOOLEAN MODE)
             "));

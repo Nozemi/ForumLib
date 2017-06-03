@@ -2,13 +2,10 @@
   namespace ForumLib\Forums;
 
   use ForumLib\Database\PSQL;
-<<<<<<< HEAD
-=======
 
   use ForumLib\Integration\Nozum\NozumThread;
   use ForumLib\Integration\vB3\vB3Thread;
 
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
   use ForumLib\Users\Permissions;
   use ForumLib\Users\User;
   use ForumLib\Utilities\Config;

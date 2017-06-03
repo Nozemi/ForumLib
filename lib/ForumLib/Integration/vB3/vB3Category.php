@@ -1,31 +1,13 @@
 <?php
     namespace ForumLib\Integration\vB3;
 
-<<<<<<< HEAD
-    use ForumLib\Database\PSQL;
-=======
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
     use ForumLib\Forums\Category;
     use ForumLib\Integration\IntegrationBaseCategory;
 
     class vB3Category extends IntegrationBaseCategory {
-<<<<<<< HEAD
-        protected $lastMessage;
-        protected $lastError;
-
-        protected $S;
-
-        public function __construct(PSQL $sql) {
-            $this->S = $sql;
-        }
-
-        public function getCategories() {
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `forum` WHERE `parentid` = -1"));
-=======
 
         public function getCategories() {
             $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}forum` WHERE `parentid` = -1"));
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
 
             if($this->S->executeQuery()) {
                 $this->lastMessage[] = 'Successfully fetched categories.';
@@ -40,43 +22,20 @@
                         ->setTitle($qR[$i]['title'])
                         ->setDescription($qR[$i]['description_clean'])
                         ->setOrder($qR[$i]['displayorder'])
-<<<<<<< HEAD
-                        ->setTopics($qR[$i]['id']);
-=======
                         ->setTopics($qR[$i]['forumid']);
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
                 }
 
                 return $theCategories;
             } else {
                 if(defined('DEBUG')) {
-<<<<<<< HEAD
-                    $this->lastError[] = $this->S->getLastError();
-=======
                     $this->lastError[] = 'Err:' . $this->S->getLastError();
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
                 } else {
                     $this->lastError[] = 'Something went wrong while fetching the categories.';
                 }
                 return false;
             }
         }
-
-<<<<<<< HEAD
-        public function getCategory() {
-            // TODO: Implement getCategory() method.
-        }
-
-        public function createCategory() {
-            // TODO: Implement createCategory() method.
-        }
-
-        public function updateCategory() {
-            // TODO: Implement updateCategory() method.
-        }
-
-        public function deleteCategory() {
-=======
+		
         public function getCategory($id, $byId, Category $cat) {
             if(is_null($id)) $id = $cat->id;
 
@@ -127,7 +86,6 @@
         }
 
         public function deleteCategory($id, Category $cat) {
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
             // TODO: Implement deleteCategory() method.
         }
     }

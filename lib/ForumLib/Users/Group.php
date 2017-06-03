@@ -2,13 +2,10 @@
   namespace ForumLib\Users;
 
   use ForumLib\Database\PSQL;
-<<<<<<< HEAD
-=======
 
   use ForumLib\Integration\Nozum\NozumGroup;
   use ForumLib\Integration\vB3\vB3Group;
   use ForumLib\Utilities\Config;
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
 
   class Group {
     public $id;
@@ -46,32 +43,7 @@
     }
 
     public function getGroups() {
-<<<<<<< HEAD
-        $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-            SELECT * FROM `{{DBP}}groups`
-        "));
-
-        if($this->S->executeQuery()) {
-            $gRps = $this->S->fetchAll();
-
-            $groups = array();
-            foreach($gRps as $group) {
-                $gR = new Group($this->S);
-                $groups[] = $gR->getGroup($group['id']);
-            }
-
-            return $groups;
-        } else {
-            if(defined('DEBUG')) {
-                $this->lastError[] = $this->S->getLastError();
-            } else {
-                $this->lastError[] = 'Something went wrong while getting groups.';
-            }
-            return false;
-        }
-=======
         return $this->integration->getGroups($this);
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
     }
 
     public function getGroup($_id) {

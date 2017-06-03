@@ -1,45 +1,14 @@
 <?php
     namespace ForumLib\Integration\vB3;
 
-<<<<<<< HEAD
-    use ForumLib\Forums\Category;
-=======
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
     use ForumLib\Forums\Topic;
     use ForumLib\Integration\IntegrationBaseTopic;
 
     class vB3Topic extends IntegrationBaseTopic {
-<<<<<<< HEAD
-        public function createTopic($categoryId, Category $cat) {
-            // TODO: Implement createTopic() method.
-        }
-
-        public function getTopics($categoryId, Category $cat) {
-            // TODO: Implement getTopics() method.
-        }
-
-        public function getTopic($id, $byId, $categoryId, Category $cat) {
-            // TODO: Implement getTopic() method.
-        }
-
-        public function updateTopic($categoryId, Category $cat) {
-            // TODO: Implement updateTopic() method.
-        }
-
-        public function deleteTopic($categoryId, Category $cat) {
-            // TODO: Implement deleteTopic() method.
-        }
-
-        public function getLatestPost($topId, Category $cat) {
-            // TODO: Implement getLatestPost() method.
-        }
 
         public function setThreadCount(Category $cat) {
             // TODO: Implement setThreadCount() method.
         }
-
-        public function setPostCount(Category $cat) {
-=======
 
         public function createTopic($categoryId, Topic $top) {
             // TODO: Implement createTopic() method.
@@ -112,11 +81,10 @@
         }
 
         public function setPostCount(Topic $top) {
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
             // TODO: Implement setPostCount() method.
         }
 
-        public function checkThreadName($title, Topic $topic) {
+        public function checkThreadName($title, Topic $top) {
             // TODO: Implement checkThreadName() method.
         }
     }

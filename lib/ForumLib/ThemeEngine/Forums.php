@@ -27,9 +27,6 @@
         }
 
         public function parseForum($_template, $_fObject) {
-<<<<<<< HEAD
-            $matches = $this->engine->findPlaceholders($_template);
-
             if($_fObject instanceof Category) {
                 $_template = $this->parseCategory($_template, $_fObject);
             }
@@ -37,17 +34,6 @@
             if($_fObject instanceof Topic) {
                 $_fObject->setThreadCount()
                     ->setPostCount();
-
-=======
-            if($_fObject instanceof Category) {
-                $_template = $this->parseCategory($_template, $_fObject);
-            }
-
-            if($_fObject instanceof Topic) {
-                $_fObject->setThreadCount()
-                    ->setPostCount();
-
->>>>>>> 615a34eea3757a7329b41b8f2d8bd5f54f42e90f
                 $_template = $this->parseTopic($_template, $_fObject);
             }
 
