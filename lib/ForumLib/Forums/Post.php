@@ -2,7 +2,7 @@
 
     namespace ForumLib\Forums;
 
-    use ForumLib\Database\PSQL;
+    use ForumLib\Database\DBUtil;
 
     use ForumLib\Integration\Nozum\NozumPost;
     use ForumLib\Integration\vB3\vB3Post;
@@ -19,14 +19,13 @@
         public $post_last_edit;
         public $originalPost;
 
-        private $integration;
-
-        public function __construct(PSQL $SQL) {
+        public function __construct(DBUtil $SQL) {
             if(!is_null($SQL)) {
                 $this->S = $SQL;
 
                 $C = new Config;
                 $this->config = $C->config;
+
                 switch(array_column($this->config, 'integration')[0]) {
                     case 'vB3':
                         $this->integration = new vB3Post($this->S);
@@ -88,6 +87,17 @@
             return $this;
         }
 
+        public function setLastEdited($_date) {
+            $this->post_last_edit = $_date;
+
+            return $this;
+        }
+
+        /**
+         * @param $_date
+         * @return $this
+         * @deprecated use setLastEdited($_date)
+         */
         public function setEditDate($_date) {
             $this->post_last_edit = $_date;
 

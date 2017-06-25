@@ -1,7 +1,7 @@
 <?php
     namespace ForumLib\Integration\vB3;
 
-    use ForumLib\Database\PSQL;
+    use ForumLib\Database\DBUtil;
     use ForumLib\Forums\Post;
     use ForumLib\Forums\Thread;
     use ForumLib\Integration\IntegrationBaseUser;

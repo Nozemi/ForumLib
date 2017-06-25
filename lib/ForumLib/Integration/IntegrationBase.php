@@ -1,7 +1,7 @@
 <?php
     namespace ForumLib\Integration;
 
-    use ForumLib\Database\PSQL;
+    use ForumLib\Database\DBUtil;
 
     abstract class IntegrationBase {
         protected $lastMessage;
@@ -9,7 +9,7 @@
 
         protected $S;
 
-        public function __construct(PSQL $sql) {
+        public function __construct(DBUtil $sql) {
             $this->S = $sql;
         }
 

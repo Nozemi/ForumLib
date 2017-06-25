@@ -1,7 +1,8 @@
 <?php
     namespace ForumLib\ThemeEngine;
 
-    use ForumLib\Database\PSQL;
+    use ForumLib\Database\DBUtil;
+    use ForumLib\Database\DBUtilQuery;
 
     use ForumLib\Utilities\Config;
     use ForumLib\Utilities\MISC;
@@ -14,8 +15,10 @@
     use ForumLib\Forums\Category;
     use ForumLib\Forums\Various;
 
+    use ForumLib\Plugin\PluginBase;
+
     /**
-     * @var  $_SQL PSQL
+     * @var  $_SQL DBUtil
      * @var  $_Config Config
      *
      */
@@ -44,15 +47,15 @@
         /**
          * NewThemeEngine constructor.
          * @param $_name String - Theme name
-         * @param PSQL|null $SQL
+         * @param DBUtil|null $SQL
          * @param Config|null $Config
          */
-        public function __construct($_name, PSQL $SQL = null, Config $Config = null) {
+        public function __construct($_name, DBUtil $SQL = null, Config $Config = null) {
             $this->_SQL         = $SQL;
             $this->_Config      = $Config;
             $this->name         = $_name;
             $this->directory    = MISC::findFile('themes/' . $this->name);
-            $this->rootDir      = array_column($Config->config, 'siteRoot')[0];
+            $this->rootDir      = array_column($Config->config, 'siteRoot');
 
             if($this->validateTheme()) {
                 $this->setConfig();
@@ -112,6 +115,14 @@
 
         public function getConfig() {
             return $this->config;
+        }
+
+        public function getName() {
+            return $this->name;
+        }
+
+        public function getDBUtil() {
+            return $this->_SQL;
         }
 
         public function getTemplate($_template, $_page = null) {
@@ -389,26 +400,20 @@
                         }
                         break;
                     case 'content':
-                        $this->_SQL->prepareQuery($this->_SQL->replacePrefix('{{DBP}}', "
-                            SELECT
-                                `value`
-                            FROM `{{DBP}}content_strings`
-                            WHERE `key` = :key
-                        "));
-                        if($this->_SQL->executeQuery(array(
-                            ':key' => $template[1]
-                        ))) {
-                            $val = $this->_SQL->fetch();
-                            $_template = $this->replaceVariable($match, $_template, $val['value']);
-                        } else {
-                            $this->lastError[] = 'Something went wrong while running query.';
-                            return false;
-                        }
+                        $contentQuery = new DBUtilQuery;
+                        $contentQuery->setName('contentQuery')
+                            ->setQuery("SELECT `value` FROM `{{PREFIX}}content_strings` WHERE `key` = :key")
+                            ->addParameter(':key', $template[1], \PDO::PARAM_STR);
+                        $this->_SQL->runQuery($contentQuery);
+
+                        $content = $this->_SQL->getResultByName($contentQuery->getName());
+                        $_template = $this->replaceVariable($match, $_template, $content['value']);
                         break;
                     default:
                     case 'custom':
                         if(isset($template[1])) {
                             if (class_exists($template[1])) {
+                                /** @var PluginBase $plugin */
                                 $plugin = new $template[1]($this);
                                 $_template = $plugin->customParse($_template);
                             }

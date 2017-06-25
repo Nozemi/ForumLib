@@ -1,7 +1,7 @@
 <?php
   namespace ForumLib\Forums;
 
-  use ForumLib\Database\PSQL;
+  use ForumLib\Database\DBUtil;
   use ForumLib\Users\Permissions;
   use ForumLib\Utilities\Config;
 
@@ -13,14 +13,15 @@
     public $permissions;
     public $topics;
     public $config;
-    private $integration;
 
-    public function __construct(PSQL $SQL) {
+    public function __construct(DBUtil $SQL) {
       // Let's check if the $Database is not a null.
       if(!is_null($SQL)) {
         $this->S = $SQL;
+
         $C = new Config;
         $this->config = $C->config;
+
         switch(array_column($this->config, 'integration')[0]) {
             case 'vB3':
                 $this->integration = new vB3Category($this->S);
@@ -32,7 +33,6 @@
         }
       } else {
         $this->lastError[] = 'Something went wrong while creating the category object.';
-        return false;
       }
     }
 

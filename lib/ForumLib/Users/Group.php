@@ -1,7 +1,7 @@
 <?php
   namespace ForumLib\Users;
 
-  use ForumLib\Database\PSQL;
+  use ForumLib\Database\DBUtil;
 
   use ForumLib\Integration\Nozum\NozumGroup;
   use ForumLib\Integration\vB3\vB3Group;
@@ -21,7 +21,7 @@
     private $lastError = array();
     private $lastMessage = array();
 
-    public function __construct(PSQL $SQL) {
+    public function __construct(DBUtil $SQL) {
       // Let's check if the $SQL is not a null.
       if(!is_null($SQL)) {
         $this->S = $SQL;
@@ -38,7 +38,6 @@
           }
       } else {
         $this->lastError[] = 'Something went wrong while creating the category object.';
-        return false;
       }
     }
 

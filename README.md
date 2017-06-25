@@ -1,29 +1,25 @@
-# ForumLib
-This is so far a basic core of a framework/library for a forum software.
-The goal is to write a OOP forum software from scratch.
-Why? Because I can, and it's a fun experience. This is under heavily development,
-and is nowhere near completed. Later on I'll add a changelog, but for now,
-the commit history will have to suffice for that purpose.
+# Nozemi's ForumLib
+Nozemi's forum library, as seen in Nozum - my forum software.
+You can either build on this library yourself,
+or choose to continue building on the whole forum software I'm developing.
 
-There's some documentation, but not a lot. If you know PHP,
-feel free to use the code for whatever you wish.
+Currently this library is under heavily development, and it's not recommended
+to relay on it, as lots of stuff is going to change. This is also a way for me
+to expand on my programming knowledge/skills, and knowledge/efficiency with
+tools to assist me in the job.
 
-### Functionality
-As far as functionality goes. I'll probably keep it simplistic and easy to use.
-There're already more advanced alternatives out there, like MyBB or IPB.
+The goal for this project is to create a simplistic, but functional and stable
+forum software that people can use if they want to.
 
+### Features
 - Theme Engine
-  - Theme Plugins (With plugin example)
-  - Loads HTML files, from themes directory
-- Admin Control Panel
-- All the basic forums functionality
-  - Posting
-  - Editing
-  - Deleting
-  - Sticking
-  - Closing
-  - Permissions
-  - Users
-  - Groups
-- Google reCAPTCHA integration for registrations
-- Easy configs loading
+- Language System
+- Plugin Support
+- Basic Forum Functionality
+- Integration with existing solutions
+- Migration from existing solutions
+
+If you wish to read more about the functionality; you should head over the documentation.
+Everything about the project, and it's functionality is explained in details there.
+
+**Note that this README might contain inaccurate information! Due to it being in development.**

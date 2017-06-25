@@ -1,16 +1,12 @@
 <?php
   namespace ForumLib\Users;
 
-  use ForumLib\Database\PSQL;
+  use ForumLib\Database\DBUtil;
 
   use ForumLib\Integration\Nozum\NozumUser;
   use ForumLib\Integration\vB3\vB3User;
-  
-  use ForumLib\Utilities\MISC;
-  use ForumLib\Utilities\Config;
 
-  use ForumLib\Forums\Post;
-  use ForumLib\Forums\Thread;
+  use ForumLib\Utilities\Config;
 
   /*
     The User object requires the PSQL class in order to function.
@@ -55,7 +51,7 @@
     private $lastError = array();
     private $lastMessage = array();
 
-    public function __construct(PSQL $SQL, $_uid = null) {
+    public function __construct(DBUtil $SQL, $_uid = null) {
         // We'll check if the required parameters are filled.
         if(!is_null($SQL)) {
             $this->S = $SQL;
@@ -84,7 +80,7 @@
 
             $C = new Config;
             $this->config = $C->config;
-            switch(array_column($this->config, 'integration')[0]) {
+            switch(array_column($this->config, 'integration')) {
                 case 'vB3':
                     $this->integration = new vB3User($this->S);
                     break;
@@ -95,7 +91,6 @@
             }
         } else {
             $this->lastError[] = 'Something went wrong with the user.';
-            return false;
         }
     }
 
@@ -153,8 +148,8 @@
         return $this;
     }
 
-    public function setSQL(PSQL $_SQL) {
-        if($_SQL instanceof PSQL) {
+    public function setSQL(DBUtil $_SQL) {
+        if($_SQL instanceof DBUtil) {
             $this->S = $_SQL;
             $this->lastMessage[] = 'Database was successfully set.';
         } else {

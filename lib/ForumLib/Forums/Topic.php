@@ -1,7 +1,7 @@
 <?php
     namespace ForumLib\Forums;
 
-    use ForumLib\Database\PSQL;
+    use ForumLib\Database\DBUtil;
     use ForumLib\Users\Permissions;
     use ForumLib\Utilities\Config;
 
@@ -15,15 +15,15 @@
         public $threads;
         public $threadCount;
         public $postCount;
-        private $config;
-        private $integration;
 
-        public function __construct(PSQL $SQL) {
+        public function __construct(DBUtil $SQL) {
             if(!is_null($SQL)) {
                 $this->S = $SQL;
+
                 $C = new Config;
                 $this->config = $C->config;
-                switch(array_column($this->config, 'integration')[0]) {
+
+                switch(array_column($this->config, 'integration')) {
                     case 'vB3':
                         $this->integration = new vB3Topic($this->S);
                         break;

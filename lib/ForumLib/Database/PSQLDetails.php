@@ -1,6 +1,12 @@
 <?php
   namespace ForumLib\Database;
 
+  /**
+   * Class PSQLDetails
+   * @package ForumLib\Database
+   *
+   * @deprecated Use DBUtil class.
+   */
   class PSQLDetails {
     private $dbuser; // Database Username
     private $dbpass; // Database Password
