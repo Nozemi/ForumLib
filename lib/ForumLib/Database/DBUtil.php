@@ -226,7 +226,7 @@
         }
 
         public function getResultByName($name) {
-            return $this->query_results[$name];
+            return end($this->query_results[$name]);
         }
 
         public function getLastInsertId() {

@@ -28,7 +28,7 @@
             $C = new Config;
             $this->config = $C->config;
 
-            switch(array_column($this->config, 'integration')[0]) {
+            switch(array_column($this->config, 'integration')) {
                 case 'vB3':
                     $this->integration = new vB3Thread($this->S);
                     break;
@@ -47,8 +47,8 @@
         return $this->integration->getThreads($topicId, $this);
     }
 
-    public function createThread(Post $post) {
-        return $this->integration->createThread($post);
+    public function createThread(Thread $thread, Post $post) {
+        return $this->integration->createThread($thread, $post);
     }
 
     public function getThread($id = null, $byId = true, $topicId = null) {

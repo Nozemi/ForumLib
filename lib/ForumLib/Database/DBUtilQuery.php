@@ -2,6 +2,7 @@
     namespace ForumLib\Database;
 
     use ForumLib\Utilities\Logger;
+    use \PDO;
 
     class DBUtilQuery {
         protected $name;
@@ -33,7 +34,7 @@
             return $this;
         }
 
-        public function addParameter($name, $value, $type) {
+        public function addParameter($name, $value, $type = PDO::PARAM_STR) {
             $this->parameters[] = array(
                 'name'  => $name,
                 'value' => $value,

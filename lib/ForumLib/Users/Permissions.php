@@ -36,7 +36,7 @@
         $this->S = $_SQL;
           $C = new Config;
           $this->config = $C->config;
-          switch(array_column($this->config, 'integration')[0]) {
+          switch(array_column($this->config, 'integration')) {
               case 'vB3':
                   $this->integration = new vB3Permissions($this->S);
                   break;
