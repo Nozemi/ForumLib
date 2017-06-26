@@ -9,21 +9,13 @@
     use ForumLib\Utilities\MISC;
 
     use ForumLib\Users\User;
-    use ForumLib\Users\Permissions;
 
     class Forums extends MainEngine {
         protected $engine;
 
         public function __construct(MainEngine $_engine) {
-            if($_engine instanceof MainEngine) {
-                $this->engine = $_engine;
-            } else {
-                $this->__destruct();
-            }
-        }
-
-        public function __destruct() {
-            $this->engine = null;
+            parent::__construct($_engine->getName(), $_engine->_SQL, $_engine->_Config);
+            $this->engine = $_engine;
         }
 
         public function parseForum($_template, $_fObject) {
@@ -128,6 +120,7 @@
                 switch($template[1]) {
                     case 'id':
                         $_template = $this->engine->replaceVariable($match, $_template, $_topic->id);
+                        break;
                     case 'header':
                     case 'title':
                         $_template = $this->engine->replaceVariable($match, $_template, $_topic->title);
@@ -144,12 +137,12 @@
                         );
                         break;
                     case 'threadCount':
-                        $count = $_topic->threadCount . ($_topic->threadCount == 1 ? ' Thread' : ' Threads');
+                        $count = $_topic->getThreadCount() . ($_topic->getThreadCount() == 1 ? ' Thread' : ' Threads');
                         $_template = $this->engine->replaceVariable($match, $_template, $count);
                         break;
                     case 'postCount':
-                        $count = max(($_topic->postCount - $_topic->threadCount), 0);
-                        if($template[2] == 'threadCount') { $count += max(($_topic->threadCount), 0); }
+                        $count = max(($_topic->getPostCount() - $_topic->getThreadCount()), 0);
+                        if(isset($template[2]) == 'threadCount') { $count += max(($_topic->threadCount), 0); }
                         $_template = $this->engine->replaceVariable($match, $_template, $count . (($_topic->postCount - $_topic->threadCount) == 1 ? ' Post' : ' Posts'));
                         break;
                     case 'lastThreadTitle':
@@ -176,9 +169,9 @@
                         break;
                     case 'lastPosterAvatar':
                         if(!empty($latest['post']->author->avatar)) {
-                            $avatar = ($latest['post']->author->avatar ? $latest['post']->author->avatar : '/' . $this->engine->directory . '/_assets/img/user/avatar.jpg');
+                            $avatar = ($latest['post']->author->avatar ? $latest['post']->author->avatar : $this->engine->rootDir . $this->engine->directory . '/_assets/img/user/avatar.jpg');
                         } else {
-                            $avatar = '/' . $this->engine->directory . '/_assets/img/' . $template[2];
+                            $avatar = $this->engine->rootDir . $this->engine->directory . '/_assets/img/' . $template[2];
                         }
                         $_template = $this->engine->replaceVariable($match, $_template, $avatar);
                         break;

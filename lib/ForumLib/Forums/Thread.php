@@ -24,11 +24,9 @@
     public function __construct(DBUtil $SQL) {
         if(!is_null($SQL)) {
             $this->S = $SQL;
+            $this->config = new Config;
 
-            $C = new Config;
-            $this->config = $C->config;
-
-            switch(array_column($this->config, 'integration')) {
+            switch($this->config->getConfigValue('integration')) {
                 case 'vB3':
                     $this->integration = new vB3Thread($this->S);
                     break;

@@ -7,7 +7,8 @@
     class DBUtilQuery {
         protected $name;
         protected $query;
-        protected $parameters;
+        protected $parameters = array();
+        protected $multipleRows = true;
 
         protected $db_util;
 
@@ -27,6 +28,15 @@
 
         public function getQuery() {
             return $this->query;
+        }
+
+        public function setMultipleRows($trueFalse = false) {
+            $this->multipleRows = $trueFalse;
+            return $this;
+        }
+
+        public function getMultipleRows() {
+            return $this->multipleRows;
         }
 
         public function setParameters($parameters) {
@@ -60,6 +70,15 @@
                 return false;
             }
 
-            return true;
+            return $this;
+        }
+
+        public function result() {
+            if($this->db_util instanceof DBUtil) {
+                return $this->db_util->getResultByName($this->getName());
+            } else {
+                new Logger('You need to provide the DBUtil class in order to execute the query.', Logger::WARNING, __FILE__, __LINE__);
+                return false;
+            }
         }
     }

@@ -1,80 +1,66 @@
 <?php
     namespace ForumLib\Integration\vB3;
 
+    use ForumLib\Database\DBUtilQuery;
     use ForumLib\Forums\Category;
     use ForumLib\Integration\IntegrationBaseCategory;
+
+    use \PDO;
 
     class vB3Category extends IntegrationBaseCategory {
 
         public function getCategories() {
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}forum` WHERE `parentid` = -1"));
+            $getCategories = new DBUtilQuery;
+            $getCategories->setName('getCategories')
+                ->setMultipleRows(true)
+                ->setQuery("SELECT * FROM `{{DBP}}forum` WHERE `parentid` = -1")
+                ->setDBUtil($this->S)
+                ->execute();
 
-            if($this->S->executeQuery()) {
-                $this->lastMessage[] = 'Successfully fetched categories.';
+            $theCategories = array();
+            $qR = $getCategories->result();
 
-                $theCategories = array();
-                $qR = $this->S->fetchAll();
-
-                for($i = 0; $i < count($qR); $i++) {
-                    $theCategories[$i] = new Category($this->S);
-                    $theCategories[$i]
-                        ->setId($qR[$i]['forumid'])
-                        ->setTitle($qR[$i]['title'])
-                        ->setDescription($qR[$i]['description_clean'])
-                        ->setOrder($qR[$i]['displayorder'])
-                        ->setTopics($qR[$i]['forumid']);
-                }
-
-                return $theCategories;
-            } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = 'Err:' . $this->S->getLastError();
-                } else {
-                    $this->lastError[] = 'Something went wrong while fetching the categories.';
-                }
-                return false;
+            for($i = 0; $i < count($qR); $i++) {
+                $theCategories[$i] = new Category($this->S);
+                $theCategories[$i]
+                    ->setId($qR[$i]['forumid'])
+                    ->setTitle($qR[$i]['title'])
+                    ->setDescription($qR[$i]['description_clean'])
+                    ->setOrder($qR[$i]['displayorder'])
+                    ->setTopics($qR[$i]['forumid']);
             }
+
+            return $theCategories;
         }
 		
         public function getCategory($id, $byId, Category $cat) {
             if(is_null($id)) $id = $cat->id;
 
+            $getCategory = new DBUtilQuery;
+            $getCategory->setName('getCategory')
+                ->setMultipleRows(false)
+                ->setDBUtil($this->S);
+
             if($byId) {
-                $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                  SELECT * FROM `{{DBP}}forum` WHERE `forumid` = :id AND `parentid` = -1;
-                "));
+                $getCategory->setQuery("SELECT * FROM `{{DBP}}forum` WHERE `forumid` = :id AND `parentid` = -1;");
+                $getCategory->addParameter(':id', $id, PDO::PARAM_INT);
             } else {
-                $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                  SELECT * FROM `{{DBP}}forum` WHERE MATCH(`title`) AGAINST(:id IN BOOLEAN MODE) AND `parentid` = -1;
-                "));
-
                 $id = str_replace('-', ' +', $id);
+
+                $getCategory->setQuery("SELECT * FROM `{{DBP}}forum` WHERE MATCH(`title`) AGAINST(:id IN BOOLEAN MODE) AND `parentid` = -1;");
+                $getCategory->addParameter(':id', $id, PDO::PARAM_STR);
             }
 
-            if($this->S->executeQuery(array(
-                ':id' => $id
-            ))) {
-                $this->lastMessage[] = 'The category was successfully loaded.';
+            $tmpCat = $getCategory->result(); // Let's get the query result.
 
-                $rcat = $this->S->fetch(); // Let's get the query result.
+            $theCategory = new Category($this->S);
+            $theCategory->setId($tmpCat['id'])
+                ->setTitle($tmpCat['title'])
+                ->setDescription($tmpCat['description'])
+                ->setOrder($tmpCat['order'])
+                ->setEnabled($tmpCat['enabled']);
 
-                $theCategory = new Category($this->S);
-                $theCategory
-                    ->setId($rcat['id'])
-                    ->setTitle($rcat['title'])
-                    ->setDescription($rcat['description'])
-                    ->setOrder($rcat['order'])
-                    ->setEnabled($rcat['enabled']);
-
-                return $theCategory;
-            } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                } else {
-                    $this->lastError[] = 'Failed to get category.';
-                }
-                return false;
-            }
+            return $theCategory;
         }
 
         public function createCategory(Category $cat) {

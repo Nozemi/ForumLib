@@ -38,7 +38,8 @@
             if(is_null($id)) $id = $cat->id;
 
             $getCategory = new DBUtilQuery;
-            $getCategory->setName('getCategory');
+            $getCategory->setName('getCategory')
+                ->setMultipleRows(false);
 
             if($byId) {
                 $getCategory->setQuery("SELECT * FROM `{{DBP}}categories` WHERE `id` = :id;");

@@ -4,6 +4,9 @@
     use ForumLib\Forums\Topic;
 
     abstract class IntegrationBaseTopic extends IntegrationBase {
+        protected $threadCount;
+        protected $postCount;
+
         abstract public function createTopic($categoryId, Topic $top);
         abstract public function getTopics($categoryId, Topic $top);
         abstract public function getTopic($id, $byId, $categoryId, Topic $top);

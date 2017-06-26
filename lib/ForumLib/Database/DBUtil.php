@@ -187,29 +187,25 @@
                     undo_magic_quotes_gpc($query['parameters']);
                 }
 
-                foreach ($query->getParameters() as $parameter) {
-                    $statement->bindParam($parameter['name'], $parameter['value'], (isset($parameter['type']) ? $parameter['type'] : \PDO::PARAM_STR));
+                if(is_array($query->getParameters())) {
+                    foreach ($query->getParameters() as $parameter) {
+                        $statement->bindParam($parameter['name'], $parameter['value'], (isset($parameter['type']) ? $parameter['type'] : \PDO::PARAM_STR));
+                    }
                 }
 
                 $statement->execute();
 
-                if($statement->rowCount() > 1) {
-                    if($query->getName() === null) {
-                        $this->query_results[] = $statement->fetch();
-                    } else {
-                        $this->query_results[$query->getName()] = $statement->fetch();
-                    }
-                } else if($statement->rowCount() == 1) {
-                    if($query->getName() === null) {
+                if($query->getName() === null) {
+                    if($query->getMultipleRows()) {
                         $this->query_results[] = $statement->fetchAll();
                     } else {
-                        $this->query_results[$query->getName()] = $statement->fetchAll();
+                        $this->query_results[] = $statement->fetch();
                     }
                 } else {
-                    if($query->getName() === null) {
-                        $this->query_results[] = 'Query ran successfully, but nothing was returned.';
+                    if($query->getMultipleRows()) {
+                        $this->query_results[$query->getName()] = $statement->fetchAll();
                     } else {
-                        $this->query_results[$query->getName()] = 'Query ran successfully, but nothing was returned.';
+                        $this->query_results[$query->getName()] = $statement->fetch();
                     }
                 }
 
@@ -226,7 +222,7 @@
         }
 
         public function getResultByName($name) {
-            return end($this->query_results[$name]);
+            return $this->query_results[$name];
         }
 
         public function getLastInsertId() {

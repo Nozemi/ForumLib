@@ -19,11 +19,9 @@
         public function __construct(DBUtil $SQL) {
             if(!is_null($SQL)) {
                 $this->S = $SQL;
+                $this->config = new Config;
 
-                $C = new Config;
-                $this->config = $C->config;
-
-                switch(array_column($this->config, 'integration')) {
+                switch($this->config->getConfigValue('integration')) {
                     case 'vB3':
                         $this->integration = new vB3Topic($this->S);
                         break;
@@ -63,11 +61,21 @@
         }
 
         public function setThreadCount() {
-            return $this->integration->setThreadCount($this);
+            $this->threadCount = $this->integration->setThreadCount($this);
+            return $this;
+        }
+
+        public function getThreadCount() {
+            return $this->threadCount;
         }
 
         public function setPostCount() {
-            return $this->integration->setPostCount($this);
+            $this->postCount = $this->integration->setPostCount($this);
+            return $this;
+        }
+
+        public function getPostCount() {
+            return $this->postCount;
         }
 
         public function checkThreadName($_title, Topic $_topic) {

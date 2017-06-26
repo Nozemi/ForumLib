@@ -84,6 +84,7 @@
 
             $getPost = new DBUtilQuery;
             $getPost->setName('getPost')
+                ->setMultipleRows(false)
                 ->setQuery("SELECT * FROM `{{DBP}}posts` WHERE `id` = :id")
                 ->addParameter(':id', $id, PDO::PARAM_INT)
                 ->setDBUtil($this->S)

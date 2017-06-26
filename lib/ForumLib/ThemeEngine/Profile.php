@@ -11,9 +11,8 @@
         private $engine;
 
         public function __construct(MainEngine $_engine) {
-            if($_engine instanceof MainEngine) {
-                $this->engine = $_engine;
-            }
+            parent::__construct($_engine->getName(), $_engine->_SQL, $_engine->_Config);
+            $this->engine = $_engine;
         }
 
         public function parseGroup($_template, Group $_group) {
@@ -32,7 +31,6 @@
                         break;
                 }
             }
-
 
             return $_template;
         }

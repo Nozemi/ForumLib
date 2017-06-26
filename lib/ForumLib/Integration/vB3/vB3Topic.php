@@ -1,14 +1,13 @@
 <?php
     namespace ForumLib\Integration\vB3;
 
+    use ForumLib\Database\DBUtilQuery;
     use ForumLib\Forums\Topic;
     use ForumLib\Integration\IntegrationBaseTopic;
 
-    class vB3Topic extends IntegrationBaseTopic {
+    use \PDO;
 
-        public function setThreadCount(Category $cat) {
-            // TODO: Implement setThreadCount() method.
-        }
+    class vB3Topic extends IntegrationBaseTopic {
 
         public function createTopic($categoryId, Topic $top) {
             // TODO: Implement createTopic() method.
@@ -21,47 +20,36 @@
         public function getTopic($id, $byId, $categoryId, Topic $top) {
             if(is_null($id)) $id = $top->id;
 
+            $getTopic = new DBUtilQuery;
+            $getTopic->setName('getTopic')
+                ->setDBUtil($this->S)
+                ->setMultipleRows(false);
+
             if($byId) {
-                $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                  SELECT * FROM `{{DBP}}forum` WHERE `forumid` = :id;
-                "));
+                $getTopic->setQuery("SELECT * FROM `{{DBP}}forum` WHERE `forumid` = :id;")
+                    ->addParameter(':id', $id, PDO::PARAM_INT);
             } else {
-                $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                    SELECT * FROM `{{DBP}}forum` WHERE MATCH(`title`) AGAINST(:id IN BOOLEAN MODE) "
-                    . (!is_null($categoryId) ? "AND `parentid` = :categoryId;" : ";"))
-                );
+                $getTopic->setQuery(
+                        "SELECT * FROM `{{DBP}}forum` WHERE MATCH(`title`) AGAINST(:id IN BOOLEAN MODE) "
+                        . (!is_null($categoryId) ? "AND `parentid` = :categoryId;" : ";")
+                    )
+                    ->addParameter(':id', $id, PDO::PARAM_INT)
+                    ->addParameter(':categoryId', $categoryId, PDO::PARAM_INT);
             }
 
-            $params = array(
-                ':id' => $id
-            );
+            $topic = $getTopic->execute()->result();
 
-            if(!is_null($categoryId)) {
-                $params[':categoryId'] = $categoryId;
-            }
+            $T = new Topic($this->S);
+            $T->setId($topic['forumid'])
+                ->setTitle($topic['title'])
+                ->setDescription($topic['description'])
+                ->setOrder($topic['displayorder'])
+                ->setCategoryId($topic['parentid'])
+                ->setPermissions($topic['forumid'])
+                ->setThreads($topic['forumid']);
 
-            if($this->S->executeQuery($params)) {
-                $topic = $this->S->fetch();
-
-                $T = new Topic($this->S);
-                $T->setId($topic['forumid'])
-                    ->setTitle($topic['title'])
-                    ->setDescription($topic['description'])
-                    ->setOrder($topic['displayorder'])
-                    ->setCategoryId($topic['parentid'])
-                    ->setPermissions($topic['forumid'])
-                    ->setThreads($topic['forumid']);
-
-                $this->lastMessage[] = 'Successfully fetched topic.';
-                return $T;
-            } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                } else {
-                    $this->lastError[] = 'Failed to get topic.';
-                }
-                return false;
-            }
+            $this->lastMessage[] = 'Successfully fetched topic.';
+            return $T;
         }
 
         public function updateTopic($categoryId, Topic $top) {

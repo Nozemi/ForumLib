@@ -31,8 +31,7 @@
                 ->setDBUtil($this->S)
                 ->execute();
 
-            $tR = $this->S->getResultByName($getThreads->getName());
-
+            $tR = $getThreads->result();
             $threads = array();
 
             for($i = 0; $i < count($tR); $i++) {
@@ -48,6 +47,7 @@
                     ->setPermissions($T->id);
                 $threads[] = $T;
             }
+
 
             $this->lastMessage[] = 'Successfully loaded threads.';
             return $threads;
@@ -120,6 +120,7 @@
 
             $getThread = new DBUtilQuery;
             $getThread->setName('getThread')
+                ->setMultipleRows(false)
                 ->setDBUtil($this->S);
 
             // We'll need to load the thread and it's posts. Currently it just loads the thread.
@@ -202,13 +203,14 @@
             if(is_null($id)) $id = $thread->id;
 
             $latestPost = new DBUtilQuery;
-            $latestPost->setName('latestPost')
+            $latestPost->setName('threadLatestPost')
+                ->setMultipleRows(false)
                 ->setQuery("SELECT `id`, `postDate` FROM `for1234_posts` WHERE `threadId` = :threadId ORDER BY `postDate` DESC LIMIT 1")
-                ->setParameters(':threadId', $id, PDO::PARAM_INT)
+                ->addParameter(':threadId', $id, PDO::PARAM_INT)
                 ->setDBUtil($this->S)
                 ->execute();
 
-            $pst = $this->S->getResultByName($latestPost->getName());
+            $pst = $latestPost->result();
 
             $P = new Post($this->S);
             return $P->getPost($pst['id']);

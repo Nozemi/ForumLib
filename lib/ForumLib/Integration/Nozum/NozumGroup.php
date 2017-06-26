@@ -11,16 +11,20 @@
         public function getGroups(Group $group) {
             $getGroups = new DBUtilQuery;
             $getGroups->setName('getGroups')
+                ->setMultipleRows(true)
                 ->setQuery("SELECT * FROM `{{DBP}}groups`")
                 ->setDBUtil($this->S)
                 ->execute();
 
-            $tmpGroups = $this->S->getResultByName($getGroups->getName());
+            $tmpGroups = $getGroups->result();
 
             $groups = array();
-                foreach($tmpGroups as $group) {
+            foreach($tmpGroups as $group) {
                 $gR = new Group($this->S);
-                $groups[] = $gR->getGroup($group['id']);
+                $groups[] = $gR->setId($group['id'])
+                                ->setName($group['title'])
+                                ->setAdmin($group['admin'])
+                                ->setDescription($group['desc']);
             }
 
             return $groups;
@@ -48,7 +52,6 @@
                 ->setAdmin($gR['admin'])
                 ->unsetSQL();
 
-            $this->lastMessage[] = 'Successfully loaded group.';
             return $group;
         }
     }

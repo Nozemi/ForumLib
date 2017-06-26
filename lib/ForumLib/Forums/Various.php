@@ -16,11 +16,9 @@
         public function __construct(DBUtil $_SQL) {
             if($_SQL instanceof DBUtil) {
                 $this->S = $_SQL;
+                $this->config = new Config;
 
-                $C = new Config;
-                $this->config = $C->config;
-
-                switch(array_column($this->config, 'integration')[0]) {
+                switch($this->config->getConfigValue('integration')) {
                     case 'vB3':
                         $this->integration = new vB3Various($this->S);
                         break;

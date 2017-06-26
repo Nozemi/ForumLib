@@ -1,16 +1,23 @@
 <?php
     namespace ForumLib\Integration\Nozum;
 
-    use ForumLib\Database\PSQL;
+    use ForumLib\Database\DBUtilQuery;
     use ForumLib\Forums\Post;
     use ForumLib\Forums\Thread;
     use ForumLib\Integration\IntegrationBaseUser;
     use ForumLib\Users\User;
     use ForumLib\Utilities\Config;
 
+    use \PDO;
+
     class NozumUser extends IntegrationBaseUser {
 
         public function login($username = 0, User $user) {
+            $login = new DBUtilQuery;
+            $login->setName('login')
+                ->setDBUtil($this->S)
+                ->addParameter(':username', $user->username, PDO::PARAM_STR);
+
             /*
             If $uname is provided in the method as 1, it will use email as username.
             If $uname is provided in the method as 2, both username and email will be checked for a match.
@@ -18,109 +25,89 @@
             */
             switch($username) {
                 case 1:
-                    $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}users` WHERE `email` = :username"));
+                    $login->setQuery("SELECT * FROM `{{DBP}}users` WHERE `email` = :username");
                     break;
                 case 2:
                     break;
                 default:
-                    $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}users` WHERE `username` = :username"));
+                    $login->setQuery("SELECT * FROM `{{DBP}}users` WHERE `username` = :username");
                     break;
             }
 
-            // Check if the query executes alright, and return an error if it doesn't.
-            if($this->S->executeQuery(array(
-                ':username' => $user->username
-            ))) {
-                $details = $this->S->fetch();
+            $details = $this->S->getResultByName($login->getName());
 
-                if(password_verify($user->password, $details['password'])) {
-                    $this->lastMessage[] = 'Successfully logged in.';
-                    $user = $this->getUser($details['id']);
+            if(password_verify($user->password, $details['password'])) {
+                $this->lastMessage[] = 'Successfully logged in.';
+                $user = $this->getUser($details['id']);
 
-                    $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                        UPDATE `{{DBP}}users` SET `lastip` = :lastip,`lastlogindate` = :lastlogindate WHERE `id` = :id
-                    "));
-                    $this->S->executeQuery(array(
-                        ':lastip' => $this->lastLogin['ip'],
-                        ':lastlogindate' => $this->lastLogin['date'],
-                        ':id' => $user->id
-                    ));
+                $lastLogin = new DBUtilQuery;
+                $lastLogin->setName('lastLogin')
+                    ->setQuery("")
+                    ->addParameter(':lastip', $this->lastLogin['ip'], PDO::PARAM_STR)
+                    ->addParameter(':lastlogindate', $this->lastlogin['date'], PDO::PARAM_STR)
+                    ->addParameter(':id', $user->id, PDO::PARAM_INT)
+                    ->setDBUtil($this->S)
+                    ->execute();
 
-                    return $user;
-                } else {
-                    $this->lastError[] = 'Incorrect username or password.';
-                    return false;
-                }
+                return $user;
             } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                } else {
-                    $this->lastError[] = 'Something went wrong during login.';
-                }
                 return false;
             }
         }
 
         public function register(User $user) {
-            if($this->usernameExists($this->username)) {
+            if($user->usernameExists($user->username)) {
                 $this->lastError[] = 'Username already in use.';
                 return false;
             }
 
-            if(!preg_match('/^[^\W_]+$/', $this->username)) {
+            if(!preg_match('/^[^\W_]+$/', $user->username)) {
                 $this->lastError[] = 'Sorry, username may only contain alphanumeric characters. (A-Z,a-z,0-9)';
                 return false;
             }
 
-            if(is_null($this->password) || is_null($this->username)) {
+            if(is_null($user->password) || is_null($user->username)) {
                 $this->lastError[] = 'Username and/or password is missing.';
                 return false;
             } else {
-                $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                    INSERT INTO `{{DBP}}users` (
-                        `username`
-                        ,`password`
-                        ,`regdate`
-                        ,`regip`
-                        ,`email`
-                        ,`firstname`
-                        ,`lastname`
-                        ,`group`
-                    ) VALUES (
-                        :username
-                        ,:password
-                        ,:regdate
-                        ,:regip
-                        ,:email
-                        ,:firstname
-                        ,:lastname
-                        ,:group
-                    );
-                "));
-
                 $C = new Config;
-                // Check if the query executes alright, and return an error if it doesn't.
-                if($this->S->executeQuery(array(
-                    ':username'   => $this->username,
-                    ':password'   => $this->password,
-                    ':regdate'    => date('Y-m-d H:i:s', time()),
-                    ':regip'      => $this->lastLogin['ip'],
-                    ':email'      => $this->email,
-                    ':firstname'  => $this->firstname,
-                    ':lastname'   => $this->lastname,
-                    ':group'      => ($this->group->id ? $this->group->id : MISC::findKey('defaultGroup', $C->config))
-                ))) {
-                    $this->lastMessage[] = 'Account was successfully registered.';
-                return true;
-                } else {
-                    if(defined('DEBUG')) {
-                        $this->lastError[] = $this->S->getLastError();
-                    } else {
-                        $this->lastError[] = 'Something went wrong during registration.';
-                    }
-                    return false;
-                }
+
+                $register = new DBUtilQuery;
+                $register->setName('register')
+                    ->setQuery("
+                        INSERT INTO `{{DBP}}users` (
+                            `username`
+                            ,`password`
+                            ,`regdate`
+                            ,`regip`
+                            ,`email`
+                            ,`firstname`
+                            ,`lastname`
+                            ,`group`
+                        ) VALUES (
+                            :username
+                            ,:password
+                            ,:regdate
+                            ,:regip
+                            ,:email
+                            ,:firstname
+                            ,:lastname
+                            ,:group
+                        );
+                    ")
+                    ->addParameter(':username', $user->username, PDO::PARAM_STR)
+                    ->addParameter(':password', $user->password, PDO::PARAM_STR)
+                    ->addParameter(':regdate', date('Y-m-d H:i:s'), PDO::PARAM_STR)
+                    ->addParameter(':regip', $user->lastLogin['ip'], PDO::PARAM_STR)
+                    ->addParameter(':email', $user->email, PDO::PARAM_STR)
+                    ->addParameter(':firstname', $user->firstname, PDO::PARAM_STR)
+                    ->addParameter(':lastname', $user->lastname, PDO::PARAM_STR)
+                    ->addParameter(':group', ($user->group->id ? $user->group->id : $C->getConfigValue('defaultGroup')), PDO::PARAM_INT)
+                    ->setDBUtil($this->S)
+                    ->execute();
             }
+
+            return true;
         }
 
         public function setPassword($p1, $p2 = null, $login = false, User $user) {
@@ -139,106 +126,84 @@
         }
 
         public function updateAccount(User $user) {
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                UPDATE `{{DBP}}users` SET
-                     `email`      = :email
-                    ,`password`   = :password
-                    ,`firstname`  = :firstname
-                    ,`lastname`   = :lastname
-                    ,`avatar`     = :avatar
-                    ,`group`      = :group
-                WHERE `username` = :username;
-            "));
-            if($this->S->executeQuery(array(
-                ':email'      => $this->email,
-                ':password'   => $this->password,
-                ':firstname'  => $this->firstname,
-                ':lastname'   => $this->lastname,
-                ':avatar'     => $this->avatar,
-                ':group'      => $this->group,
-                ':username'   => $this->username
-            ))) {
-                $this->lastMessage[] = 'Account was successfully updated.';
+            $updateAccount = new DBUtilQuery;
+            $updateAccount->setName('updateAccount')
+                ->setQuery("
+                    UPDATE `{{DBP}}users` SET
+                         `email`      = :email
+                        ,`password`   = :password
+                        ,`firstname`  = :firstname
+                        ,`lastname`   = :lastname
+                        ,`avatar`     = :avatar
+                        ,`group`      = :group
+                    WHERE `username` = :username;
+                ")
+                ->addParameter(':email', $user->email, PDO::PARAM_STR)
+                ->addParameter(':password', $user->password, PDO::PARAM_STR)
+                ->addParameter(':firstname', $user->firstname, PDO::PARAM_STR)
+                ->addParameter(':lastname', $user->lastname, PDO::PARAM_STR)
+                ->addParameter(':avatar', $user->avatar, PDO::PARAM_STR)
+                ->addParameter(':group', $user->groupId, PDO::PARAM_INT)
+                ->addParameter(':username', $user->username, PDO::PARAM_STR)
+                ->setDBUtil($this->S)
+                ->execute();
+
+            return true;
+        }
+
+        public function usernameExists($username, User $user) {
+            if(!$username) $username = $user->username; // TODO: Remove this. Not really necessary.
+
+            $getUsername = new DBUtilQuery;
+            $getUsername->setName('getUsername')
+                ->setQuery("SELECT `id`, `username` FROM `{{DBP}}users` WHERE `username` = :username")
+                ->addParameter(':username', $username, PDO::PARAM_STR)
+                ->setDBUtil($this->S)
+                ->execute();
+
+            $usr = $this->S->getResultByName($getUsername->getName());
+
+            if(!empty($usr)) {
                 return true;
             } else {
-                $this->lastError[] = $this->S->getLastError();
                 return false;
             }
         }
 
-        public function usernameExists($username, User $user) {
-            if(!$username) $username = $user->username;
-
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-              SELECT `id`, `username` FROM `{{DBP}}users` WHERE `username` = :username
-            "));
-            if($this->S->executeQuery(array(
-                ':username' => $username
-            ))) {
-                $usr = $this->S->fetch();
-                if(!empty($usr)) {
-                    return true;
-                } else {
-                    return false;
-                }
-            } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                    return false;
-                } else {
-                    $this->lastError[] = 'Something went wrong while checking username.';
-                    return false;
-                }
-            }
-        }
-
         public function sessionController(User $user) {
-            $C = new Config;
-            if(array_column($C->config, 'integration')[0] == 'vB3') return false;
-
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                INSERT INTO `{{DBP}}users_session` SET
-                     `uid` = :uid
-                    ,`lastActive` = :lastActive
-                    ,`ipAddress` = :ipAddress
-                    ,`created` = :created
-                    ,`lastPage` = :lastPage
-                    ,`phpSessId` = :phpSessId
-                    ,`userAgent` = :userAgent
-                ON DUPLICATE KEY UPDATE
-                     `uid` = :uid
-                    ,`lastActive` = :lastActive
-                    ,`ipAddress` = :ipAddress
-                    ,`lastPage` = :lastPage
-                    ,`phpSessId` = :phpSessId
-                    ,`userAgent` = :userAgent;
-            "));
-
-            if($this->S->executeQuery(array(
-                ':uid'          => ($user->id ? $user->id : 0),
-                ':lastActive'   => date('Y-m-d H:i:s'),
-                ':ipAddress'    => $user->lastIp,
-                ':created'      => date('Y-m-d H:i:s'),
-                ':lastPage'     => 'N/A',
-                ':phpSessId'    => session_id(),
-                ':userAgent'    => $_SERVER['HTTP_USER_AGENT']
-            ))) {
-
-            } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                    return false;
-                } else {
-                    $this->lastError[] = 'Something went wrong while running session controller.';
-                    return false;
-                }
-            }
+            $sessionController = new DBUtilQuery;
+            $sessionController->setName('sessionController')
+                ->setQuery("
+                    INSERT INTO `{{DBP}}users_session` SET
+                         `uid` = :uid
+                        ,`lastActive` = :lastActive
+                        ,`ipAddress` = :ipAddress
+                        ,`created` = :created
+                        ,`lastPage` = :lastPage
+                        ,`phpSessId` = :phpSessId
+                        ,`userAgent` = :userAgent
+                    ON DUPLICATE KEY UPDATE
+                         `uid` = :uid
+                        ,`lastActive` = :lastActive
+                        ,`ipAddress` = :ipAddress
+                        ,`lastPage` = :lastPage
+                        ,`phpSessId` = :phpSessId
+                        ,`userAgent` = :userAgent;
+                ")
+                ->setParameters(array(
+                    array(':uid', ($user->id ? $user->id : 0), PDO::PARAM_INT),
+                    array(':lastActive', date('Y-m-d H:i:s'), PDO::PARAM_STR),
+                    array(':ipAddress', $user->lastIp, PDO::PARAM_STR),
+                    array(':created', date('Y-m-d H:i:s')),
+                    array(':lastPage', 'N/A', PDO::PARAM_STR),
+                    array(':phpSessId', session_id(), PDO::PARAM_STR),
+                    array(':userAgent', $_SERVER['HTTP_USER_AGENT'], PDO::PARAM_STR)
+                ))
+                ->setDBUtil($this->S)
+                ->execute();
         }
 
         public function getStatus($id, User $user) {
-            $C = new Config;
-            if(array_column($C->config, 'integration')[0] == 'vB3') return false;
-
             if(is_null($id)) $id = $user->id;
 
             if($id == 0) {
@@ -248,72 +213,66 @@
 
             $status = 0;
 
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                SELECT
-                  *
-                FROM `{{DBP}}users_session`
-                WHERE `uid` = :uid
-                ORDER BY `lastActive` DESC
-                LIMIT 1
-            "));
+            $getStatus = new DBUtilQuery;
+            $getStatus->setName('getStatus')
+                ->setQuery("
+                    SELECT
+                      *
+                    FROM `{{DBP}}users_session`
+                    WHERE `uid` = :uid
+                    ORDER BY `lastActive` DESC
+                    LIMIT 1
+                ")
+                ->addParameter(':uid', $id, PDO::PARAM_INT)
+                ->setDBUtil($this->S)
+                ->execute();
 
-            if($this->S->executeQuery(array(
-                ':uid' => $id
-            ))) {
-                $result = $this->S->fetch();
+            $result = $getStatus->result();
 
-                if((strtotime($result['lastActive']) + 180) >= time()) {
-                    $status = 1;
-                }
-            } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                    return false;
-                } else {
-                    $this->lastError[] = 'Something went wrong while getting current status for user with ID ' . $id . '.';
-                    return false;
-                }
+            if((strtotime($result['lastActive']) + 180) >= time()) {
+                $status = 1;
             }
 
             return $status;
         }
 
         public function getOnlineCount(User $user) {
-            $C = new Config;
-
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                SELECT
-                  *
-                FROM (
-                      SELECT * FROM `{{DBP}}users_session` ORDER BY `lastActive` DESC
+            $onlineCount = new DBUtilQuery;
+            $onlineCount->setName('onlineCount')
+                ->setQuery("
+                    SELECT
+                        *
+                    FROM (
+                        SELECT * FROM `{{DBP}}users_session` ORDER BY `lastActive` DESC
                     ) `sessions`
-                GROUP BY `uid`
-            "));
-            if($this->S->executeQuery()) {
-                $sessions = $this->S->fetchAll();
+                    GROUP BY `uid`
+                ")
+                ->setDBUtil($this->S)
+                ->execute();
 
-                $guestCount = 0;
-                $onlineUsers = array();
-                foreach($sessions as $session) {
-                    if((strtotime($session['lastActive']) + 180) >= time()) {
-                        if($session['uid'] == 0) {
-                            $guestCount++;
-                        } else {
-                            $onlineUsers[] = array(
-                                'lastActive' => $session['lastActive'],
-                                'userId'     => $session['uid']
-                            );
-                        }
+            $sessions = $onlineCount->result();
+
+            $guestCount = 0;
+            $onlineUsers = array();
+            foreach($sessions as $session) {
+                if((strtotime($session['lastActive']) + 180) >= time()) {
+                    if($session['uid'] == 0) {
+                        $guestCount++;
+                    } else {
+                        $onlineUsers[] = array(
+                            'lastActive' => $session['lastActive'],
+                            'userId'     => $session['uid']
+                        );
                     }
                 }
-
-                return array(
-                    'members' => $onlineUsers,
-                    'memberCount' => count($onlineUsers),
-                    'guestCount' => $guestCount,
-                    'total' => (count($onlineUsers) + $guestCount)
-                );
             }
+
+            return array(
+                'members' => $onlineUsers,
+                'memberCount' => count($onlineUsers),
+                'guestCount' => $guestCount,
+                'total' => (count($onlineUsers) + $guestCount)
+            );
         }
 
         public function getCurrentPage($id, User $user) {
@@ -331,23 +290,26 @@
                 return false;
             }
 
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                SELECT
-                     `P`.`id` `postId`
-                    ,`T`.`id` `threadId`
-                FROM `for1234_posts` `P`
-                INNER JOIN `for1234_threads` `T` ON `T`.`id` = `P`.`threadId`
-                WHERE `P`.`authorId` = :authorId
-                ORDER BY `P`.`postDate` DESC
-            "));
+            $getLatestPosts = new DBUtilQuery;
+            $getLatestPosts->setName('getLatestPosts')
+                ->setQuery("
+                    SELECT
+                         `P`.`id` `postId`
+                        ,`T`.`id` `threadId`
+                    FROM `for1234_posts` `P`
+                    INNER JOIN `for1234_threads` `T` ON `T`.`id` = `P`.`threadId`
+                    WHERE `P`.`authorId` = :authorId
+                    ORDER BY `P`.`postDate` DESC
+                ")
+                ->addParameter(':authorId', $user->id, PDO::PARAM_INT)
+                ->setDBUtil($this->S)
+                ->execute();
 
-            $this->S->executeQuery(array(':authorId' => $user->id));
-
-            $psts = $this->S->fetchAll();
+            $tmpPosts = $getLatestPosts->result();
 
             $threads = array();
 
-            foreach($psts as $pst) {
+            foreach($tmpPosts as $pst) {
                 $P = new Post($this->S);
                 $T = new Thread($this->S);
 
@@ -366,73 +328,79 @@
         public function getUser($id = null, $byId = true, User $user) {
             if(is_null($id)) $id = $user->id;
 
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                SELECT
-                     `id`
-                    ,`username`
-                    ,`avatar`
-                    ,`group`
-                    ,`firstname`
-                    ,`lastname`
-                    ,`lastlogindate`
-                    ,`regdate`
-                    ,`lastip`
-                    ,`regip`
-                    ,`email`
-                    ,`about`
-                    ,`location`
-                FROM `{{DBP}}users`
-                WHERE `" . ($byId ? 'id' : 'username') . "` = :id
-            "));
+            $getUser = new DBUtilQuery;
+            $getUser->setName('getUser')
+                ->setMultipleRows(false)
+                ->setQuery("
+                    SELECT
+                         `id`
+                        ,`username`
+                        ,`avatar`
+                        ,`group`
+                        ,`firstname`
+                        ,`lastname`
+                        ,`lastlogindate`
+                        ,`regdate`
+                        ,`lastip`
+                        ,`regip`
+                        ,`email`
+                        ,`about`
+                        ,`location`
+                    FROM `{{DBP}}users`
+                    WHERE `" . ($byId ? 'id' : 'username') . "` = :id
+                ")
+                ->setDBUtil($this->S);
 
-            if($this->S->executeQuery(array(
-                ':id' => $id
-            ))) {
-                $uR = $this->S->fetch();
-                $user = new User($this->S);
-                $user->setId($uR['id'])
-                    ->setAvatar($uR['avatar'])
-                    ->setGroup($uR['group'])
-                    ->setGroupId(($user->group ? $user->group->id : 0))
-                    ->setFirstname($uR['firstname'])
-                    ->setLastname($uR['lastname'])
-                    ->setLastLogin($uR['lastlogindate'])
-                    ->setRegDate($uR['regdate'])
-                    ->setLastIP($uR['lastip'])
-                    ->setRegIP($uR['regip'])
-                    ->setEmail($uR['email'])
-                    ->setUsername($uR['username'])
-                    ->setAbout($uR['about'])
-                    ->setLocation($uR['location'])
-                    ->setPostCount($uR['id'])
-                    ->unsetSQL();
-
-                return $user;
+            if($byId) {
+                $getUser->addParameter(':id', $id, PDO::PARAM_INT);
             } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                } else {
-                    $this->lastError[] = 'Something went wrong while getting the user.';
-                }
-                return false;
+                $getUser->addParameter(':id', $id, PDO::PARAM_STR);
             }
+
+            $getUser->execute();
+
+            $uR = $getUser->result();
+
+            $user = new User($this->S);
+            $user->setId($uR['id'])
+                ->setAvatar($uR['avatar'])
+                ->setGroup($uR['group'])
+                ->setGroupId(($user->group ? $user->group->id : 0))
+                ->setFirstname($uR['firstname'])
+                ->setLastname($uR['lastname'])
+                ->setLastLogin($uR['lastlogindate'])
+                ->setRegDate($uR['regdate'])
+                ->setLastIP($uR['lastip'])
+                ->setRegIP($uR['regip'])
+                ->setEmail($uR['email'])
+                ->setUsername($uR['username'])
+                ->setAbout($uR['about'])
+                ->setLocation($uR['location'])
+                ->setPostCount($uR['id'])
+                ->unsetSQL();
+
+            return $user;
         }
 
         public function getRegisteredUsers(User $user) {
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                SELECT
-                     `U`.`id`
-                    ,`U`.`username`
-                    ,`U`.`regdate`
-                    ,`U`.`lastlogindate`
-                    ,`U`.`group`
-                    ,`G`.`title`
-                FROM `{{DBP}}users` `U`
-                INNER JOIN `{{DBP}}groups` `G` ON `G`.`id` = `U`.`group`
-                ORDER BY `username` ASC
-            "));
-            $this->S->executeQuery();
-            return $this->S->fetchAll();
+            $registeredUsers = new DBUtilQuery;
+            $registeredUsers->setName('registeredUsers')
+                ->setQuery("
+                    SELECT
+                         `U`.`id`
+                        ,`U`.`username`
+                        ,`U`.`regdate`
+                        ,`U`.`lastlogindate`
+                        ,`U`.`group`
+                        ,`G`.`title`
+                    FROM `{{DBP}}users` `U`
+                    INNER JOIN `{{DBP}}groups` `G` ON `G`.`id` = `U`.`group`
+                    ORDER BY `username` ASC
+                ")
+                ->setDBUtil($this->S)
+                ->execute();
+
+            return $registeredUsers->result();
         }
 
         public function setPostCount($id, User $user) {
@@ -440,13 +408,15 @@
 
             $this->postCount = 0;
 
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-              SELECT COUNT(`id`) `count` FROM `{{DBP}}posts` WHERE `authorId` = :userId
-            "));
+            $postCount = new DBUtilQuery;
+            $postCount->setName('postCount')
+                ->setMultipleRows(false)
+                ->setQuery("SELECT COUNT(`id`) `count` FROM `{{DBP}}posts` WHERE `authorId` = :userId")
+                ->addParameter(':userId', $id, PDO::PARAM_INT)
+                ->setDBUtil($this->S)
+                ->execute();
 
-            $this->S->executeQuery(array(':userId' => $id));
-
-            $result = $this->S->fetch();
+            $result = $postCount->result();
             $this->postCount = $result['count'];
 
             return $this;

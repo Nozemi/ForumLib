@@ -1,9 +1,7 @@
 <?php
     namespace ForumLib\Integration\Nozum;
 
-    use ForumLib\Database\DBUtil;
     use ForumLib\Database\DBUtilQuery;
-    use ForumLib\Database\PSQL;
     use ForumLib\Forums\Thread;
     use ForumLib\Forums\Topic;
     use ForumLib\Forums\Post;
@@ -72,7 +70,8 @@
 
             $getTopic = new DBUtilQuery;
             $getTopic->setName('getTopic')
-                ->setDBUtil($this->S);
+                ->setDBUtil($this->S)
+                ->setMultipleRows(false);
 
             if($byId) {
                 $getTopic->setQuery("SELECT * FROM `{{DBP}}topics` WHERE `id` = :id;")
@@ -86,7 +85,7 @@
 
             $getTopic->execute();
 
-            $topic = $this->S->getResultByName($getTopic->getName());
+            $topic = $getTopic->result();
 
             $T = new Topic($this->S);
             $T->setId($topic['id'])
@@ -142,7 +141,8 @@
             if(is_null($topId)) $topId = $top->id;
 
             $latestPost = new DBUtilQuery;
-            $latestPost->setName('latestPost')
+            $latestPost->setName('topicLatestPost')
+                ->setMultipleRows(false)
                 ->setQuery("
                     SELECT
                         `P`.`id` `postId`
@@ -154,11 +154,11 @@
                     ORDER BY `P`.`postDate` DESC
                     LIMIT 1
                 ")
-                ->addParameter(':topicId', $topicId, PDO::PARAM_INT)
+                ->addParameter(':topicId', $topId, PDO::PARAM_INT)
                 ->setDBUtil($this->S)
                 ->execute();
 
-            $result = $this->S->getResultByName($latestPost->getName());
+            $result = $latestPost->result();
 
             $P = new Post($this->S);
             $T = new Thread($this->S);
@@ -175,20 +175,21 @@
         public function setThreadCount(Topic $top) {
             $threadCount = new DBUtilQuery;
             $threadCount->setName('threadCount')
+                ->setMultipleRows(false)
                 ->setQuery("SELECT COUNT(*) `count` FROM `{{DBP}}threads` WHERE `topicId` = :topicId")
                 ->addParameter(':topicId', $top->id, PDO::PARAM_INT)
                 ->setDBUtil($this->S)
                 ->execute();
 
-            $rslt = $this->S->getResultByName($threadCount->getName());
+            $result = $threadCount->result();
 
-            $this->threadCount = $rslt['count'];
-            return $this;
+            return $result['count'];
         }
 
         public function setPostCount(Topic $top) {
             $postCount = new DBUtilQuery;
             $postCount->setName('postCount')
+                ->setMultipleRows(false)
                 ->setQuery("
                     SELECT
                       COUNT(*) `count`
@@ -202,10 +203,9 @@
                 ->setDBUtil($this->S)
                 ->execute();
 
-            $rslt = $this->S->getResultByName('postCount');
+            $result = $postCount->result();
 
-            $this->postCount = $rslt['count'];
-            return $this;
+            return $result['count'];
         }
 
         public function checkThreadName($_title, Topic $_topic) {

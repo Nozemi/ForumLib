@@ -55,7 +55,7 @@
             $this->_Config      = $Config;
             $this->name         = $_name;
             $this->directory    = MISC::findFile('themes/' . $this->name);
-            $this->rootDir      = array_column($Config->config, 'siteRoot');
+            $this->rootDir      = ($Config->getConfigValue('siteRoot') ? '/' . $Config->getConfigValue('siteRoot') . '/' : '/');
 
             if($this->validateTheme()) {
                 $this->setConfig();
@@ -153,8 +153,6 @@
                             case 'latestNews':
                                 // TODO: Implement a way to decide between a blogging kind of system, or use a forum topic.
                                 if($this->_Config instanceof Config) {
-                                    $Forums = new Forums($this);
-
                                     $T = new Topic($this->_SQL);
                                     $top = $T->getTopic(MISC::findKey('newsForum', $this->_Config->config));
                                     $top->setThreads();
@@ -252,18 +250,17 @@
                                 $_template = $this->replaceVariable($match, $_template, $this->name);
                                 break;
                             case 'dir':
-
-                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? '/' . $this->rootDir : '') . '/' . $this->directory . '/');
+                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? $this->rootDir : '') . '/' . $this->directory . '/');
                                 break;
                             case 'assets':
                             case 'assetsDir':
-                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? '/' . $this->rootDir : '') . '/' . $this->directory . '/_assets/');
+                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? $this->rootDir : '') . '/' . $this->directory . '/_assets/');
                                 break;
                             case 'imgDir':
                             case 'img':
                             case 'imgs':
                             case 'images':
-                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? '/' . $this->rootDir : '') . '/' . $this->directory . '/_assets/img/');
+                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? $this->rootDir : '') . '/' . $this->directory . '/_assets/img/');
                                 break;
                         }
                         break;
@@ -314,10 +311,7 @@
                                 break;
                             case 'rootDir':
                             case 'rootDirectory':
-                                $rootDir = MISC::findFile('themes');
-                                $rootDir = $rootDir . '../';
-
-                                $_template = $this->replaceVariable($match, $_template, $rootDir);
+                                $_template = $this->replaceVariable($match, $_template, $this->rootDir);
                                 break;
                             case 'currPage':
                             case 'currentPage':

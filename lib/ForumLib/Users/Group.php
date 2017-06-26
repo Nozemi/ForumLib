@@ -25,9 +25,8 @@
       // Let's check if the $SQL is not a null.
       if(!is_null($SQL)) {
         $this->S = $SQL;
-          $C = new Config;
-          $this->config = $C->config;
-          switch(array_column($this->config, 'integration')[0]) {
+          $this->config = new Config;
+          switch($this->config->getConfigValue('integration')) {
               case 'vB3':
                   $this->integration = new vB3Group($this->S);
                   break;
