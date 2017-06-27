@@ -5,6 +5,7 @@
     use ForumLib\Database\DBUtilQuery;
 
     use ForumLib\Utilities\Config;
+    use ForumLib\Utilities\Logger;
     use ForumLib\Utilities\MISC;
 
     use ForumLib\Users\User;
@@ -315,7 +316,7 @@
                                 break;
                             case 'currPage':
                             case 'currentPage':
-                                $_template = $this->replaceVariable($match, $_template, MISC::getPageName($_SERVER['SCRIPT_FILENAME']));
+                                $_template = $this->replaceVariable($match, $_template, MISC::getPageName($_SERVER['SCRIPT_FILENAME'], $this->_SQL));
                                 break;
                             case 'members':
                             case 'membersList':
@@ -332,7 +333,7 @@
                                 $_template = $this->replaceVariable($match, $_template, $html);
                                 break;
                             case 'pageName':
-                                $_template = $this->replaceVariable($match, $_template, MISC::getPageName($_SERVER['SCRIPT_FILENAME']));
+                                $_template = $this->replaceVariable($match, $_template, MISC::getPageName($_SERVER['SCRIPT_FILENAME'], $this->_SQL));
                                 break;
                             case 'userNav':
                                 if(empty($_SESSION)) {
@@ -396,6 +397,7 @@
                     case 'content':
                         $contentQuery = new DBUtilQuery;
                         $contentQuery->setName('contentQuery')
+                            ->setMultipleRows(false)
                             ->setQuery("SELECT `value` FROM `{{PREFIX}}content_strings` WHERE `key` = :key")
                             ->addParameter(':key', $template[1], \PDO::PARAM_STR);
                         $this->_SQL->runQuery($contentQuery);
@@ -430,7 +432,13 @@
             return $matches;
         }
 
-        protected function replaceVariable($_match, $_template, $_replacement) {
+        protected function replaceVariable($_match, $_template, $_replacement, $file = 'NONE', $line = 0) {
+            /*if(basename($file) == 'Profile.php') {
+                print_r($_replacement); echo "{$file} - {$line}<hr>";
+
+                new Logger("Replacing variable {$_match}, with {$_replacement}.", Logger::DEBUG, $file, $line);
+            }*/
+
             return str_replace($this->varWrapperStart . $_match . $this->varWrapperEnd, $_replacement, $_template);
         }
 

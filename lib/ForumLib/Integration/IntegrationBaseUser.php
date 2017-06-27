@@ -4,6 +4,9 @@
     use ForumLib\Users\User;
 
     abstract class IntegrationBaseUser extends IntegrationBase  {
+        public $password;
+        public $postCount;
+
         abstract public function login($username = 0, User $user);
         abstract public function register(User $user);
         abstract public function setPassword($p1, $p2 = null, $login = false, User $user);

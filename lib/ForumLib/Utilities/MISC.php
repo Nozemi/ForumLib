@@ -1,6 +1,7 @@
 <?php
   namespace ForumLib\Utilities;
 
+  use ForumLib\Database\DBUtil;
   use ForumLib\Forums\Category;
   use ForumLib\Forums\Topic;
   use ForumLib\Forums\Thread;
@@ -47,17 +48,12 @@
       }
 
       /**
-       * @param $_file string - Filename
+       * @param string $_file - Filename
+       * @param DBUtil $SQL
        *
        * @return string
        */
-    public static function getPageName($_file) {
-        global $Config, $SQL;
-
-        if(!$Config instanceof Config) {
-            $Config = new Config;
-        }
-
+    public static function getPageName($_file, DBUtil $SQL) {
         $page = ucfirst(basename($_file, '.php'));
 
         if(isset($_GET['page'])) {
@@ -105,7 +101,7 @@
 
     public static function parseDate($dateString, Config $config = null, $options = array()) {
         if($config instanceof Config) {
-            $format = MISC::findKey('timeFormat', $config->config);
+            $format = $config->getConfigValue('timeFormat');
         }
 
         if(empty($format)) {

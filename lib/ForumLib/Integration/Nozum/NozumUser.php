@@ -8,6 +8,7 @@
     use ForumLib\Users\User;
     use ForumLib\Utilities\Config;
 
+    use ForumLib\Utilities\Logger;
     use \PDO;
 
     class NozumUser extends IntegrationBaseUser {
@@ -15,6 +16,7 @@
         public function login($username = 0, User $user) {
             $login = new DBUtilQuery;
             $login->setName('login')
+                ->setMultipleRows(false)
                 ->setDBUtil($this->S)
                 ->addParameter(':username', $user->username, PDO::PARAM_STR);
 
@@ -29,28 +31,31 @@
                     break;
                 case 2:
                     break;
+                case 0:
                 default:
                     $login->setQuery("SELECT * FROM `{{DBP}}users` WHERE `username` = :username");
                     break;
             }
 
-            $details = $this->S->getResultByName($login->getName());
+            $details = $login->execute()->result();
 
             if(password_verify($user->password, $details['password'])) {
-                $this->lastMessage[] = 'Successfully logged in.';
-                $user = $this->getUser($details['id']);
+                new Logger("{$user->username} logged in.", Logger::DEBUG, __FILE__, __LINE__);
+                $user = $this->getUser($details['id'], true, $user);
 
                 $lastLogin = new DBUtilQuery;
                 $lastLogin->setName('lastLogin')
-                    ->setQuery("")
-                    ->addParameter(':lastip', $this->lastLogin['ip'], PDO::PARAM_STR)
-                    ->addParameter(':lastlogindate', $this->lastlogin['date'], PDO::PARAM_STR)
+                    ->setMultipleRows(false)
+                    ->setQuery("UPDATE `{{DBP}}users` SET `lastip` = :lastip,`lastlogindate` = :lastlogindate WHERE `id` = :id")
+                    ->addParameter(':lastip', (isset($user->lastLogin['ip']) ? $user->lastLogin['ip'] : '0.0.0.0'), PDO::PARAM_STR)
+                    ->addParameter(':lastlogindate', (isset($user->lastLogin['date']) ? $user->lastLogin['date'] : ''), PDO::PARAM_STR)
                     ->addParameter(':id', $user->id, PDO::PARAM_INT)
                     ->setDBUtil($this->S)
                     ->execute();
 
                 return $user;
             } else {
+                new Logger("{$user->username} failed to log in.", Logger::DEBUG, __FILE__, __LINE__);
                 return false;
             }
         }
@@ -117,8 +122,7 @@
                 return $this;
             } else if(is_null($p2) && $login == true) {
                 // If password 2 is empty and $login is true, it'll store the clear text password in the object.
-                $this->password = $p1;
-                return $this;
+                return $p1;
             } else {
                 $this->lastError[] = 'Passwords doesn\'t match.';
                 return false;
@@ -215,6 +219,7 @@
 
             $getStatus = new DBUtilQuery;
             $getStatus->setName('getStatus')
+                ->setMultipleRows(false)
                 ->setQuery("
                     SELECT
                       *
@@ -417,8 +422,6 @@
                 ->execute();
 
             $result = $postCount->result();
-            $this->postCount = $result['count'];
-
-            return $this;
+            return $result['count'];
         }
     }

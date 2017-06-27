@@ -93,7 +93,7 @@
                             $U = new User($this->engine->_SQL);
                             $user = $U->getUser($_SESSION['user']['id']);
 
-                            if($user->group->admin) {
+                            if(isset($user->group->admin)) {
                                 $html = $this->parseCategory($this->engine->getTemplate('admin_categories', 'admin'), $_category);
                             }
                         }
@@ -133,7 +133,7 @@
                         break;
                     case 'url':
                         $_template = $this->engine->replaceVariable($match, $_template,
-                                                                    '/forums/' . $cat->getURL() . '/' . $_topic->getURL()
+                            $this->engine->rootDir . 'forums/' . $cat->getURL() . '/' . $_topic->getURL()
                         );
                         break;
                     case 'threadCount':
@@ -157,7 +157,7 @@
                             $tpc = $T->getTopic($latest['thread']->topicId);
 
                             if($tpc instanceof Topic) {
-                                $url = '/forums/' . $cat->getURL() . '/' . $tpc->getURL() . '/' . $latest['thread']->getURL();
+                                $url = $this->engine->rootDir . 'forums/' . $cat->getURL() . '/' . $tpc->getURL() . '/' . $latest['thread']->getURL();
                             }
                         }
 
@@ -176,7 +176,7 @@
                         $_template = $this->engine->replaceVariable($match, $_template, $avatar);
                         break;
                     case 'lastPosterUrl':
-                        $url = ($latest['post']->author->username ? '/profile/' . $latest['post']->author->username : '#');
+                        $url = ($latest['post']->author->username ? $this->engine->rootDir . 'profile/' . $latest['post']->author->username : '#');
                         $_template = $this->engine->replaceVariable($match, $_template, $url);
                         break;
                     case 'lastPostDate':
@@ -206,7 +206,7 @@
                         $_template = $this->engine->replaceVariable($match, $_template, $html);
                         break;
                     case 'newThreadUrl':
-                        $url = '/newthread/' . $cat->getURL() . '/' . $_topic->getURL();
+                        $url = $this->engine->rootDir . 'newthread/' . $cat->getURL() . '/' . $_topic->getURL();
                         $_template = $this->engine->replaceVariable($match, $_template, $url);
                         break;
                     case 'adminMenu':
@@ -216,7 +216,7 @@
                             $U = new User($this->engine->_SQL);
                             $user = $U->getUser($_SESSION['user']['id']);
 
-                            if($user->group->admin) {
+                            if(isset($user->group->admin)) {
                                 $html = $this->engine->getTemplate('admin_topic', 'admin');
                             }
                         }
@@ -303,7 +303,7 @@
                             $cat = $C->getCategory($top->categoryId);
 
                             $_template = $this->engine->replaceVariable($match, $_template,
-                                                                        '/forums/' . $cat->getURL() . '/' . $top->getURL() . '/' . $_thread->getURL());
+                                $this->engine->rootDir . 'forums/' . $cat->getURL() . '/' . $top->getURL() . '/' . $_thread->getURL());
                         }
                         break;
                     case 'latestPostDate':
@@ -314,7 +314,7 @@
                         $_template = $this->engine->replaceVariable($match, $_template, $_thread->latestPost->author->avatar);
                         break;
                     case 'lastPosterUrl':
-                        $_template = $this->engine->replaceVariable($match, $_template, '/profile/' . $_thread->latestPost->author->username);
+                        $_template = $this->engine->replaceVariable($match, $_template, $this->engine->rootDir . 'profile/' . $_thread->latestPost->author->username);
                         break;
                 }
             }
@@ -337,12 +337,6 @@
                         if($_post->author instanceof User) {
                             $_template = $this->engine->replaceVariable($match, $_template, $_post->author->username);
                         }
-                        break;
-                    case 'posterStatus':
-                        $U = new User($this->engine->_SQL);
-
-                        $status = ($U->getStatus($_post->author->id) ? 'success' : 'danger');
-                        $_template = $this->engine->replaceVariable($match, $_template, $status);
                         break;
                     case 'posterStatus':
                         $U = new User($this->engine->_SQL);
@@ -374,7 +368,7 @@
                         break;
                     case 'posterUrl':
                         if($_post->author instanceof User) {
-                            $_template = $this->engine->replaceVariable($match, $_template, '/profile/' . $_post->author->username);
+                            $_template = $this->engine->replaceVariable($match, $_template, $this->engine->rootDir . 'profile/' . $_post->author->username);
                         }
                         break;
                     case 'manage':

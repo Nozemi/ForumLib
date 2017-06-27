@@ -94,8 +94,8 @@
         }
     }
 
-    public function login($uname = 0) {
-        return $this->integration->login($uname, $this);
+    public function login($username = 0) {
+        return $this->integration->login($username, $this);
     }
 
     public function register() {
@@ -104,7 +104,8 @@
 
     // Set the password if the passwords match.
     public function setPassword($p1, $p2 = null, $login = false) {
-        return $this->integration->setPassword($p1, $p2, $login, $this);
+        $this->password = $this->integration->setPassword($p1, $p2, $login, $this);
+        return $this;
     }
 
     public function updateAccount() {
@@ -166,6 +167,10 @@
     public function setPostCount($_id = null) {
         $this->postCount = $this->integration->setPostCount($_id, $this);
         return $this;
+    }
+
+    public function getPostCount() {
+        return $this->postCount;
     }
 
     public function setAvatar($_avatar) {
