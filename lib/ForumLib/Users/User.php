@@ -1,16 +1,12 @@
 <?php
   namespace ForumLib\Users;
 
-  use ForumLib\Database\PSQL;
+  use ForumLib\Database\DBUtil;
 
   use ForumLib\Integration\Nozum\NozumUser;
   use ForumLib\Integration\vB3\vB3User;
-  
-  use ForumLib\Utilities\MISC;
-  use ForumLib\Utilities\Config;
 
-  use ForumLib\Forums\Post;
-  use ForumLib\Forums\Thread;
+  use ForumLib\Utilities\Config;
 
   /*
     The User object requires the PSQL class in order to function.
@@ -55,7 +51,7 @@
     private $lastError = array();
     private $lastMessage = array();
 
-    public function __construct(PSQL $SQL, $_uid = null) {
+    public function __construct(DBUtil $SQL, $_uid = null) {
         // We'll check if the required parameters are filled.
         if(!is_null($SQL)) {
             $this->S = $SQL;
@@ -84,7 +80,7 @@
 
             $C = new Config;
             $this->config = $C->config;
-            switch(array_column($this->config, 'integration')[0]) {
+            switch(array_column($this->config, 'integration')) {
                 case 'vB3':
                     $this->integration = new vB3User($this->S);
                     break;
@@ -95,12 +91,11 @@
             }
         } else {
             $this->lastError[] = 'Something went wrong with the user.';
-            return false;
         }
     }
 
-    public function login($uname = 0) {
-        return $this->integration->login($uname, $this);
+    public function login($username = 0) {
+        return $this->integration->login($username, $this);
     }
 
     public function register() {
@@ -109,7 +104,8 @@
 
     // Set the password if the passwords match.
     public function setPassword($p1, $p2 = null, $login = false) {
-        return $this->integration->setPassword($p1, $p2, $login, $this);
+        $this->password = $this->integration->setPassword($p1, $p2, $login, $this);
+        return $this;
     }
 
     public function updateAccount() {
@@ -125,7 +121,10 @@
     }
 
     public function sessionController() {
-        return $this->integration->sessionController($this);
+        $user = new self($this->S);
+        $user = $user->getUser($_SESSION['user']['id'], true);
+
+        return $this->integration->sessionController($user);
     }
 
     public function getStatus($_uid = null) {
@@ -153,8 +152,8 @@
         return $this;
     }
 
-    public function setSQL(PSQL $_SQL) {
-        if($_SQL instanceof PSQL) {
+    public function setSQL(DBUtil $_SQL) {
+        if($_SQL instanceof DBUtil) {
             $this->S = $_SQL;
             $this->lastMessage[] = 'Database was successfully set.';
         } else {
@@ -171,6 +170,10 @@
     public function setPostCount($_id = null) {
         $this->postCount = $this->integration->setPostCount($_id, $this);
         return $this;
+    }
+
+    public function getPostCount() {
+        return $this->postCount;
     }
 
     public function setAvatar($_avatar) {

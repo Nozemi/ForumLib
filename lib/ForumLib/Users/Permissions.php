@@ -1,12 +1,8 @@
 <?php
   namespace ForumLib\Users;
 
-  use ForumLib\Database\PSQL;
+  use ForumLib\Database\DBUtil;
 
-  use ForumLib\Forums\Category;
-  use ForumLib\Forums\Topic;
-  use ForumLib\Forums\Thread;
-  use ForumLib\Forums\Post;
   use ForumLib\Integration\Nozum\NozumPermissions;
   use ForumLib\Integration\vB3\vB3Permissions;
   use ForumLib\Utilities\Config;
@@ -34,13 +30,13 @@
     private $userId;    // This is defined whenever this is a user spesific permission.
     private $groupId;   // This is defined whenever this is a group spesific permission.
 
-    public function __construct(PSQL $_SQL, $_id = null) {
+    public function __construct(DBUtil $_SQL, $_id = null) {
       // We'll check if the required parameters are filled.
       if(!is_null($_SQL)) {
         $this->S = $_SQL;
           $C = new Config;
           $this->config = $C->config;
-          switch(array_column($this->config, 'integration')[0]) {
+          switch(array_column($this->config, 'integration')) {
               case 'vB3':
                   $this->integration = new vB3Permissions($this->S);
                   break;
@@ -51,7 +47,6 @@
           }
       } else {
         $this->lastError[] = 'Failed to make comment object.';
-        return false;
       }
 
       if(!is_null($_id)) {

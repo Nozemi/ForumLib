@@ -1,7 +1,7 @@
 <?php
   namespace ForumLib\Forums;
 
-  use ForumLib\Database\PSQL;
+  use ForumLib\Database\DBUtil;
 
   use ForumLib\Integration\Nozum\NozumThread;
   use ForumLib\Integration\vB3\vB3Thread;
@@ -21,14 +21,12 @@
     public $posts;
     public $latestPost;
 
-    private $integration;
-
-    public function __construct(PSQL $SQL) {
+    public function __construct(DBUtil $SQL) {
         if(!is_null($SQL)) {
             $this->S = $SQL;
+            $this->config = new Config;
 
-            $C = new Config;
-            switch(array_column($C->config, 'integration')[0]) {
+            switch($this->config->getConfigValue('integration')) {
                 case 'vB3':
                     $this->integration = new vB3Thread($this->S);
                     break;
@@ -47,8 +45,8 @@
         return $this->integration->getThreads($topicId, $this);
     }
 
-    public function createThread(Post $post) {
-        return $this->integration->createThread($post);
+    public function createThread(Thread $thread, Post $post) {
+        return $this->integration->createThread($thread, $post);
     }
 
     public function getThread($id = null, $byId = true, $topicId = null) {

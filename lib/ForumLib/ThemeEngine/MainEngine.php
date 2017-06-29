@@ -1,7 +1,8 @@
 <?php
     namespace ForumLib\ThemeEngine;
 
-    use ForumLib\Database\PSQL;
+    use ForumLib\Database\DBUtil;
+    use ForumLib\Database\DBUtilQuery;
 
     use ForumLib\Utilities\Config;
     use ForumLib\Utilities\MISC;
@@ -14,8 +15,10 @@
     use ForumLib\Forums\Category;
     use ForumLib\Forums\Various;
 
+    use ForumLib\Plugin\PluginBase;
+
     /**
-     * @var  $_SQL PSQL
+     * @var  $_SQL DBUtil
      * @var  $_Config Config
      *
      */
@@ -31,7 +34,7 @@
         protected $varWrapperStart;
         protected $varWrapperEnd;
 
-        protected $_SQL; // PSQL object
+        protected $_SQL; // DBUtil object
         protected $_Config; // Config object
 
         protected $lastError; // Array of last error messages
@@ -44,31 +47,33 @@
         /**
          * NewThemeEngine constructor.
          * @param $_name String - Theme name
-         * @param PSQL|null $SQL
+         * @param DBUtil|null $SQL
          * @param Config|null $Config
          */
-        public function __construct($_name, PSQL $SQL = null, Config $Config = null) {
+        public function __construct($_name, DBUtil $SQL = null, Config $Config = null) {
             $this->_SQL         = $SQL;
             $this->_Config      = $Config;
             $this->name         = $_name;
             $this->directory    = MISC::findFile('themes/' . $this->name);
-            $this->rootDir      = array_column($Config->config, 'siteRoot')[0];
+            $this->rootDir      = ($Config->getConfigValue('siteRoot') ? '/' . $Config->getConfigValue('siteRoot') . '/' : '/');
 
             if($this->validateTheme()) {
                 $this->setConfig();
                 $this->setTemplates();
 
                 if($this->config) {
-                    $this->varWrapperStart = MISC::findKey('varWrapper1', $this->config);
-                    $this->varWrapperEnd = MISC::findKey('varWrapper2', $this->config);
+                    $this->varWrapperStart  = MISC::findKey('varWrapper1', $this->config);
+                    $this->varWrapperEnd    = MISC::findKey('varWrapper2', $this->config);
                 } else {
-                    $this->varWrapperStart = '{{';
-                    $this->varWrapperEnd = '}}';
+                    $this->varWrapperStart  = '{{';
+                    $this->varWrapperEnd    = '}}';
                 }
             } else {
                 $this->lastError[] = 'Failed to create object.';
                 return false;
             }
+
+            return true;
         }
 
         private function validateTheme() {
@@ -114,6 +119,14 @@
             return $this->config;
         }
 
+        public function getName() {
+            return $this->name;
+        }
+
+        public function getDBUtil() {
+            return $this->_SQL;
+        }
+
         public function getTemplate($_template, $_page = null) {
             $tmp = $this->templates;
 
@@ -142,8 +155,6 @@
                             case 'latestNews':
                                 // TODO: Implement a way to decide between a blogging kind of system, or use a forum topic.
                                 if($this->_Config instanceof Config) {
-                                    $Forums = new Forums($this);
-
                                     $T = new Topic($this->_SQL);
                                     $top = $T->getTopic(MISC::findKey('newsForum', $this->_Config->config));
                                     $top->setThreads();
@@ -241,18 +252,17 @@
                                 $_template = $this->replaceVariable($match, $_template, $this->name);
                                 break;
                             case 'dir':
-
-                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? '/' . $this->rootDir : '') . '/' . $this->directory . '/');
+                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? $this->rootDir : '') . '/' . $this->directory . '/');
                                 break;
                             case 'assets':
                             case 'assetsDir':
-                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? '/' . $this->rootDir : '') . '/' . $this->directory . '/_assets/');
+                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? $this->rootDir : '') . '/' . $this->directory . '/_assets/');
                                 break;
                             case 'imgDir':
                             case 'img':
                             case 'imgs':
                             case 'images':
-                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? '/' . $this->rootDir : '') . '/' . $this->directory . '/_assets/img/');
+                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? $this->rootDir : '') . '/' . $this->directory . '/_assets/img/');
                                 break;
                         }
                         break;
@@ -303,14 +313,11 @@
                                 break;
                             case 'rootDir':
                             case 'rootDirectory':
-                                $rootDir = MISC::findFile('themes');
-                                $rootDir = $rootDir . '../';
-
-                                $_template = $this->replaceVariable($match, $_template, $rootDir);
+                                $_template = $this->replaceVariable($match, $_template, $this->rootDir);
                                 break;
                             case 'currPage':
                             case 'currentPage':
-                                $_template = $this->replaceVariable($match, $_template, MISC::getPageName($_SERVER['SCRIPT_FILENAME']));
+                                $_template = $this->replaceVariable($match, $_template, MISC::getPageName($_SERVER['SCRIPT_FILENAME'], $this->_SQL));
                                 break;
                             case 'members':
                             case 'membersList':
@@ -327,7 +334,7 @@
                                 $_template = $this->replaceVariable($match, $_template, $html);
                                 break;
                             case 'pageName':
-                                $_template = $this->replaceVariable($match, $_template, MISC::getPageName($_SERVER['SCRIPT_FILENAME']));
+                                $_template = $this->replaceVariable($match, $_template, MISC::getPageName($_SERVER['SCRIPT_FILENAME'], $this->_SQL));
                                 break;
                             case 'userNav':
                                 if(empty($_SESSION)) {
@@ -359,11 +366,11 @@
                                 break;
                             case 'onlineMembers':
                                 $U = new User($this->_SQL);
-                                $UT = new Profile($this);
+                                $P = new Profile($this);
 
                                 $html = '';
                                 for($i = 0; $i < $U->getOnlineCount()['memberCount']; $i++) {
-                                    $html .= $UT->parseProfile(
+                                    $html .= $P->parseProfile(
                                         $this->getTemplate('portal_online_users_user', 'portal'),
                                         $U->getUser($U->getOnlineCount()['members'][$i]['userId'])
                                     );
@@ -389,26 +396,21 @@
                         }
                         break;
                     case 'content':
-                        $this->_SQL->prepareQuery($this->_SQL->replacePrefix('{{DBP}}', "
-                            SELECT
-                                `value`
-                            FROM `{{DBP}}content_strings`
-                            WHERE `key` = :key
-                        "));
-                        if($this->_SQL->executeQuery(array(
-                            ':key' => $template[1]
-                        ))) {
-                            $val = $this->_SQL->fetch();
-                            $_template = $this->replaceVariable($match, $_template, $val['value']);
-                        } else {
-                            $this->lastError[] = 'Something went wrong while running query.';
-                            return false;
-                        }
+                        $contentQuery = new DBUtilQuery;
+                        $contentQuery->setName('contentQuery')
+                            ->setMultipleRows(false)
+                            ->setQuery("SELECT `value` FROM `{{PREFIX}}content_strings` WHERE `key` = :key")
+                            ->addParameter(':key', $template[1], \PDO::PARAM_STR);
+                        $this->_SQL->runQuery($contentQuery);
+
+                        $content = $this->_SQL->getResultByName($contentQuery->getName());
+                        $_template = $this->replaceVariable($match, $_template, $content['value']);
                         break;
                     default:
                     case 'custom':
                         if(isset($template[1])) {
                             if (class_exists($template[1])) {
+                                /** @var PluginBase $plugin */
                                 $plugin = new $template[1]($this);
                                 $_template = $plugin->customParse($_template);
                             }
@@ -431,7 +433,13 @@
             return $matches;
         }
 
-        protected function replaceVariable($_match, $_template, $_replacement) {
+        protected function replaceVariable($_match, $_template, $_replacement, $file = 'NONE', $line = 0) {
+            /*if(basename($file) == 'Profile.php') {
+                print_r($_replacement); echo "{$file} - {$line}<hr>";
+
+                new Logger("Replacing variable {$_match}, with {$_replacement}.", Logger::DEBUG, $file, $line);
+            }*/
+
             return str_replace($this->varWrapperStart . $_match . $this->varWrapperEnd, $_replacement, $_template);
         }
 

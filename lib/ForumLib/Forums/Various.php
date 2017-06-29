@@ -1,27 +1,24 @@
 <?php
     namespace ForumLib\Forums;
 
-    use ForumLib\Database\PSQL;
+    use ForumLib\Database\DBUtil;
 
     use ForumLib\Integration\Nozum\NozumVarious;
     use ForumLib\Integration\vB3\vB3Various;
     use ForumLib\Utilities\Config;
 	
     class Various {
-
         private $S;
-
-        private $integration;
 
         private $lastError = array();
         private $lastMessage = array();
 
-        public function __construct(PSQL $_SQL) {
-            if($_SQL instanceof PSQL) {
+        public function __construct(DBUtil $_SQL) {
+            if($_SQL instanceof DBUtil) {
                 $this->S = $_SQL;
-                $C = new Config;
-                $this->config = $C->config;
-                switch(array_column($this->config, 'integration')[0]) {
+                $this->config = new Config;
+
+                switch($this->config->getConfigValue('integration')) {
                     case 'vB3':
                         $this->integration = new vB3Various($this->S);
                         break;

@@ -1,9 +1,13 @@
 <?php
     namespace ForumLib\Integration\Nozum;
 
+    use ForumLib\Database\DBUtil;
+    use ForumLib\Database\DBUtilQuery;
     use ForumLib\Forums\Post;
     use ForumLib\Forums\Thread;
     use ForumLib\Integration\IntegrationBasePost;
+
+    use \PDO;
 
     class NozumPost extends IntegrationBasePost {
 
@@ -13,147 +17,115 @@
                 return false;
             }
 
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                INSERT INTO `{{DBP}}posts` (
-                     `post_content_html`
-                    ,`post_content_text`
-                    ,`authorId`
-                    ,`threadId`
-                    ,`postDate`
-                    ,`editDate`
-                ) VALUES (
-                     :post_content_html
-                    ,:post_content_text
-                    ,:authorId
-                    ,:threadId
-                    ,:postDate
-                    ,:editDate
-                );
-            "));
+            $createPost = new DBUtilQuery;
+            $createPost->setName('createPost')
+                ->setQuery("
+                    INSERT INTO `{{DBP}}posts` (
+                         `post_content_html`
+                        ,`post_content_text`
+                        ,`authorId`
+                        ,`threadId`
+                        ,`postDate`
+                        ,`editDate`
+                    ) VALUES (
+                         :post_content_html
+                        ,:post_content_text
+                        ,:authorId
+                        ,:threadId
+                        ,:postDate
+                        ,:editDate
+                    );
+                ")
+                ->addParameter(':post_content_html', $post->post_html, PDO::PARAM_STR)
+                ->addParameter(':post_content_text', $post->post_text, PDO::PARAM_STR)
+                ->addParameter(':authorId', $post->author->id, PDO::PARAM_INT)
+                ->addParameter(':threadId', $post->threadId, PDO::PARAM_INT)
+                ->addParameter(':postDate', date('Y-m-d H:i:s'), PDO::PARAM_STR)
+                ->addParameter(':editDate', date('Y-m-d H:i:s'), PDO::PARAM_STR)
+                ->setDBUtil($this->S)
+                ->execute();
 
-            if($this->S->executeQuery(array(
-                ':post_content_html' => $post->post_html,
-                ':post_content_text' => $post->post_text,
-                ':authorId'          => $post->author->id,
-                ':threadId'          => $post->threadId,
-                ':postDate'          => date('Y-m-d H:i:s'),
-                ':editDate'          => date('Y-m-d H:i:s')
-            ))) {
-                $this->lastMessage[] = 'Post successfully created.';
-                return true;
-            } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                } else {
-                 $this->lastError[] = 'Something went wrong while submitting post.';
-                }
-                return false;
-            }
+            return true;
         }
 
         public function getPosts($threadId, Post $post) {
             if(is_null($threadId)) $threadId = $post->threadId;
 
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                SELECT * FROM `{{DBP}}posts` WHERE `threadId` = :threadId ORDER BY `postDate` ASC"
-            ));
+            $getPosts = new DBUtilQuery;
+            $getPosts->setName('getPosts')
+                ->setQuery("SELECT * FROM `{{DBP}}posts` WHERE `threadId` = :threadId ORDER BY `postDate` ASC")
+                ->addParameter(':threadId', $threadId, PDO::PARAM_INT)
+                ->setDBUtil($this->S)
+                ->execute();
 
-            if($this->S->executeQuery(array(
-                ':threadId' => $threadId
-            ))) {
-                $this->lastMessage[] = 'Successfully fetched posts.';
+            $posts = $this->S->getResultByName($getPosts->getName());
 
-                $posts = $this->S->fetchAll();
-                $thePosts = array();
+            $thePosts = array();
 
-                for($i = 0; $i < count($posts); $i++) {
-                    $thePost = new Post($this->S);
-                    $thePost->setId($posts[$i]['id'])
-                        ->setThreadId($posts[$i]['threadId'])
-                        ->setAuthor($posts[$i]['authorId'])
-                        ->setPostDate($posts[$i]['postDate'])
-                        ->setEditDate($posts[$i]['editDate'])
-                        ->setHTML($posts[$i]['post_content_html'])
-                        ->setText($posts[$i]['post_content_text'])
-                        ->setOriginalPost($posts[$i]['originalPost']);
+            for($i = 0; $i < count($posts); $i++) {
+                $thePost = new Post($this->S);
+                $thePost->setId($posts[$i]['id'])
+                    ->setThreadId($posts[$i]['threadId'])
+                    ->setAuthor($posts[$i]['authorId'])
+                    ->setPostDate($posts[$i]['postDate'])
+                    ->setLastEdited($posts[$i]['editDate'])
+                    ->setHTML($posts[$i]['post_content_html'])
+                    ->setText($posts[$i]['post_content_text'])
+                    ->setOriginalPost($posts[$i]['originalPost']);
 
-                    $thePosts[] = $thePost;
-                }
-
-                return $thePosts;
-            } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                } else {
-                    $this->lastError[] = 'Something went wrong while fetching posts.';
-                }
-
-                return false;
+                $thePosts[] = $thePost;
             }
+
+            return $thePosts;
         }
 
         public function getPost($id, Post $post) {
             if(is_null($id)) $id = $post->id;
 
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "SELECT * FROM `{{DBP}}posts` WHERE `id` = :id"));
-            if($this->S->executeQuery(array(
-                ':id' => $id
-            ))) {
-                $rpost = $this->S->fetch();
+            $getPost = new DBUtilQuery;
+            $getPost->setName('getPost')
+                ->setMultipleRows(false)
+                ->setQuery("SELECT * FROM `{{DBP}}posts` WHERE `id` = :id")
+                ->addParameter(':id', $id, PDO::PARAM_INT)
+                ->setDBUtil($this->S)
+                ->execute();
 
-                $thePost = new Post($this->S);
-                $thePost->setId($rpost['id'])
-                    ->setThreadId($rpost['threadId'])
-                    ->setAuthor($rpost['authorId'])
-                    ->setPostDate($rpost['postDate'])
-                    ->setEditDate($rpost['editDate'])
-                    ->setHTML($rpost['post_content_html'])
-                    ->setText($rpost['post_content_text'])
-                    ->setOriginalPost($rpost['originalPost']);
+            $tmpPost = $this->S->getResultByName($getPost->getName());
 
-                $this->lastMessage[] = 'Successfully fetched posts.';
+            $thePost = new Post($this->S);
+            $thePost->setId($tmpPost['id'])
+                ->setThreadId($tmpPost['threadId'])
+                ->setAuthor($tmpPost['authorId'])
+                ->setPostDate($tmpPost['postDate'])
+                ->setLastEdited($tmpPost['editDate'])
+                ->setHTML($tmpPost['post_content_html'])
+                ->setText($tmpPost['post_content_text'])
+                ->setOriginalPost($tmpPost['originalPost']);
 
-                return $thePost;
-            } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                } else {
-                    $this->lastError[] = 'Something went wrong while fetching post.';
-                }
+            $this->lastMessage[] = 'Successfully fetched posts.';
 
-                return false;
-            }
+            return $thePost;
         }
 
         public function updatePost(Post $post) {
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                UPDATE `{{DBP}}posts` SET
-                   `post_content_html`  = :post_content_html
-                  ,`post_content_text`  = :post_content_text
-                  ,`authorId`           = :authorId
-                  ,`threadId`           = :threadId
-                  ,`editDate`           = :editDate
-                WHERE `postId` = :postId
-            "));
-            if($this->S->executeQuery(array(
-                ':post_content_html' => $post->post_html,
-                ':post_content_text' => $post->post_text,
-                ':authorId'          => $post->author->id,
-                ':threadId'          => $post->threadId,
-                ':editDate'          => date('Y-m-d H:i:s', time())
-            ))) {
-                $this->lastMessage[] = 'Successfully edited post.';
-
-                return true;
-            } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                } else {
-                    $this->lastError[] = 'Something went wrong while updating post.';
-                }
-
-                return false;
-            }
+            $updatePost = new DBUtilQuery;
+            $updatePost->setName('updatePost')
+                ->setQuery("
+                    UPDATE `{{DBP}}posts` SET
+                       `post_content_html`  = :post_content_html
+                      ,`post_content_text`  = :post_content_text
+                      ,`authorId`           = :authorId
+                      ,`threadId`           = :threadId
+                      ,`editDate`           = :editDate
+                    WHERE `postId` = :postId
+                ")
+                ->addParameter(':post_content_html', $post->post_html, PDO::PARAM_STR)
+                ->addParameter(':post_content_text', $post->post_text, PDO::PARAM_STR)
+                ->addParameter(':authorId', $post->author->id, PDO::PARAM_INT)
+                ->addParameter(':threadId', $post->threadId, PDO::PARAM_INT)
+                ->addParameter(':editDate', date('Y-m-d H:i:s'), PDO::PARAM_STR)
+                ->setDBUtil($this->S)
+                ->execute();
         }
 
         public function deletePost($id, Post $post) {
@@ -168,24 +140,11 @@
                 $thread->deleteThread();
             }
 
-            $this->S->prepareQuery($this->S->replacePrefix('{{DBP}}', "
-                DELETE FROM `{{DBP}}posts` WHERE `id` = :id
-            "));
-
-            if($this->S->executeQuery(array(
-                ':id' => $id
-            ))) {
-                $this->lastMessage[] = 'Successfully deleted post.';
-
-                return true;
-            } else {
-                if(defined('DEBUG')) {
-                    $this->lastError[] = $this->S->getLastError();
-                } else {
-                    $this->lastError[] = 'Something went wrong while deleting post.';
-                }
-
-                return false;
-            }
+            $deletePost = new DBUtilQuery;
+            $deletePost->setName('deletePost')
+                ->setQuery("DELETE FROM `{{DBP}}posts` WHERE `id` = :id")
+                ->addParameter(':id', $id, PDO::PARAM_INT)
+                ->setDBUtil($this->S)
+                ->execute();
         }
     }
