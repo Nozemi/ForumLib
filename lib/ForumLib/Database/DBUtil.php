@@ -157,10 +157,12 @@
          */
         public function runQuery(DBUtilQuery $query) {
             $this->executeQuery($query);
+            return $this;
         }
 
         public function runQueryByName($name) {
             $this->executeQuery($this->query_queue[$name]);
+            return $this;
         }
 
         public function getConnection() {

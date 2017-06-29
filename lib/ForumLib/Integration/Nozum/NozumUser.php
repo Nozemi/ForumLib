@@ -1,6 +1,7 @@
 <?php
     namespace ForumLib\Integration\Nozum;
 
+    use ForumLib\Database\DBUtil;
     use ForumLib\Database\DBUtilQuery;
     use ForumLib\Forums\Post;
     use ForumLib\Forums\Thread;
@@ -177,22 +178,23 @@
         public function sessionController(User $user) {
             $sessionController = new DBUtilQuery;
             $sessionController->setName('sessionController')
+                ->setMultipleRows(false)
                 ->setQuery("
                     INSERT INTO `{{DBP}}users_session` SET
-                         `uid` = :uid
+                         `uid`        = :uid
                         ,`lastActive` = :lastActive
-                        ,`ipAddress` = :ipAddress
-                        ,`created` = :created
-                        ,`lastPage` = :lastPage
-                        ,`phpSessId` = :phpSessId
-                        ,`userAgent` = :userAgent
+                        ,`ipAddress`  = :ipAddress
+                        ,`created`    = :created
+                        ,`lastPage`   = :lastPage
+                        ,`phpSessId`  = :phpSessId
+                        ,`userAgent`  = :userAgent
                     ON DUPLICATE KEY UPDATE
-                         `uid` = :uid
+                         `uid`        = :uid
                         ,`lastActive` = :lastActive
-                        ,`ipAddress` = :ipAddress
-                        ,`lastPage` = :lastPage
-                        ,`phpSessId` = :phpSessId
-                        ,`userAgent` = :userAgent;
+                        ,`ipAddress`  = :ipAddress
+                        ,`lastPage`   = :lastPage
+                        ,`phpSessId`  = :phpSessId
+                        ,`userAgent`  = :userAgent;
                 ")
                 ->setParameters(array(
                     array(':uid', ($user->id ? $user->id : 0), PDO::PARAM_INT),
@@ -244,14 +246,7 @@
         public function getOnlineCount(User $user) {
             $onlineCount = new DBUtilQuery;
             $onlineCount->setName('onlineCount')
-                ->setQuery("
-                    SELECT
-                        *
-                    FROM (
-                        SELECT * FROM `{{DBP}}users_session` ORDER BY `lastActive` DESC
-                    ) `sessions`
-                    GROUP BY `uid`
-                ")
+                ->setQuery("SELECT * FROM (SELECT * FROM `{{PREFIX}}users_session` ORDER BY `lastActive` DESC) `sessions` GROUP BY `uid`")
                 ->setDBUtil($this->S)
                 ->execute();
 
@@ -290,7 +285,7 @@
                 return false;
             }
 
-            if(!$this->S instanceof PSQL) {
+            if(!$this->S instanceof DBUtil) {
                 $this->lastError[] = 'No instance of PSQL was found in the User object instance.';
                 return false;
             }

@@ -121,7 +121,10 @@
     }
 
     public function sessionController() {
-        return $this->integration->sessionController($this);
+        $user = new self($this->S);
+        $user = $user->getUser($_SESSION['user']['id'], true);
+
+        return $this->integration->sessionController($user);
     }
 
     public function getStatus($_uid = null) {

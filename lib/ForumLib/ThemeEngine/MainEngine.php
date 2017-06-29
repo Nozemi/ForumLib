@@ -5,7 +5,6 @@
     use ForumLib\Database\DBUtilQuery;
 
     use ForumLib\Utilities\Config;
-    use ForumLib\Utilities\Logger;
     use ForumLib\Utilities\MISC;
 
     use ForumLib\Users\User;
@@ -35,7 +34,7 @@
         protected $varWrapperStart;
         protected $varWrapperEnd;
 
-        protected $_SQL; // PSQL object
+        protected $_SQL; // DBUtil object
         protected $_Config; // Config object
 
         protected $lastError; // Array of last error messages
@@ -63,16 +62,18 @@
                 $this->setTemplates();
 
                 if($this->config) {
-                    $this->varWrapperStart = MISC::findKey('varWrapper1', $this->config);
-                    $this->varWrapperEnd = MISC::findKey('varWrapper2', $this->config);
+                    $this->varWrapperStart  = MISC::findKey('varWrapper1', $this->config);
+                    $this->varWrapperEnd    = MISC::findKey('varWrapper2', $this->config);
                 } else {
-                    $this->varWrapperStart = '{{';
-                    $this->varWrapperEnd = '}}';
+                    $this->varWrapperStart  = '{{';
+                    $this->varWrapperEnd    = '}}';
                 }
             } else {
                 $this->lastError[] = 'Failed to create object.';
                 return false;
             }
+
+            return true;
         }
 
         private function validateTheme() {
@@ -365,11 +366,11 @@
                                 break;
                             case 'onlineMembers':
                                 $U = new User($this->_SQL);
-                                $UT = new Profile($this);
+                                $P = new Profile($this);
 
                                 $html = '';
                                 for($i = 0; $i < $U->getOnlineCount()['memberCount']; $i++) {
-                                    $html .= $UT->parseProfile(
+                                    $html .= $P->parseProfile(
                                         $this->getTemplate('portal_online_users_user', 'portal'),
                                         $U->getUser($U->getOnlineCount()['members'][$i]['userId'])
                                     );

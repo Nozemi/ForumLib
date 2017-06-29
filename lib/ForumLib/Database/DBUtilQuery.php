@@ -40,7 +40,19 @@
         }
 
         public function setParameters($parameters) {
-            $this->parameters = $parameters;
+            foreach($parameters as $parameter) {
+                if(!isset($parameter[0]) || !isset($parameter[1])) {
+                    new Logger('Parameters weren\'t supplied correctly. See DBUtilQuery::addParameter() method.', Logger::ERROR, __FILE__, __LINE__);
+                    return false;
+                }
+
+                if(isset($parameter[2])) {
+                    $this->addParameter($parameter[0], $parameter[1], $parameter[2]);
+                } else {
+                    $this->addParameter($parameter[0], $parameter[1]);
+                }
+            }
+
             return $this;
         }
 
