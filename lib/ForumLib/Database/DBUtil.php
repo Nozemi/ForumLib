@@ -24,7 +24,7 @@ class DBUtil {
      * @throws DBUtilException
      */
     public function __construct($details) {
-        foreach($details as $key => $detail) {
+        foreach((object) $details as $key => $detail) {
             $this->connection_info->$key = $detail;
         }
 
