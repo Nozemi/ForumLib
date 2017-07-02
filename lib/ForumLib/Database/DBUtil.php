@@ -10,7 +10,7 @@ class DBUtil {
     const PostgreSQL = 3;
     const Oracle     = 4;
 
-    private $connection_info;
+    private $connection_info = (object) array('host' => 'localhost', 'name' => null, 'port' => 3306, 'user' => 'root', 'pass' => '', 'prefix' => '', 'type' => self::MySQL);
 
     private $query_queue;
     private $query_results;
@@ -23,16 +23,10 @@ class DBUtil {
      * @param object $details
      * @throws DBUtilException
      */
-    public function __construct($details = (object) array('host' => 'localhost', 'name' => null, 'port' => 3306, 'user' => 'root', 'pass' => '', 'prefix' => '', 'type' => self::MySQL)) {
-        $this->connection_info->host    = (isset($details->host)    ? $details->host    : 'localhost');
-        $this->connection_info->name    = (isset($details->name)    ? $details->name    : null);
-        $this->connection_info->port    = (isset($details->port)    ? $details->port    : 3306);
-        $this->connection_info->user    = (isset($details->user)    ? $details->user    : 'root');
-        $this->connection_info->pass    = (isset($details->pass)    ? $details->pass    : '');
-        $this->connection_info->prefix  = (isset($details->prefix)  ? $details->prefix  : '');
-        $this->connection_info->type    = (isset($details->type)    ? $details->type    : self::MySQL);
-
-        $this->connection_info = (object) $details;
+    public function __construct($details) {
+        foreach($details as $key => $detail) {
+            $this->connection_info->$key = $detail;
+        }
 
         if(!$this->isValid()) {
             new Logger('Invalid database details', Logger::ERROR, __CLASS__, __LINE__);
