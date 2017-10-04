@@ -14,7 +14,5 @@
             "homepage": "https://github.com/Nozemi",
             "role": "Project Leader & Developer"
         }
-    ],
-    "minimum-stability": "dev",
-    "version": "1.0.0.0"
+    ]
 }
