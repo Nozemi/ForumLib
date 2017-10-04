@@ -14,5 +14,10 @@
             "homepage": "https://github.com/Nozemi",
             "role": "Project Leader & Developer"
         }
-    ]
+    ],
+    "autoload": {
+        "psr-4": {
+            "ForumLib\\": "lib/ForumLib"
+        }
+    }
 }
