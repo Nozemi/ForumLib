@@ -58,6 +58,9 @@
             }
         }
 
+        /**
+         * @return mixed
+         */
         public function getConfigValue($key) {
             $configVal = null;
             if(isset(array_column($this->config, $key)[0])) {
