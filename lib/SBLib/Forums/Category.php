@@ -1,0 +1,81 @@
+<?php
+  namespace SBLib\Forums;
+
+  use SBLib\Database\DBUtil;
+  use SBLib\Users\Permissions;
+  use SBLib\Utilities\Config;
+
+  use SBLib\Integration\Nozum\NozumCategory;
+  use SBLib\Integration\vB3\vB3Category;
+
+  class Category extends Base {
+    public $enabled;
+    public $permissions;
+    public $topics;
+    public $config;
+
+    public function __construct(DBUtil $SQL) {
+      // Let's check if the $Database is not a null.
+      if(!is_null($SQL)) {
+        $this->S = $SQL;
+          $this->config = new Config;
+
+          switch($this->config->getConfigValue('integration')) {
+            case 'vB3':
+                $this->integration = new vB3Category($this->S);
+                break;
+            case 'Nozum':
+            default:
+                $this->integration = new NozumCategory($this->S);
+                break;
+        }
+      } else {
+        $this->lastError[] = 'Something went wrong while creating the category object.';
+      }
+    }
+
+    public function getCategories() {
+        return $this->integration->getCategories();
+    }
+
+    public function getCategory($id = null, $byId = true) {
+        return $this->integration->getCategory($id, $byId, $this);
+    }
+
+    public function createCategory() {
+        return $this->integration->createCategory($this);
+    }
+
+    public function updateCategory() {
+        return $this->integration->updateCategory($this);
+    }
+
+    public function deleteCategory($id = null) {
+        return $this->integration->deleteCategory($id, $this);
+    }
+
+    public function setEnabled($_enabled) {
+      $this->enabled = $_enabled;
+      return $this;
+    }
+
+    public function setPermissions($_id = null) {
+      if(is_null($this->id)) $this->id = $_id;
+
+      $P = new Permissions($this->S, $this->id, $this);
+      $this->permissions = $P->getPermissions();
+      return $this;
+    }
+
+    public function setTopics($_cid = null) {
+      if(is_null($this->id)) $this->id = $_cid;
+
+      $T = new Topic($this->S);
+      $this->topics = $T->getTopics();
+      return $this;
+    }
+
+    public function getType() {
+      return __CLASS__;
+    }
+  }

@@ -1,5 +1,5 @@
 {
-    "name": "nozemi/forumlib",
+    "name": "nozemi/sblib",
     "description": "A forum library - for the core forum functionality, without a front-end to display it.",
     "type": "library",
     "require": {
@@ -17,7 +17,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "ForumLib\\": "lib/ForumLib"
+            "SBLib\\": "lib/SBLib"
         }
     }
 }

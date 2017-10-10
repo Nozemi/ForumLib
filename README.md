@@ -1,5 +1,5 @@
-# Nozemi's ForumLib
-Nozemi's forum library, as seen in Nozum - my forum software.
+# Slick Board's Backend Library
+A forum backend library, as seen in Slibk Board - my forum software.
 You can either build on this library yourself,
 or choose to continue building on the whole forum software I'm developing.
 
@@ -22,4 +22,4 @@ forum software that people can use if they want to.
 If you wish to read more about the functionality; you should head over the documentation.
 Everything about the project, and it's functionality is explained in details there.
 
-**Note that this README might contain inaccurate information! Due to it being in development.**
+**Note that this README might contain inaccurate information! Due to the project being under heavily development.**
