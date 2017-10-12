@@ -422,6 +422,67 @@
             return $_template;
         }
 
+        protected function parseTemplate_new($_template) {
+            $matches = $this->findPlaceholders($_template);
+
+            foreach($matches as $match) {
+                /** @var $match Placeholder */
+                switch($match->getCategory()) {
+                    case 'forum':
+                        break;
+                    case 'user':
+                    case 'profile':
+                        if(isset($_GET['username']) || isset($_SESSION['user']['username'])) {
+                            $username = (isset($_GET['username']) ? $_GET['username'] : $_SESSION['user']['username']);
+
+                            $Profile    = new Profile($this);
+                            $User       = new User($this->_SQL);
+                            $user       = $User->getUser(str_replace('_', ' ', $username), false);
+
+                            if($user instanceof User) {
+                                $_template = $Profile->parseProfile($_template, $user);
+                            }
+                        }
+                        break;
+                    case 'structure':
+                        break;
+                    case 'theme':
+                        break;
+                    case 'site':
+                        break;
+                    case 'pagination':
+                        // TODO: Need to do something here. Idk just what yet.
+                        switch($match->getOption()) {
+                            case 'links':
+                                break;
+                        }
+                        break;
+                    case 'content':
+                        $contentQuery = new DBUtilQuery;
+                        $contentQuery->setName('contentQuery')
+                            ->setMultipleRows(false)
+                            ->setQuery("SELECT `value` FROM `{{PREFIX}}content_strings` WHERE `key` = :key")
+                            ->addParameter(':key', $match->getOption(), \PDO::PARAM_STR);
+                        $this->_SQL->runQuery($contentQuery);
+
+                        // TODO: Add some kind of error checking here.
+                        $content = (object) $this->_SQL->getResultByName($contentQuery->getName());
+                        $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $content->value);
+                        break;
+                    case 'custom':
+                    default:
+                        if($match->getOption()) {
+                            if(class_exists($match->getOption())) {
+                                /** @var PluginBase $plugin */
+                                $plugin = new ($match->getOption())($this);
+                                $_template = $plugin->customParse($_template);
+                            }
+                        }
+                        break;
+                }
+            }
+        }
+
         /**
          * Finds all placeholder variables within the template files.
          * @param $_template
@@ -429,6 +490,12 @@
          */
         protected function findPlaceholders($_template) {
             preg_match_all('/' . $this->varWrapperStart . '(.*?)' . $this->varWrapperEnd . '/', $_template, $matches);
+
+            $matches = array();
+            foreach($matches as $match) {
+                $ph = new Placeholder($match);
+                $matches[] = $ph->getObject();
+            }
 
             return $matches;
         }
