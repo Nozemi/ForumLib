@@ -73,14 +73,13 @@
             }
 
             $timestamp = \Date('m/d Y - H:i:s');
-
-            $logFile = MISC::findFile('logs/eldrios.log');
+            $logFile = MISC::findFile('logs/' . $config->getConfigValue('siteName', 'default') . '.log');
 
             try {
                 // Open and write to the file if it doesn't exist.
 
                 if(!file_exists($logFile)) {
-                    $accessFile = fopen($logFile, "w");
+                    $accessFile = fopen($logFile, "w+");
                 } else {
                     if((filesize($logFile) / 1024) > (!empty($logSize) ? $logSize : 1000)) {
                         $accessFile = fopen($logFile, "w");

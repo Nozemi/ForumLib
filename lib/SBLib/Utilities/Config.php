@@ -61,12 +61,19 @@
         /**
          * @return mixed
          */
-        public function getConfigValue($key) {
+        public function getConfigValue($key, $defaultValue = null) {
             $configVal = null;
-            if(isset(array_column($this->config, $key)[0])) {
-                $configVal = array_column($this->config, $key)[0];
-            } else if(!empty(array_column($this->config, $key))) {
-                $configVal = array_column($this->config, $key);
+
+            if(is_array($this->config)) {
+                if (isset(array_column($this->config, $key)[0])) {
+                    $configVal = array_column($this->config, $key)[0];
+                } else if (!empty(array_column($this->config, $key))) {
+                    $configVal = array_column($this->config, $key);
+                }
+            }
+
+            if($configVal == null || $configVal == '') {
+                return $defaultValue;
             }
 
             return $configVal;

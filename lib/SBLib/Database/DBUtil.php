@@ -4,13 +4,13 @@ namespace SBLib\Database;
 use SBLib\Utilities\Logger;
 
 class DBUtil {
-    const MySQL      = 0;
-    const MsSQL      = 1;
-    const SQLite     = 2;
-    const PostgreSQL = 3;
-    const Oracle     = 4;
+    const MySQL       = 0;
+    const MsSQL       = 1;
+    const SQLite      = 2;
+    const PostgresSQL = 3;
+    const Oracle      = 4;
 
-    private $connection_info = (object) array('host' => 'localhost', 'name' => null, 'port' => 3306, 'user' => 'root', 'pass' => '', 'prefix' => '', 'type' => self::MySQL);
+    private $connection_info;
 
     private $query_queue;
     private $query_results;
@@ -74,6 +74,8 @@ class DBUtil {
      * @throws DBUtilException
      */
     public function __construct($details) {
+        $this->connection_info = (object) array('host' => 'localhost', 'name' => null, 'port' => 3306, 'user' => 'root', 'pass' => '', 'prefix' => '', 'type' => self::MySQL);
+
         foreach((object) $details as $key => $detail) {
             $this->connection_info->$key = $detail;
         }
