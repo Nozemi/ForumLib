@@ -13,4 +13,8 @@
         public function getGroup($id, Group $group) {
             // TODO: Implement getGroup() method.
         }
+
+        public function createGroup(Group $group) {
+            // TODO: Implement createGroup() method.
+        }
     }

@@ -99,7 +99,8 @@
     }
 
     public function register() {
-        return $this->integration->register($this);
+        $this->id = $this->integration->register($this);
+        return $this;
     }
 
     // Set the password if the passwords match.
@@ -125,6 +126,10 @@
         $user = $user->getUser($_SESSION['user']['id'], true);
 
         return $this->integration->sessionController($user);
+    }
+
+    public function getId() {
+        return $this->id;
     }
 
     public function getStatus($_uid = null) {

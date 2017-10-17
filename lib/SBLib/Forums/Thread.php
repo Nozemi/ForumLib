@@ -45,8 +45,13 @@
         return $this->integration->getThreads($topicId, $this);
     }
 
-    public function createThread(Thread $thread, Post $post) {
-        return $this->integration->createThread($thread, $post);
+    public function createThread(Thread $thread = null, Post $post) {
+        if($thread == null) {
+            $thread = $this;
+        }
+
+        $this->id = $this->integration->createThread($thread, $post);
+        return $this;
     }
 
     public function getThread($id = null, $byId = true, $topicId = null) {

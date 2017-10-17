@@ -37,7 +37,8 @@
         }
 
         public function createTopic($categoryId = null) {
-            return $this->integration->createTopic($categoryId, $this);
+            $this->id = $this->integration->createTopic($categoryId, $this);
+            return $this;
         }
 
         public function getTopics($categoryId = null) {

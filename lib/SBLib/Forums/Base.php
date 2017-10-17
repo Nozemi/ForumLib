@@ -47,6 +47,10 @@
             return $this;
         }
 
+        public function getId() {
+            return $this->id;
+        }
+
         public function getURL() {
             return strtolower(str_replace('--', '-', preg_replace("/[^a-z0-9._-]+/i", "", str_replace(' ', '-', $this->title))));
         }
