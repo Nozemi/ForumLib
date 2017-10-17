@@ -86,6 +86,8 @@
                 ->addParameter(':order', $cat->order, PDO::PARAM_INT)
                 ->setDBUtil($this->S)
                 ->execute();
+
+            return $this->S->getLastInsertId();
         }
 
         public function updateCategory(Category $cat) {

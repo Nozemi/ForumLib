@@ -111,6 +111,8 @@
                     ->addParameter(':group', ($user->group->id ? $user->group->id : $C->getConfigValue('defaultGroup')), PDO::PARAM_INT)
                     ->setDBUtil($this->S)
                     ->execute();
+
+                return $this->S->getLastInsertId();
             }
 
             return true;

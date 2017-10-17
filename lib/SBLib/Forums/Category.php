@@ -43,7 +43,8 @@
     }
 
     public function createCategory() {
-        return $this->integration->createCategory($this);
+        $this->id = $this->integration->createCategory($this);
+        return $this;
     }
 
     public function updateCategory() {

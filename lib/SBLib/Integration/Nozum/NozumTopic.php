@@ -31,6 +31,8 @@
                 ->addParameter(':order', $top->order, PDO::PARAM_INT)
                 ->setDBUtil($this->S)
                 ->execute();
+
+            return $this->S->getLastInsertId();
         }
 
         public function getTopics($categoryId, Topic $top) {

@@ -54,4 +54,22 @@
 
             return $group;
         }
+
+        public function createGroup(Group $group) {
+            $createGroup = new DBUtilQuery;
+            $createGroup->setName('createGroup')
+                ->setQuery("
+                    INSERT INTO `{{DBP}}groups` SET
+                         `title`    = :title
+                        ,`desc`     = :desc
+                        ,`admin`    = :admin
+                ")
+                ->addParameter(':title', $group->name)
+                ->addParameter(':desc', $group->description)
+                ->addParameter(':admin', $group->admin)
+                ->setDBUtil($this->S)
+                ->execute();
+
+            return $this->S->getLastInsertId();
+        }
     }

@@ -40,6 +40,9 @@
         protected $lastError; // Array of last error messages
         protected $lastMessage; // Array of last info messages
 
+        const START = 0;
+        const END = 1;
+
         protected function customParse($_template) {
             return $_template;
         }
@@ -85,6 +88,14 @@
             }
 
             return true;
+        }
+
+        public function getWrapper($place) {
+            if($place == self::START) {
+                return $this->varWrapperStart;
+            } else {
+                return $this->varWrapperEnd;
+            }
         }
 
         private function setTemplates() {
@@ -134,38 +145,38 @@
                 $tmp = $this->templates['page_' . $_page];
             }
 
-            return $this->parseTemplate(MISC::findKey($_template, $tmp));
+            return $tmp;
+
+            //return $this->parseTemplate(MISC::findKey($_template, $tmp));
         }
 
         protected function parseTemplate($_template) {
             $matches = $this->findPlaceholders($_template);
 
-            foreach($matches[1] as $match) {
-                $template = explode('::', $match);
-
-                switch($template[0]) {
-                    case 'structure':
-                        $_template = $this->replaceVariable($match, $_template, $this->getTemplate($template[1]));
-                        break;
+            foreach($matches as $match) {
+                /** @var $match Placeholder */
+                switch($match->getCategory()) {
                     case 'forum':
                     case 'forums':
                         $Forums = new Forums($this);
 
-                        switch($template[1]) {
+                        switch($match->getOption()) {
                             case 'latestNews':
                                 // TODO: Implement a way to decide between a blogging kind of system, or use a forum topic.
                                 if($this->_Config instanceof Config) {
                                     $T = new Topic($this->_SQL);
                                     $top = $T->getTopic(MISC::findKey('newsForum', $this->_Config->config));
                                     $top->setThreads();
-									
+
                                     $html = '';
-                                    $amount = (isset($template[2]) ? $template[2] : 3);
+                                    $amount = (isset($match->getArguments()[0]) ? $match->getArguments()[0] : 3);
                                     $amount = ($amount > count($top->threads) ? count($top->threads) : $amount);
+
                                     for($i = 0; $i < $amount; $i++) {
                                         $html .= $Forums->parseForum($this->getTemplate('portal_news'), $top->threads[$i]);
                                     }
-                                    $_template = $this->replaceVariable($match, $_template, $html);
+
+                                    $_template = $this->replaceVariable($match->getOption(), $_template, $html);
                                 }
                                 break;
                             case 'latestPosts':
@@ -173,12 +184,14 @@
                                 $V = new Various($this->_SQL);
                                 $threads = $V->getLatestPosts();
                                 $html = '';
-                                $amount = (isset($template[2]) ? $template[2] : 10);
+                                $amount = (isset($match->getArguments()[0]) ? $match->getArguments()[0] : 10);
                                 $amount = ($amount > count($threads) ? count($threads) : $amount);
+
                                 for($i = 0; $i < $amount; $i++) {
                                     $html .= $Forums->parseForum($this->getTemplate('portal_latest_post_list_item', 'portal'), $threads[$i]);
                                 }
-                                $_template = $this->replaceVariable($match, $_template, $html);
+
+                                $_template = $this->replaceVariable($match->getOption(), $_template, $html);
                                 break;
                             case 'categories':
                                 $C = new Category($this->_SQL);
@@ -190,7 +203,7 @@
                                     $html .= $Forums->parseForum($this->getTemplate('category_view', 'forums'), $cat);
                                 }
 
-                                $_template = $this->replaceVariable($match, $_template, $html);
+                                $_template = $this->replaceVariable($match->getOption(), $_template, $html);
                                 break;
                             case 'groupPerms':
                                 $G = new Group($this->_SQL);
@@ -204,7 +217,7 @@
                                     $html .= $P->parseGroup($this->getTemplate('admin_categories_group_perms', 'admin'), $group);
                                 }
 
-                                $_template = $this->replaceVariable($match, $_template, $html);
+                                $_template = $this->replaceVariable($match->getOption(), $_template, $html);
                                 break;
                             default:
                                 $fItem = null;
@@ -246,31 +259,34 @@
                             }
                         }
                         break;
+                    case 'structure':
+                        $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $this->getTemplate($match->getOption()));
+                        break;
                     case 'theme':
-                        switch($template[1]) {
+                        switch($match->getOption()) {
                             case 'name':
-                                $_template = $this->replaceVariable($match, $_template, $this->name);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $this->name);
                                 break;
                             case 'dir':
-                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? $this->rootDir : '') . '/' . $this->directory . '/');
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, ($this->rootDir ? $this->rootDir : '') . '/' . $this->directory . '/');
                                 break;
                             case 'assets':
                             case 'assetsDir':
-                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? $this->rootDir : '') . '/' . $this->directory . '/_assets/');
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, ($this->rootDir ? $this->rootDir : '') . '/' . $this->directory . '/_assets/');
                                 break;
                             case 'imgDir':
                             case 'img':
                             case 'imgs':
                             case 'images':
-                                $_template = $this->replaceVariable($match, $_template, ($this->rootDir ? $this->rootDir : '') . '/' . $this->directory . '/_assets/img/');
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, ($this->rootDir ? $this->rootDir : '') . '/' . $this->directory . '/_assets/img/');
                                 break;
                         }
                         break;
                     case 'site':
-                        switch($template[1]) {
+                        switch($match->getOption()) {
                             case 'captchaPublicKey':
                                 $C = new Config;
-                                $_template = $this->replaceVariable($match, $_template, MISC::findKey('captchaPublicKey', $C->config));
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, MISC::findKey('captchaPublicKey', $C->config));
                                 break;
                             case 'topicName':
                                 $C = new Category($this->_SQL);
@@ -278,7 +294,7 @@
                                 $cat = $C->getCategory($_GET['category'], false);
                                 $top = $T->getTopic($_GET['topic'], false, $cat->id);
 
-                                $_template = $this->replaceVariable($match, $_template, $top->title);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $top->title);
                                 break;
                             case 'topicUrl':
                                 $C = new Category($this->_SQL);
@@ -287,7 +303,7 @@
                                 $top = $T->getTopic($_GET['topic'], false, $cat->id);
 
                                 $url = '/forums/' . $cat->getURL() . '/' . $top->getURL() . '/';
-                                $_template = $this->replaceVariable($match, $_template, $url);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $url);
                                 break;
                             case 'topicId':
                                 $C = new Category($this->_SQL);
@@ -295,29 +311,29 @@
                                 $cat = $C->getCategory($_GET['category'], false);
                                 $top = $T->getTopic($_GET['topic'], false, $cat->id);
 
-                                $_template = $this->replaceVariable($match, $_template, $top->id);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $top->id);
                                 break;
                             case 'name':
                             case 'siteName':
                                 if($this->_Config instanceof Config) {
-                                    $_template = $this->replaceVariable($match, $_template, MISC::findKey('name', $this->_Config->config));
+                                    $_template = $this->replaceVariable($match->getPlaceholder(), $_template, MISC::findKey('name', $this->_Config->config));
                                 } else {
-                                    $_template = $this->replaceVariable($match, $_template, 'Undefined');
+                                    $_template = $this->replaceVariable($match->getPlaceholder(), $_template, 'Undefined');
                                 }
                                 break;
                             case 'desc':
                             case 'description':
                                 if(!$this->_Config instanceof Config) {
-                                    $_template = $this->replaceVariable($match, $_template, MISC::findKey('description', $this->_Config->config));
+                                    $_template = $this->replaceVariable($match->getPlaceholder(), $_template, MISC::findKey('description', $this->_Config->config));
                                 }
                                 break;
                             case 'rootDir':
                             case 'rootDirectory':
-                                $_template = $this->replaceVariable($match, $_template, $this->rootDir);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $this->rootDir);
                                 break;
                             case 'currPage':
                             case 'currentPage':
-                                $_template = $this->replaceVariable($match, $_template, MISC::getPageName($_SERVER['SCRIPT_FILENAME'], $this->_SQL));
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, MISC::getPageName($_SERVER['SCRIPT_FILENAME'], $this->_SQL));
                                 break;
                             case 'members':
                             case 'membersList':
@@ -331,10 +347,10 @@
                                     $html .= $P->parseProfile($this->getTemplate('member_item'), $usr);
                                 }
 
-                                $_template = $this->replaceVariable($match, $_template, $html);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $html);
                                 break;
                             case 'pageName':
-                                $_template = $this->replaceVariable($match, $_template, MISC::getPageName($_SERVER['SCRIPT_FILENAME'], $this->_SQL));
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, MISC::getPageName($_SERVER['SCRIPT_FILENAME'], $this->_SQL));
                                 break;
                             case 'userNav':
                                 if(empty($_SESSION)) {
@@ -342,7 +358,7 @@
                                 } else {
                                     $html = $this->getTemplate('main_navigation_user');
                                 }
-                                $_template = $this->replaceVariable($match, $_template, $html);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $html);
                                 break;
                             case 'pagination':
                                 $html = '';
@@ -358,11 +374,11 @@
                                         $count++;
                                     }
                                 }
-                                $_template = $this->replaceVariable($match, $_template, $html);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $html);
                                 break;
                             case 'onlineCount':
                                 $U = new User($this->_SQL);
-                                $_template = $this->replaceVariable($match, $_template, $U->getOnlineCount()['total']);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $U->getOnlineCount()['total']);
                                 break;
                             case 'onlineMembers':
                                 $U = new User($this->_SQL);
@@ -380,75 +396,14 @@
                                     }
                                 }
 
-                                $_template = $this->replaceVariable($match, $_template, $html);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $html);
                                 break;
                             case 'guestCount':
                                 $U = new User($this->_SQL);
                                 $guests = ($U->getOnlineCount()['guestCount'] == 1 ? 'guest is' : 'guests are');
-                                $_template = $this->replaceVariable($match, $_template, $U->getOnlineCount()['guestCount'] . ' ' . $guests);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $U->getOnlineCount()['guestCount'] . ' ' . $guests);
                                 break;
                         }
-                        break;
-                    case 'pagination':
-                        switch($template[1]) {
-                            case 'links':
-                                break;
-                        }
-                        break;
-                    case 'content':
-                        $contentQuery = new DBUtilQuery;
-                        $contentQuery->setName('contentQuery')
-                            ->setMultipleRows(false)
-                            ->setQuery("SELECT `value` FROM `{{PREFIX}}content_strings` WHERE `key` = :key")
-                            ->addParameter(':key', $template[1], \PDO::PARAM_STR);
-                        $this->_SQL->runQuery($contentQuery);
-
-                        $content = $this->_SQL->getResultByName($contentQuery->getName());
-                        $_template = $this->replaceVariable($match, $_template, $content['value']);
-                        break;
-                    default:
-                    case 'custom':
-                        if(isset($template[1])) {
-                            if (class_exists($template[1])) {
-                                /** @var PluginBase $plugin */
-                                $plugin = new $template[1]($this);
-                                $_template = $plugin->customParse($_template);
-                            }
-                        }
-                        break;
-                }
-            }
-
-            return $_template;
-        }
-
-        protected function parseTemplate_new($_template) {
-            $matches = $this->findPlaceholders($_template);
-
-            foreach($matches as $match) {
-                /** @var $match Placeholder */
-                switch($match->getCategory()) {
-                    case 'forum':
-                        break;
-                    case 'user':
-                    case 'profile':
-                        if(isset($_GET['username']) || isset($_SESSION['user']['username'])) {
-                            $username = (isset($_GET['username']) ? $_GET['username'] : $_SESSION['user']['username']);
-
-                            $Profile    = new Profile($this);
-                            $User       = new User($this->_SQL);
-                            $user       = $User->getUser(str_replace('_', ' ', $username), false);
-
-                            if($user instanceof User) {
-                                $_template = $Profile->parseProfile($_template, $user);
-                            }
-                        }
-                        break;
-                    case 'structure':
-                        break;
-                    case 'theme':
-                        break;
-                    case 'site':
                         break;
                     case 'pagination':
                         // TODO: Need to do something here. Idk just what yet.
@@ -489,11 +444,11 @@
          * @return mixed
          */
         protected function findPlaceholders($_template) {
-            preg_match_all('/' . $this->varWrapperStart . '(.*?)' . $this->varWrapperEnd . '/', $_template, $matches);
+            preg_match_all('/' . $this->varWrapperStart . '(.*?)' . $this->varWrapperEnd . '/', $_template, $tmpMatches);
 
             $matches = array();
-            foreach($matches as $match) {
-                $ph = new Placeholder($match);
+            foreach($tmpMatches as $match) {
+                $ph = new Placeholder($match, $this);
                 $matches[] = $ph->getObject();
             }
 
