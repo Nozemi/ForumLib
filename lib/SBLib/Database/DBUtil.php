@@ -12,6 +12,8 @@ class DBUtil {
 
     private $connection_info;
 
+    private $errors = [];
+
     private $query_queue;
     private $query_results;
 
@@ -110,8 +112,10 @@ class DBUtil {
     }
 
     public function isInitialized() {
-        if($this->pdo_connection->getAttribute(\PDO::ATTR_CONNECTION_STATUS)) {
-            return true;
+        if($this->pdo_connection instanceof \PDO) {
+            if ($this->pdo_connection->getAttribute(\PDO::ATTR_CONNECTION_STATUS)) {
+                return true;
+            }
         }
 
         return false;
@@ -131,6 +135,7 @@ class DBUtil {
 
             $this->query_queue = array();
         } catch(\PDOException $exception) {
+            $this->errors[] = $exception->getMessage();
             new Logger($exception->getMessage(), Logger::ERROR, __CLASS__, __LINE__);
         }
 
@@ -272,5 +277,9 @@ class DBUtil {
 
     public function getLastInsertId() {
         return $this->pdo_connection->lastInsertId();
+    }
+
+    public function getLastError() {
+        return end($this->errors);
     }
 }

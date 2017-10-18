@@ -75,7 +75,7 @@
             $timestamp = \Date('m/d Y - H:i:s');
             $logFile = MISC::findFile('logs/' . $config->getConfigValue('siteName', 'default') . '.log');
 
-            try {
+            /*try {
                 // Open and write to the file if it doesn't exist.
 
                 if(!file_exists($logFile)) {
@@ -97,7 +97,7 @@
                 } else {
                     echo "Looks like the logger doesn\'t have access to log to [{$logFile}].";
                 }
-            }
+            }*/
 
             return true;
         }
