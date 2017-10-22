@@ -254,7 +254,7 @@
         }
 
         public function getOnlineCount(User $user) {
-            $onlineCount = new DBUtilQuery;
+            /*$onlineCount = new DBUtilQuery;
             $onlineCount->setName('onlineCount')
                 ->setQuery("SELECT * FROM (SELECT * FROM `{{PREFIX}}users_session` ORDER BY `lastActive` DESC) `sessions` GROUP BY `uid`")
                 ->setDBUtil($this->S)
@@ -282,7 +282,7 @@
                 'memberCount' => count($onlineUsers),
                 'guestCount' => $guestCount,
                 'total' => (count($onlineUsers) + $guestCount)
-            );
+            );*/
         }
 
         public function getCurrentPage($id, User $user) {
@@ -306,8 +306,8 @@
                     SELECT
                          `P`.`id` `postId`
                         ,`T`.`id` `threadId`
-                    FROM `for1234_posts` `P`
-                    INNER JOIN `for1234_threads` `T` ON `T`.`id` = `P`.`threadId`
+                    FROM `{{PREFIX}}posts` `P`
+                    INNER JOIN `{{PREFIX}}threads` `T` ON `T`.`id` = `P`.`threadId`
                     WHERE `P`.`authorId` = :authorId
                     ORDER BY `P`.`postDate` DESC
                 ")

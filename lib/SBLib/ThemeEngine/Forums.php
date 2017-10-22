@@ -29,7 +29,8 @@
                 $_template = $this->parseTopic($_template, $_fObject);
             }
 
-            if($_GET['page'] == 'portal' && $_fObject instanceof Thread) {
+
+            if(basename($_SERVER['REQUEST_URI'], '.php') == 'portal' && $_fObject instanceof Thread) {
                 $P = new Post($this->_engine->_SQL);
                 $posts = $P->getPosts($_fObject->id);
                 $_template = $this->parseThread($this->parsePost($_template, $posts[0]), $_fObject);
@@ -52,30 +53,29 @@
         public function parseCategory($_template, Category $_category) {
             $matches = $this->_engine->findPlaceholders($_template);
 
-            foreach($matches[1] as $match) {
-                $template = explode('::', $match);
-
-                switch($template[1]) {
+            foreach($matches as $match) {
+                /** @var Placeholder $match */
+                switch($match->getCategory()) {
                     case 'id':
                     case 'cid':
-                        $_template = $this->_engine->replaceVariable($match, $_template, $_category->id);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $_category->id);
                         break;
                     case 'safeDesc':
                     case 'safeDescription':
-                        $_template = $this->_engine->replaceVariable($match, $_template, str_replace('\'', "\'", $_category->description));
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, str_replace('\'', "\'", $_category->description));
                         break;
                     case 'safeName':
-                        $_template = $this->_engine->replaceVariable($match, $_template, str_replace('\'', "\'", $_category->title));
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, str_replace('\'', "\'", $_category->title));
                         break;
                     case 'order':
-                        $_template = $this->_engine->replaceVariable($match, $_template, $_category->order);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $_category->order);
                         break;
                     case 'header':
                     case 'title':
-                        $_template = $this->_engine->replaceVariable($match, $_template, $_category->title);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $_category->title);
                         break;
                     case 'description':
-                        $_template = $this->_engine->replaceVariable($match, $_template, $_category->description);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $_category->description);
                         break;
                     case 'topics':
                         $html = '';
@@ -84,7 +84,7 @@
                         foreach($tops as $top) {
                             $html .= $this->parseForum($this->_engine->getTemplate('topic_view', 'forums'), $top);
                         }
-                        $_template = $this->_engine->replaceVariable($match, $_template, $html);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $html);
                         break;
                     case 'adminMenu':
                         $html = '';
@@ -98,7 +98,7 @@
                             }
                         }
 
-                        $_template = $this->_engine->replaceVariable($match, $_template, $html);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $html);
                         break;
                 }
             }
@@ -114,40 +114,39 @@
 
             $latest = $_topic->getLatestPost();
 
-            foreach($matches[1] as $match) {
-                $template = explode('::', $match);
-
-                switch($template[1]) {
+            foreach($matches as $match) {
+                /** @var Placeholder $match */
+                switch($match->getOption()) {
                     case 'id':
-                        $_template = $this->_engine->replaceVariable($match, $_template, $_topic->id);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $_topic->id);
                         break;
                     case 'header':
                     case 'title':
-                        $_template = $this->_engine->replaceVariable($match, $_template, $_topic->title);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $_topic->title);
                         break;
                     case 'description':
-                        $_template = $this->_engine->replaceVariable($match, $_template, $_topic->description);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $_topic->description);
                         break;
                     case 'order':
-                        $_template = $this->_engine->replaceVariable($match, $_template, $_topic->order);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $_topic->order);
                         break;
                     case 'url':
-                        $_template = $this->_engine->replaceVariable($match, $_template,
-                            $this->_engine->_rootDir . 'forums/' . $cat->getURL() . '/' . $_topic->getURL()
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template,
+                            $this->_engine->_rootDir . 'forum/' . $cat->getURL() . '/' . $_topic->getURL()
                         );
                         break;
                     case 'threadCount':
                         $count = $_topic->getThreadCount() . ($_topic->getThreadCount() == 1 ? ' Thread' : ' Threads');
-                        $_template = $this->_engine->replaceVariable($match, $_template, $count);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $count);
                         break;
                     case 'postCount':
                         $count = max(($_topic->getPostCount() - $_topic->getThreadCount()), 0);
                         if(isset($template[2]) == 'threadCount') { $count += max(($_topic->threadCount), 0); }
-                        $_template = $this->_engine->replaceVariable($match, $_template, $count . (($_topic->postCount - $_topic->threadCount) == 1 ? ' Post' : ' Posts'));
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $count . (($_topic->postCount - $_topic->threadCount) == 1 ? ' Post' : ' Posts'));
                         break;
                     case 'lastThreadTitle':
                         $title = ($latest['thread']->title ? $latest['thread']->title : 'No posts yet');
-                        $_template = $this->_engine->replaceVariable($match, $_template, $title);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $title);
                         break;
                     case 'lastThreadUrl':
                         $url = '#';
@@ -157,31 +156,32 @@
                             $tpc = $T->getTopic($latest['thread']->topicId);
 
                             if($tpc instanceof Topic) {
-                                $url = $this->_engine->_rootDir . 'forums/' . $cat->getURL() . '/' . $tpc->getURL() . '/' . $latest['thread']->getURL();
+                                $url = $this->_engine->_rootDir . 'forum/' . $cat->getURL() . '/' . $tpc->getURL() . '/' . $latest['thread']->getURL();
                             }
                         }
 
-                        $_template = $this->_engine->replaceVariable($match, $_template, $url);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $url);
                         break;
                     case 'lastPoster':
                         $username = ($latest['post']->author->username ? $latest['post']->author->username : 'N/A');
-                        $_template = $this->_engine->replaceVariable($match, $_template, $username);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $username);
                         break;
                     case 'lastPosterAvatar':
                         if(!empty($latest['post']->author->avatar)) {
                             $avatar = ($latest['post']->author->avatar ? $latest['post']->author->avatar : $this->_engine->_rootDir . $this->_engine->directory . '/_assets/img/user/avatar.jpg');
                         } else {
-                            $avatar = $this->_engine->_rootDir . $this->_engine->directory . '/_assets/img/' . $template[2];
+                            //$avatar = $this->_engine->_rootDir . $this->_engine->directory . '/_assets/img/' . $template[2];
+                            $avatar = '';
                         }
-                        $_template = $this->_engine->replaceVariable($match, $_template, $avatar);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $avatar);
                         break;
                     case 'lastPosterUrl':
                         $url = ($latest['post']->author->username ? $this->_engine->_rootDir . 'profile/' . $latest['post']->author->username : '#');
-                        $_template = $this->_engine->replaceVariable($match, $_template, $url);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $url);
                         break;
                     case 'lastPostDate':
                         $date = ($latest['post']->post_date ? MISC::parseDate($latest['post']->post_date, $this->_engine->_Config, array('howLongAgo' => true)) : 'No posts...');
-                        $_template = $this->_engine->replaceVariable($match, $_template, $date);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $date);
                         break;
                     case 'threads':
                         $html = '';
@@ -196,18 +196,18 @@
                             $html = $this->_engine->getTemplate('no_threads_msg', 'misc');
                         }
 
-                        $_template = $this->_engine->replaceVariable($match, $_template, $html);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $html);
                         break;
                     case 'moderate':
                         $html = '';
                         if(!empty($_SESSION['user'])) {
                             $html = $this->_engine->getTemplate('topic_view_moderate', 'forums');
                         }
-                        $_template = $this->_engine->replaceVariable($match, $_template, $html);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $html);
                         break;
                     case 'newThreadUrl':
                         $url = $this->_engine->_rootDir . 'newthread/' . $cat->getURL() . '/' . $_topic->getURL();
-                        $_template = $this->_engine->replaceVariable($match, $_template, $url);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $url);
                         break;
                     case 'adminMenu':
                         $html = '';
@@ -221,7 +221,7 @@
                             }
                         }
 
-                        $_template = $this->_engine->replaceVariable($match, $_template, $html);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $html);
                         break;
                 }
             }
@@ -232,12 +232,11 @@
         public function parseThread($_template, Thread $_thread) {
             $matches = $this->_engine->findPlaceholders($_template);
 
-            foreach($matches[1] as $match) {
-                $template = explode('::', $match);
-
-                switch($template[1]) {
+            foreach($matches as $match) {
+                /** @var Placeholder $match */
+                switch($match->getOption()) {
                     case 'title':
-                        $_template = $this->_engine->replaceVariable($match, $_template, $_thread->title);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $_thread->title);
                         break;
                     case 'posts':
                         $html = '';
@@ -246,53 +245,53 @@
                             $html .= $this->parseForum($this->_engine->getTemplate('post_view', 'forums'), $post);
                         }
 
-                        $_template = $this->_engine->replaceVariable($match, $_template, $html);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $html);
                         break;
                     case 'reply':
                         $html = '';
                         if(!empty($_SESSION['user'])) {
                             $html = $this->_engine->getTemplate('thread_view_reply', 'forums');
                         }
-                        $_template = $this->_engine->replaceVariable($match, $_template, $html);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $html);
                         break;
                     case 'moderate':
                         $html = '';
                         if(!empty($_SESSION['user'])) {
                             $html = $this->_engine->getTemplate('thread_view_moderate', 'forums');
                         }
-                        $_template = $this->_engine->replaceVariable($match, $_template, $html);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $html);
                         break;
                     case 'id':
-                        $_template = $this->_engine->replaceVariable($match, $_template, $_thread->id);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $_thread->id);
                         break;
                     case 'lastResponderAvatar':
                         $avatar = $_thread->author->avatar;
-                        $_template = $this->_engine->replaceVariable($match, $_template, $avatar);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $avatar);
                         break;
                     case 'poster':
                         if($_thread->author instanceof User) {
-                            $_template = $this->_engine->replaceVariable($match, $_template, $_thread->author->username);
+                            $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $_thread->author->username);
                         }
                         break;
                     case 'lastReplyDate':
                         $date = MISC::parseDate($_thread->latestPost->post_date, $this->_engine->_Config, array('howLongAgo' => true));
-                        $_template = $this->_engine->replaceVariable($match, $_template, $date);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $date);
                         break;
                     case 'postDate':
                         $date = MISC::parseDate($_thread->posted, $this->_engine->_Config, array('howLongAgo' => true));
-                        $_template = $this->_engine->replaceVariable($match, $_template, $date);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $date);
                         break;
                     case 'viewCount':
                         // TODO: Add functionality.
-                        $_template = $this->_engine->replaceVariable($match, $_template, '0 Views');
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, '0 Views');
                         break;
                     case 'replyCount':
                         $count = (count($_thread->posts) - 1) . ((count($_thread->posts) - 1) == 1 ? ' Reply' : ' Replies');
-                        $_template = $this->_engine->replaceVariable($match, $_template, $count);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $count);
                         break;
                     case 'lastResponder':
                         $username = ($_thread->latestPost->author->username ? $_thread->latestPost->author->username : 'Unknown');
-                        $_template = $this->_engine->replaceVariable($match, $_template, $username);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $username);
                         break;
                     case 'url':
                         $T = new Topic($this->_engine->_SQL);
@@ -302,19 +301,19 @@
                             $C = new Category($this->_engine->_SQL);
                             $cat = $C->getCategory($top->categoryId);
 
-                            $_template = $this->_engine->replaceVariable($match, $_template,
+                            $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template,
                                 $this->_engine->_rootDir . 'forums/' . $cat->getURL() . '/' . $top->getURL() . '/' . $_thread->getURL());
                         }
                         break;
                     case 'latestPostDate':
                         $date = MISC::parseDate($_thread->latestPost->post_date, $this->_engine->_Config, array('howLongAgo' => true));
-                        $_template = $this->_engine->replaceVariable($match, $_template, $date);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $date);
                         break;
                     case 'lastPosterAvatar':
-                        $_template = $this->_engine->replaceVariable($match, $_template, $_thread->latestPost->author->avatar);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $_thread->latestPost->author->avatar);
                         break;
                     case 'lastPosterUrl':
-                        $_template = $this->_engine->replaceVariable($match, $_template, $this->_engine->_rootDir . 'profile/' . $_thread->latestPost->author->username);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $this->_engine->_rootDir . 'profile/' . $_thread->latestPost->author->username);
                         break;
                 }
             }
@@ -325,50 +324,49 @@
         public function parsePost($_template, Post $_post) {
             $matches = $this->_engine->findPlaceholders($_template);
 
-            foreach($matches[1] as $match) {
-                $template = explode('::', $match);
-
-                switch($template[1]) {
+            foreach($matches as $match) {
+                /** @var Placeholder $match */
+                switch($match->getOption()) {
                     case 'id':
                     case 'pid':
-                        $_template = $this->_engine->replaceVariable($match, $_template, $_post->id);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $_post->id);
                         break;
                     case 'poster':
                         if($_post->author instanceof User) {
-                            $_template = $this->_engine->replaceVariable($match, $_template, $_post->author->username);
+                            $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $_post->author->username);
                         }
                         break;
                     case 'posterStatus':
                         $U = new User($this->_engine->_SQL);
 
                         $status = ($U->getStatus($_post->author->id) ? 'success' : 'danger');
-                        $_template = $this->_engine->replaceVariable($match, $_template, $status);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $status);
                         break;
                     case 'posterAvatar':
                         if($_post->author instanceof User) {
-                            $_template = $this->_engine->replaceVariable($match, $_template, $_post->author->avatar);
+                            $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $_post->author->avatar);
                         }
                         break;
                     case 'posterMemberSince':
                         $date = MISC::parseDate($_post->author->regDate, $this->_engine->_Config, array('howLongAgo' => true));
-                        $_template = $this->_engine->replaceVariable($match, $_template, $date);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $date);
                         break;
                     case 'content':
                         $content = (isset($_post->post_html) ? $_post->post_html : '<p>' . $_post->post_text . '</p>');
-                        $_template = $this->_engine->replaceVariable($match, $_template, $content);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $content);
                         break;
                     case 'posted':
                         $date = MISC::parseDate($_post->post_date, $this->_engine->_Config, array('howLongAgo' => true));
-                        $_template = $this->_engine->replaceVariable($match, $_template, $date);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $date);
                         break;
                     case 'threadTitle':
                         $T = new Thread($this->_engine->_SQL);
                         $trd = $T->getThread($_post->threadId);
-                        $_template = $this->_engine->replaceVariable($match, $_template, $trd->title);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $trd->title);
                         break;
                     case 'posterUrl':
                         if($_post->author instanceof User) {
-                            $_template = $this->_engine->replaceVariable($match, $_template, $this->_engine->_rootDir . 'profile/' . $_post->author->username);
+                            $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $this->_engine->_rootDir . 'profile/' . $_post->author->username);
                         }
                         break;
                     case 'manage':
@@ -384,7 +382,7 @@
                             }
                         }
 
-                        $_template = $this->_engine->replaceVariable($match, $_template, $html);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $html);
                         break;
                     case 'originalPost':
                         $html = '';
@@ -393,7 +391,7 @@
                             $html = 'originalPost';
                         }
 
-                        $_template = $this->_engine->replaceVariable($match, $_template, $html);
+                        $_template = $this->_engine->replaceVariable($match->getPlaceholder(), $_template, $html);
                         break;
                 }
             }

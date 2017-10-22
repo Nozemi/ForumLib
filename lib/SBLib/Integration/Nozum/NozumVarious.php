@@ -23,18 +23,21 @@
                             INNER JOIN `{{DBP}}threads` `T` ON `T`.`id` = `P`.`threadId`
                         ORDER BY `P`.`postDate` DESC
                     ) `latestThreads`
-                    GROUP BY `threadId`
                         ORDER BY `postDate` DESC
                 ")
                 ->setDBUtil($this->S)
                 ->execute();
 
+            // TODO: GROUP BY `threadId`
+
             $trds = $this->S->getResultByName($latestPosts->getName());
 
             $threads = array();
-            foreach($trds as $trd) {
-                $T = new Thread($this->S);
-                $threads[] = $T->getThread($trd['threadId']);
+            if(count($trds) > 0) {
+                foreach ($trds as $trd) {
+                    $T = new Thread($this->S);
+                    $threads[] = $T->getThread($trd['threadId']);
+                }
             }
 
             return $threads;

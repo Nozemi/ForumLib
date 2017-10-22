@@ -11,6 +11,8 @@
     use SBLib\Forums\Topic;
     use SBLib\Forums\Thread;
     use SBLib\Forums\Post;
+    use SBLib\Utilities\Logger;
+    use SBLib\Utilities\MISC;
 
     /**
      * Class Database
@@ -20,29 +22,55 @@
      * @package SBLib\Installer
      */
     class Installer {
+        /** @var Group $_defaultGroup */
+        /** @var Topic $_newsTopic */
+
         private $_queries;
         private $_structureFile;
 
         private $_data;
         private $_adminUser;
-        /**
-         * @var Group $_defaultGroup
-         */
         private $_defaultGroup;
-        /**
-         * @var Topic $_newsTopic
-         */
         private $_newsTopic;
 
         private $_dbUtil;
 
-        public function __construct(DBUtil $dbUtil, $data) {
+        private $_errors  = [];
+        private $_success = [];
+
+        public function __construct($data) {
             $this->_structureFile = dirname(dirname(dirname(dirname(dirname(__FILE__))))) . '/structure.sql';
-            $this->_dbUtil = $dbUtil;
-            $this->_data = $data;
+            $this->_data = (object) $data;
+
+            $Validator = new Validator($data);
+            $Validator->validateDatabase()
+                ->validateForum()
+                ->validateAdmin();
+
+            $this->_errors = $Validator->getErrors();
+            $this->_success = $Validator->getSuccess();
+            if(!empty($Validator->getErrors())) {
+                return false;
+            }
+
+            $dbDetails = (object)[
+                'host' => $this->_data->dbHost,
+                'port' => $this->_data->dbPort,
+                'name' => $this->_data->dbName,
+                'user' => $this->_data->dbUser,
+                'pass' => $this->_data->dbPass,
+                'prefix' => $this->_data->dbPrefix
+            ];
+            try {
+                $this->_dbUtil = new DBUtil($dbDetails);
+            } catch(\Exception $exception) {
+                $this->_errors[] = 'Something went wrong while connecting to the database.';
+                new Logger(json_encode($dbDetails), Logger::DEBUG, __CLASS__, __LINE__);
+                return false;
+            }
 
             $this->_addTables();
-            $dbUtil->addQueries($this->_queries)
+            $this->_dbUtil->addQueries($this->_queries)
                 ->runQueries();
 
             $this->_addAdmin();
@@ -50,10 +78,10 @@
 
             $this->_generateConfigs();
 
-            if(empty($dbUtil->getLastErrorCode())) {
-                return true;
+            if(empty($this->_dbUtil->getLastErrorCode())) {
+                $this->_success[] = ['status' => true, 'message' => 'Slick Board was successfully installed.'];
             } else {
-                return ['message' => $dbUtil->getLastError(), 'code' => $dbUtil->getLastErrorCode()];
+                $this->_errors[] = 'An error occurred while installing Slick Board.';
             }
         }
 
@@ -67,7 +95,6 @@
                 $this->_queries[] = $tablesQuery;
                 return true;
             } else {
-                // TODO: Handle the error upon the structure file not being found.
                 return false;
             }
         }
@@ -137,6 +164,9 @@
         }
 
         private function _generateConfigs() {
+            $defaultGroupId = $this->_defaultGroup->getId();
+            $newsForumId = $this->_newsTopic->getId();
+
             $config = [
                 'database' => [
                     'dbUser'            => $this->_data->dbUser,
@@ -146,30 +176,43 @@
                     'dbName'            => $this->_data->dbName,
                     'dbPrefix'          => $this->_data->dbPrefix
                 ],
-                'main'     => [
-                    'name'              => $this->_data->siteName,
-                    'description'       => $this->_data->description,
-                    'lang'              => $this->_data->language,
-                    'theme'             => $this->_data->theme,
-                    'captchaPublicKey'  => $this->_data->reCaptchaPublicKey,
-                    'captchaPrivateKey' => $this->_data->reCaptchaPrivateKey,
-                    'siteRoot'          => $this->_data->siteRoot,
-                    'defaultGroup'      => $this->_data->_defaultGroup->getId(),
-                    'newsForum'         => $this->_data->_newsTopic->getId()
+                'main' => [
+                    'name'              => $this->_data->forumName,
+                    'description'       => $this->_data->forumDescription,
+                    'lang'              => $this->_data->forumLanguage,
+                    'theme'             => $this->_data->forumTheme,
+                    //'captchaPublicKey'  => $this->_data->reCaptchaPublicKey,
+                    //'captchaPrivateKey' => $this->_data->reCaptchaPrivateKey,
+                    'siteRoot'          => $this->_data->rootDirectory,
+                    'defaultGroup'      => $defaultGroupId,
+                    'newsForum'         => $newsForumId
                 ]
             ];
 
             foreach($config as $name => $values) {
                 // TODO: Generate the config files.
                 $options = json_encode($values);
-                $configFile = fopen($this->_data->rootDirectory . '/config/' . $name . '.conf.json', 'w');
+
+                if(!file_exists(MISC::getRootDirectory()->server . $this->_data->rootDirectory . '/config')) {
+                    mkdir(MISC::getRootDirectory()->server . $this->_data->rootDirectory . '/config', 0777, true);
+                }
+
+                $configFile = fopen(MISC::getRootDirectory()->server . $this->_data->rootDirectory . '/config/' . $name . '.conf.json', 'w');
                 fwrite($configFile, $options);
                 fclose($configFile);
             }
 
             // Write install.lock
-            $installLock = fopen($this->_data->rootDirectory . '/Installer/install.lock', 'w');
+            $installLock = fopen(MISC::getRootDirectory()->server . $this->_data->rootDirectory . '/install.lock', 'w');
             fwrite($installLock,'Locked installation');
             fclose($installLock);
+        }
+
+        public function getErrors() {
+            return $this->_errors;
+        }
+
+        public function getSuccess() {
+            return $this->_success;
         }
     }

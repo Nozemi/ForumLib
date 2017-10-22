@@ -67,7 +67,7 @@
          * @param bool $file
          * @return mixed
          */
-        public function getConfigValue($name, $default = null, $file = false) {
+        public function getConfigValue($name, $default = null, $file = null) {
             return self::get($name, $default, $file);
         }
 

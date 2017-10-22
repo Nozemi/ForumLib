@@ -1,7 +1,8 @@
 <?php
     namespace SBLib\Handlers\Install;
 
-    use SBLib\Database\DButil;
+    use SBLib\Database\DBUtil;
+    use SBLib\Utilities\MISC;
 
     class Validator {
         private $_data;
@@ -40,13 +41,13 @@
             } else if($this->_data->dbName) {
                 // Now we'll try to connect to the database with the provided details.
                 try {
-                    $db = new DButil((object) [
-                        'dbHost'   => $this->_data->dbHost,
-                        'dbPort'   => $this->_data->dbPort,
-                        'dbName'   => $this->_data->dbName,
-                        'dbUser'   => $this->_data->dbUser,
-                        'dbPass'   => $this->_data->dbPass,
-                        'dbPrefix' => $this->_data->dbPrefix
+                    $db = new DBUtil((object) [
+                        'host'   => $this->_data->dbHost,
+                        'port'   => $this->_data->dbPort,
+                        'name'   => $this->_data->dbName,
+                        'user'   => $this->_data->dbUser,
+                        'pass'   => $this->_data->dbPass,
+                        'prefix' => $this->_data->dbPrefix
                     ]);
 
                     // Let's check if the connection is initialized.
@@ -69,8 +70,12 @@
                                 break;
                         }
                     }
-                } catch(\PDOException $exception) {
+                } catch(\Exception $exception) {
                     $this->_errors[] = 'Unable to connect to database. (<i>' . $exception->getMessage() . '</i>)';
+                    $this->_errors['dbUser'] = 'Please verify that the username is correct.';
+                    $this->_errors['dbPass'] = 'Please verify that the password is correct.';
+                    $this->_success['dbUser'] = false;
+                    $this->_success['dbPass'] = false;
                 }
             }
 
@@ -101,19 +106,17 @@
             }
 
             // Now we'll need a bit more complicated validation for the site root directory.
-            if(!$this->_data->rootDirectory) {
-                $this->_errors['rootDirectory'] = 'Root directory isn\'t set.';
-                $this->_success['rootDirectory'] = false;
-            } else if($this->_data->rootDirectory) {
-                if(!file_exists($this->_data->rootDirectory . '/index.php')) {
-                    $this->_errors[] = '<strong>[Root Directory]</strong> Are you sure the root directory is correct? Could not find the index.php file for the forums in there. (Path: ' . realpath($this->_data->rootDirectory) . ')';
+            if($this->_data->rootDirectory) {
+                $rootDirectory = MISC::getRootDirectory()->server . $this->_data->rootDirectory;
+                if(!file_exists($rootDirectory . '/index.php')) {
+                    $this->_errors[] = '<strong>[Root Directory]</strong> Are you sure the root directory is correct? Could not find the index.php file for the forums in there. (Path: ' . realpath($rootDirectory) . ')';
                 }
 
-                if(!is_writeable($this->_data->rootDirectory)) {
-                    $this->_errors[] = '<strong>[Root Directory]</strong> The root directory isn\'t writeable. Please make sure the webserver is allowed to write files in there. (Path: ' . realpath($this->_data->rootDirectory) . ')';
+                if(!is_writeable($rootDirectory)) {
+                    $this->_errors[] = '<strong>[Root Directory]</strong> The root directory isn\'t writeable. Please make sure the webserver is allowed to write files in there. (Path: ' . realpath($rootDirectory) . ')';
                 }
 
-                if(!is_writeable($this->_data->rootDirectory) || !file_exists($this->_data->rootDirectory . '/index.php')) {
+                if(!is_writeable($rootDirectory) || !file_exists($rootDirectory . '/index.php')) {
                     $this->_errors['rootDirectory'] = 'Please reference the errors displayed at the top of the page.';
                     $this->_success['rootDirectory'] = false;
                 }

@@ -53,7 +53,7 @@
          * @param DBUtil|null $SQL
          * @param Config|null $Config
          */
-        public function __construct(DBUtil $SQL, $_name = 'slickboard', Config $Config = null) {
+        public function __construct(DBUtil $SQL, $_name = 'gameforest', Config $Config = null) {
             if($Config == null) {
                 $Config = new Config;
             }
@@ -62,7 +62,7 @@
             $this->_Config      = $Config;
             $this->name         = $_name;
             $this->directory    = MISC::findFile('themes/' . $this->name);
-            $this->_rootDir      = ($Config->getConfigValue('siteRoot') ? '/' . $Config->getConfigValue('siteRoot') . '/' : '/');
+            $this->_rootDir     = MISC::getRootDirectory()->clientFull;
 
             if($this->validateTheme()) {
                 $this->setConfig();
@@ -142,16 +142,12 @@
             return $this->_SQL;
         }
 
-        public function getTemplate($_template, $_page = null) {
-            $tmp = $this->_templates;
-
-            if($_page) {
-                $tmp = $this->_templates['page_' . $_page];
+        public function getTemplate($templateName, $pageName = null) {
+            if($pageName === null) {
+                return $this->parseTemplate(MISC::findKey($templateName, $this->_templates));
+            } else {
+                return $this->parseTemplate(MISC::findKey($templateName, $this->_templates['page_' . $pageName]));
             }
-
-            return $tmp;
-
-            //return $this->parseTemplate(MISC::findKey($_template, $tmp));
         }
 
         protected function parseTemplate($_template) {
@@ -306,7 +302,7 @@
                                 $cat = $C->getCategory($_GET['category'], false);
                                 $top = $T->getTopic($_GET['topic'], false, $cat->id);
 
-                                $url = '/forums/' . $cat->getURL() . '/' . $top->getURL() . '/';
+                                $url = '/forum/' . $cat->getURL() . '/' . $top->getURL() . '/';
                                 $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $url);
                                 break;
                             case 'topicId':
@@ -368,7 +364,7 @@
                                 $html = '';
                                 $count = 1;
                                 if($_GET['page'] == 'newthread') {
-                                    $_GET['page'] = 'forums';
+                                    $_GET['page'] = 'forum';
                                     $_GET['action'] = 'New Thread';
                                 }
                                 foreach($_GET as $key => $value) {
@@ -441,6 +437,8 @@
                         break;
                 }
             }
+
+            return $_template;
         }
 
         /**
@@ -452,16 +450,16 @@
             preg_match_all('/' . $this->_varWrapperStart . '(.*?)' . $this->_varWrapperEnd . '/', $_template, $tmpMatches);
 
             $matches = array();
-            foreach($tmpMatches as $match) {
+            foreach($tmpMatches[0] as $match) {
                 $ph = new Placeholder($match, $this);
                 $matches[] = $ph->getObject();
             }
 
-            $matches = array();
+            /*$matches = array();
             foreach($matches as $match) {
                 $ph = new Placeholder($match, $this);
                 $matches[] = $ph->getObject();
-            }
+            }*/
 
             return $matches;
         }
@@ -509,41 +507,41 @@
                 $trd = $Tr->getThread($_GET['threadId']);
             }
 
-            foreach($matches[1] as $match) {
-                $template = explode('::', $match);
-                switch($template[1]) {
+            foreach($matches as $match) {
+                /** @var Placeholder $match */
+                switch($match->getOption()) {
                     case 'linkTitle':
                         switch($key) {
                             case 'category':
-                                $_template = $this->replaceVariable($match, $_template, $cat->title);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $cat->title);
                                 break;
                             case 'topic':
-                                $_template = $this->replaceVariable($match, $_template, $top->title);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $top->title);
                                 break;
                             case 'thread':
-                                $_template = $this->replaceVariable($match, $_template, $trd->title);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $trd->title);
                                 break;
                             default:
-                                $_template = $this->replaceVariable($match, $_template, ucwords($value));
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, ucwords($value));
                                 break;
                         }
                         break;
                     case 'linkURL':
                         switch($key) {
                             case 'category':
-                                $url = '/forums/' . $cat->getURL();
+                                $url = '/forum/' . $cat->getURL();
                                 break;
                             case 'topic':
-                                $url = '/forums/' . $cat->getURL() . '/' . $top->getURL();
+                                $url = '/forum/' . $cat->getURL() . '/' . $top->getURL();
                                 break;
                             case 'thread':
-                                $url = '/forums/' . $cat->getURL() . '/' . $top->getURL() . '/' . $trd->getURL();
+                                $url = '/forum/' . $cat->getURL() . '/' . $top->getURL() . '/' . $trd->getURL();
                                 break;
                             default:
                                 $url = '/' . $value;
                                 break;
                         }
-                        $_template = $this->replaceVariable($match, $_template, $url);
+                        $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $url);
                         break;
                 }
             }

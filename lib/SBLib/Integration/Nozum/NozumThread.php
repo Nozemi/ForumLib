@@ -11,7 +11,7 @@
     class NozumThread extends IntegrationBaseThread {
 
         public function getThreads($topicId, Thread $thread) {
-            if(is_null($topicId)) $topicId = $thread->topicId;
+            //if(is_null($topicId)) $topicId = $thread->topicId;
 
             $getThreads = new DBUtilQuery;
             $getThreads->setName('getThreads')
@@ -25,11 +25,12 @@
                             INNER JOIN `{{DBP}}topics` `F` ON `T`.`topicId` = `F`.`id`
                         WHERE `F`.`id` = :topicId
                         ORDER BY `P`.`postDate` DESC ) `threads`
-                    GROUP BY `id` ORDER BY `postDate` DESC
+                    ORDER BY `postDate` DESC
                 ")
                 ->addParameter(':topicId', $topicId, PDO::PARAM_INT)
                 ->setDBUtil($this->S)
                 ->execute();
+            // TODO: GROUP BY `id`
 
             $tR = $getThreads->result();
             $threads = array();
@@ -48,8 +49,9 @@
                         ->setPermissions($T->id);
                     $threads[] = $T;
                 }
+            } else {
+                echo "Shit";
             }
-
 
             $this->lastMessage[] = 'Successfully loaded threads.';
             return $threads;
@@ -206,7 +208,7 @@
             $latestPost = new DBUtilQuery;
             $latestPost->setName('threadLatestPost')
                 ->setMultipleRows(false)
-                ->setQuery("SELECT `id`, `postDate` FROM `for1234_posts` WHERE `threadId` = :threadId ORDER BY `postDate` DESC LIMIT 1")
+                ->setQuery("SELECT `id`, `postDate` FROM `{{PREFIX}}posts` WHERE `threadId` = :threadId ORDER BY `postDate` DESC LIMIT 1")
                 ->addParameter(':threadId', $id, PDO::PARAM_INT)
                 ->setDBUtil($this->S)
                 ->execute();

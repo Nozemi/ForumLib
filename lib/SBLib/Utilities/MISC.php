@@ -13,15 +13,15 @@ use SBLib\Users\User;
 class MISC {
 
     public static function getRootDirectory() {
-        $currentDirectory = explode('/', dirname(dirname(__FILE__)));
+        $currentDirectory = explode('/', dirname(dirname(dirname(dirname(dirname(dirname(dirname(__FILE__))))))));
         $currentDirectory = end($currentDirectory);
 
-        $currentDirectory = (($currentDirectory === 'html') ? '' : $currentDirectory) . '/';
+        $currentDirectory = (($currentDirectory === 'html') ? '' : $currentDirectory) . '';
 
         $currentDirectory = (object) [
-            'server'     => $_SERVER['DOCUMENT_ROOT'] . $currentDirectory,
-            'clientFull' => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $currentDirectory,
-            'client'     => $currentDirectory
+            'server'     => $_SERVER['DOCUMENT_ROOT'] . '/' . $currentDirectory,
+            'clientFull' => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . '/' . $currentDirectory,
+            'client'     => '/' . $currentDirectory
         ];
 
         return $currentDirectory;
