@@ -41,15 +41,12 @@
 
         public function setParameters($parameters) {
             foreach($parameters as $parameter) {
-                if(!isset($parameter[0]) || !isset($parameter[1])) {
-                    new Logger('Parameters weren\'t supplied correctly. See DBUtilQuery::addParameter() method.', Logger::ERROR, __FILE__, __LINE__);
-                    return false;
-                }
-
-                if(isset($parameter[2])) {
+                if(count($parameter) > 1) {
+                    $this->addParameter($parameter[0], $parameter[1]);
+                } else if(count($parameter) > 2) {
                     $this->addParameter($parameter[0], $parameter[1], $parameter[2]);
                 } else {
-                    $this->addParameter($parameter[0], $parameter[1]);
+                    return false;
                 }
             }
 

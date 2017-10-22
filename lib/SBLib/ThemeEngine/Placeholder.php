@@ -2,17 +2,19 @@
     namespace SBLib\ThemeEngine;
 
     class Placeholder {
-        protected $category;
-        protected $option;
-        protected $arguments;
-        protected $placeholder;
+        protected $_category;
+        protected $_option;
+        protected $_arguments;
+        protected $_placeholder;
 
         public function __construct($placeholder, MainEngine $engine) {
             $options = explode('::', trim(str_replace($engine->getWrapper(MainEngine::END), '', str_replace($engine->getWrapper(MainEngine::START), '', $placeholder))));
 
-            $this->category  = $options[0];
-            $this->option    = explode('(', $options[1])[0];
-            $this->arguments = explode(',', str_replace(')', '', explode('(', $options[1])[1]));
+            $this->_category  = $options[0];
+            $this->_option    = explode('(', $options[1])[0];
+            $this->_arguments = explode(',', str_replace(')', '', explode('(', $options[1])[1]));
+
+            $this->_placeholder = $placeholder;
         }
 
         public function getObject() {
@@ -20,21 +22,21 @@
         }
 
         public function getCategory() {
-            return $this->category;
+            return $this->_category;
         }
 
         public function getOption() {
-            return $this->option;
+            return $this->_option;
         }
 
         public function getPlaceholder() {
-            return $this->placeholder;
+            return $this->_placeholder;
         }
 
         /**
          * @return array
          */
         public function getArguments() {
-            return $this->arguments;
+            return $this->_arguments;
         }
     }

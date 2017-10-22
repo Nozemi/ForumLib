@@ -10,76 +10,26 @@ class DBUtil {
     const PostgresSQL = 3;
     const Oracle      = 4;
 
-    private $connection_info;
+    private $_connectionInfo;
 
-    private $errors = [];
+    private $_errors = [];
 
-    private $query_queue;
-    private $query_results;
+    private $_queryQueue;
+    private $_queryResults;
 
-    /** @var  \PDO $pdo_connection */
-    private $pdo_connection;
+    /** @var  \PDO $_pdoConnection */
+    private $_pdoConnection;
 
     /**
-     * <h3>DBUtil Constructor</h3>
-     *
-     * <p>Unspecified values will use the default values.</p>
-     *
-     * <table>
-     *  <thead>
-     *   <th>Option</th>
-     *   <th>Value</th>
-     *   <th>Description</th>
-     *   <th>Required?</th>
-     *  </thead>
-     *  <tbody>
-     *   <tr>
-     *    <td>host</td>
-     *    <td>Database host</td>
-     *    <td>localhost</td>
-     *    <td>No</td>
-     *   </tr>
-     *   <tr>
-     *    <td>name</td>
-     *    <td>Database name</td>
-     *    <td>null</td>
-     *    <td>Yes</td>
-     *   </tr>
-     *   <tr>
-     *    <td>port</td>
-     *    <td>Database port</td>
-     *    <td>3306</td>
-     *    <td>No</td>
-     *   </tr>
-     *   <tr>
-     *    <td>user</td>
-     *    <td>Database username</td>
-     *    <td>root</td>
-     *    <td>No</td>
-     *   </tr>
-     *   <tr>
-     *    <td>pass</td>
-     *    <td>Database password</td>
-     *    <td></td>
-     *    <td>No</td>
-     *   </tr>
-     *   <tr>
-     *    <td>prefix</td>
-     *    <td>Database prefix</td>
-     *    <td></td>
-     *    <td>No</td>
-     *   </tr>
-     *  </tbody>
-     * </table>
      *
      * @param object $details
      * @throws DBUtilException
      */
     public function __construct($details) {
-        $this->connection_info = (object) array('host' => 'localhost', 'name' => null, 'port' => 3306, 'user' => 'root', 'pass' => '', 'prefix' => '', 'type' => self::MySQL);
+        $this->_connectionInfo = (object) array('host' => 'localhost', 'name' => null, 'port' => 3306, 'user' => 'root', 'pass' => '', 'prefix' => '', 'type' => self::MySQL);
 
         foreach((object) $details as $key => $detail) {
-            $this->connection_info->$key = $detail;
+            $this->_connectionInfo->$key = $detail;
         }
 
         if(!$this->isValid()) {
@@ -91,7 +41,7 @@ class DBUtil {
     }
 
     private function isValid() {
-        if($this->connection_info->name === null) {
+        if($this->_connectionInfo->name === null) {
             return false;
         }
 
@@ -99,9 +49,9 @@ class DBUtil {
     }
 
     private function initialize() {
-        switch($this->connection_info->type) {
+        switch($this->_connectionInfo->type) {
             case self::MySQL:
-                $this->pdo_connection = $this->newMySQLConnection();
+                $this->_pdoConnection = $this->newMySQLConnection();
                 new Logger('MySQL connection initialized.', Logger::INFO, __CLASS__, __LINE__);
                 break;
             default:
@@ -112,8 +62,8 @@ class DBUtil {
     }
 
     public function isInitialized() {
-        if($this->pdo_connection instanceof \PDO) {
-            if ($this->pdo_connection->getAttribute(\PDO::ATTR_CONNECTION_STATUS)) {
+        if($this->_pdoConnection instanceof \PDO) {
+            if ($this->_pdoConnection->getAttribute(\PDO::ATTR_CONNECTION_STATUS)) {
                 return true;
             }
         }
@@ -128,14 +78,18 @@ class DBUtil {
         $connection = null;
 
         try {
-            $connection = new \PDO('mysql:host=' . $this->connection_info->host . ';dbname=' . $this->connection_info->name . ';charset=utf8', $this->connection_info->name, $this->connection_info->pass);
+            $options = [
+                \PDO::ATTR_TIMEOUT => 4
+            ];
+
+            $connection = new \PDO('mysql:host=' . $this->_connectionInfo->host . ';dbname=' . $this->_connectionInfo->name . ';charset=utf8', $this->_connectionInfo->name, $this->_connectionInfo->pass, $options);
 
             $connection->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
             $connection->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
 
-            $this->query_queue = array();
+            $this->_queryQueue = array();
         } catch(\PDOException $exception) {
-            $this->errors[] = $exception->getMessage();
+            $this->_errors[] = ['message' => $exception->getMessage(), 'code' => $exception->getCode()];
             new Logger($exception->getMessage(), Logger::ERROR, __CLASS__, __LINE__);
         }
 
@@ -147,9 +101,9 @@ class DBUtil {
      * @return String $query
      */
     private function replacePrefix($query) {
-        $query = str_replace('{{PREFIX}}', $this->connection_info->prefix, $query);
-        $query = str_replace('{{PREF}}', $this->connection_info->prefix, $query);
-        $query = str_replace('{{DBP}}', $this->connection_info->prefix, $query);
+        $query = str_replace('{{PREFIX}}', $this->_connectionInfo->prefix, $query);
+        $query = str_replace('{{PREF}}', $this->_connectionInfo->prefix, $query);
+        $query = str_replace('{{DBP}}', $this->_connectionInfo->prefix, $query);
 
         return $query;
     }
@@ -163,9 +117,9 @@ class DBUtil {
      */
     public function addQuery(DBUtilQuery $query) {
         if($query->getName() !== null) {
-            $this->query_queue[$query->getName()] = $query;
+            $this->_queryQueue[$query->getName()] = $query;
         } else {
-            $this->query_queue[] = $query;
+            $this->_queryQueue[] = $query;
         }
 
         new Logger('Query added to the queue.', Logger::DEBUG, __CLASS__, __LINE__);
@@ -179,20 +133,25 @@ class DBUtil {
      * @return $this
      */
     public function addQueries($queries) {
-        foreach($queries as $query) {
-            $this->addQuery($query);
+        if(is_array($queries)) {
+            foreach($queries as $query) {
+                $this->addQuery($query);
+            }
+
+            new Logger('Queries added to the queue.', Logger::DEBUG, __CLASS__, __LINE__);
+            return $this;
         }
 
-        new Logger('Queries added to the queue.', Logger::DEBUG, __CLASS__, __LINE__);
+        new Logger('Failed to add to the queue.', Logger::ERROR, __CLASS__, __LINE__);
         return $this;
     }
 
     public function getQueue() {
-        return $this->query_queue;
+        return $this->_queryQueue;
     }
 
     public function runQueries() {
-        foreach($this->query_queue as $query) {
+        foreach($this->_queryQueue as $query) {
             $this->executeQuery($query);
         }
 
@@ -209,19 +168,19 @@ class DBUtil {
     }
 
     public function runQueryByName($name) {
-        $this->executeQuery($this->query_queue[$name]);
+        $this->executeQuery($this->_queryQueue[$name]);
         return $this;
     }
 
     public function getConnection() {
-        return $this->pdo_connection;
+        return $this->_pdoConnection;
     }
 
     private function executeQuery(DBUtilQuery $query) {
-        $this->query_results = array();
+        $this->_queryResults = array();
 
         try {
-            $statement = $this->pdo_connection->prepare($this->replacePrefix($query->getQuery()));
+            $statement = $this->_pdoConnection->prepare($this->replacePrefix($query->getQuery()));
 
             if (function_exists('get_magic_quotes') && get_magic_quotes_gpc()) {
                 function undo_magic_quotes_gpc(&$array) {
@@ -247,15 +206,15 @@ class DBUtil {
 
             if($query->getName() === null) {
                 if($query->getMultipleRows()) {
-                    $this->query_results[] = $statement->fetchAll();
+                    $this->_queryResults[] = $statement->fetchAll();
                 } else {
-                    $this->query_results[] = $statement->fetch();
+                    $this->_queryResults[] = $statement->fetch();
                 }
             } else {
                 if($query->getMultipleRows()) {
-                    $this->query_results[$query->getName()] = $statement->fetchAll();
+                    $this->_queryResults[$query->getName()] = $statement->fetchAll();
                 } else {
-                    $this->query_results[$query->getName()] = $statement->fetch();
+                    $this->_queryResults[$query->getName()] = $statement->fetch();
                 }
             }
 
@@ -268,18 +227,24 @@ class DBUtil {
     }
 
     public function getResults() {
-        return $this->query_results;
+        return $this->_queryResults;
     }
 
     public function getResultByName($name) {
-        return $this->query_results[$name];
+        if(!empty($this->_queryResults[$name])) {
+            return $this->_queryResults[$name];
+        }
     }
 
     public function getLastInsertId() {
-        return $this->pdo_connection->lastInsertId();
+        return $this->_pdoConnection->lastInsertId();
     }
 
     public function getLastError() {
-        return end($this->errors);
+        return end($this->_errors)['message'];
+    }
+
+    public function getLastErrorCode() {
+        return end($this->_errors)['code'];
     }
 }

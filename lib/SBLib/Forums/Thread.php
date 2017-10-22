@@ -26,7 +26,7 @@
             $this->S = $SQL;
             $this->config = new Config;
 
-            switch($this->config->getConfigValue('integration')) {
+            switch($this->config->get('integration')) {
                 case 'vB3':
                     $this->integration = new vB3Thread($this->S);
                     break;
@@ -114,7 +114,8 @@
     public function setPermissions($_id = null) {
       if(is_null($_id)) $_id = $this->id;
 
-      $P = new Permissions($this->S, $_id, $this);
+      //$P = new Permissions($this->S, $_id, $this);
+      $P = new Permissions($this->S, $_id);
       $this->permissions = $P->getPermissions();
       return $this;
     }

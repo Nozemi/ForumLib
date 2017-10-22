@@ -51,8 +51,8 @@
          */
         private function create() {
             $config = new Config;
-            $logLevel = $config->getConfigValue('logLevel');
-            $logSize  = $config->getConfigValue('logSize');
+            $logLevel = $config->get('logLevel');
+            $logSize  = $config->get('logSize');
 
             if(is_array($logLevel)) {
                 if (!in_array('info', $logLevel) && $this->type == self::INFO) {
@@ -73,9 +73,9 @@
             }
 
             $timestamp = \Date('m/d Y - H:i:s');
-            $logFile = MISC::findFile('logs/' . $config->getConfigValue('siteName', 'default') . '.log');
+            $logFile = MISC::findFile('logs/' . $config->get('siteName', 'default') . '.log');
 
-            /*try {
+            try {
                 // Open and write to the file if it doesn't exist.
 
                 if(!file_exists($logFile)) {
@@ -97,7 +97,7 @@
                 } else {
                     echo "Looks like the logger doesn\'t have access to log to [{$logFile}].";
                 }
-            }*/
+            }
 
             return true;
         }

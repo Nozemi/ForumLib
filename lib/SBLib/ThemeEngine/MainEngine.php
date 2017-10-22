@@ -27,18 +27,18 @@
         public $name; // Theme name
         public $directory; // Theme directory
 
-        protected $config; // Theme config (theme.json file within the theme folder)
-        protected $rootDir;
+        protected $_config; // Theme config (theme.json file within the theme folder)
+        protected $_rootDir;
 
-        protected $templates; // Templates loaded from the HTML files.
-        protected $varWrapperStart;
-        protected $varWrapperEnd;
+        protected $_templates; // Templates loaded from the HTML files.
+        protected $_varWrapperStart;
+        protected $_varWrapperEnd;
 
         protected $_SQL; // DBUtil object
         protected $_Config; // Config object
 
-        protected $lastError; // Array of last error messages
-        protected $lastMessage; // Array of last info messages
+        protected $_lastError; // Array of last error messages
+        protected $_lastMessage; // Array of last info messages
 
         const START = 0;
         const END = 1;
@@ -53,26 +53,30 @@
          * @param DBUtil|null $SQL
          * @param Config|null $Config
          */
-        public function __construct($_name, DBUtil $SQL = null, Config $Config = null) {
+        public function __construct(DBUtil $SQL, $_name = 'slickboard', Config $Config = null) {
+            if($Config == null) {
+                $Config = new Config;
+            }
+
             $this->_SQL         = $SQL;
             $this->_Config      = $Config;
             $this->name         = $_name;
             $this->directory    = MISC::findFile('themes/' . $this->name);
-            $this->rootDir      = ($Config->getConfigValue('siteRoot') ? '/' . $Config->getConfigValue('siteRoot') . '/' : '/');
+            $this->_rootDir      = ($Config->getConfigValue('siteRoot') ? '/' . $Config->getConfigValue('siteRoot') . '/' : '/');
 
             if($this->validateTheme()) {
                 $this->setConfig();
                 $this->setTemplates();
 
-                if($this->config) {
-                    $this->varWrapperStart  = MISC::findKey('varWrapper1', $this->config);
-                    $this->varWrapperEnd    = MISC::findKey('varWrapper2', $this->config);
+                if($this->_config) {
+                    $this->_varWrapperStart  = MISC::findKey('varWrapper1', $this->_config);
+                    $this->_varWrapperEnd    = MISC::findKey('varWrapper2', $this->_config);
                 } else {
-                    $this->varWrapperStart  = '{{';
-                    $this->varWrapperEnd    = '}}';
+                    $this->_varWrapperStart  = '{{';
+                    $this->_varWrapperEnd    = '}}';
                 }
             } else {
-                $this->lastError[] = 'Failed to create object.';
+                $this->_lastError[] = 'Failed to create object.';
                 return false;
             }
 
@@ -83,7 +87,7 @@
             // TODO: Check if name is specified
             // TODO: Check if theme directory is found.
             if(!$this->_Config instanceof Config) {
-                $this->lastError[] = 'Config was not successfully provided.';
+                $this->_lastError[] = 'Config was not successfully provided.';
                 return false;
             }
 
@@ -92,9 +96,9 @@
 
         public function getWrapper($place) {
             if($place == self::START) {
-                return $this->varWrapperStart;
+                return $this->_varWrapperStart;
             } else {
-                return $this->varWrapperEnd;
+                return $this->_varWrapperEnd;
             }
         }
 
@@ -103,10 +107,10 @@
                 $dir = explode('/', $dir);
                 $dir = end($dir);
 
-                $this->templates['page_' . $dir] = array();
+                $this->_templates['page_' . $dir] = array();
 
                 foreach(glob($this->directory . '/' . $dir . '/*.template.html') as $file) {
-                    $this->templates['page_' . $dir][basename($file, '.template.html')] = file_get_contents($file);
+                    $this->_templates['page_' . $dir][basename($file, '.template.html')] = file_get_contents($file);
                 }
             }
 
@@ -116,18 +120,18 @@
         private function setConfig() {
             $configFile = $this->directory . '/theme.json';
             if(file_exists($configFile)) {
-                $this->lastMessage[] = 'Theme config was successfully loaded.';
-                $this->config = json_decode(file_get_contents($configFile), true);
+                $this->_lastMessage[] = 'Theme config was successfully loaded.';
+                $this->_config = json_decode(file_get_contents($configFile), true);
             } else {
-                $this->lastMessage[] = 'No theme config was present.';
-                $this->config = false;
+                $this->_lastMessage[] = 'No theme config was present.';
+                $this->_config = false;
             }
 
             return $this;
         }
 
         public function getConfig() {
-            return $this->config;
+            return $this->_config;
         }
 
         public function getName() {
@@ -139,10 +143,10 @@
         }
 
         public function getTemplate($_template, $_page = null) {
-            $tmp = $this->templates;
+            $tmp = $this->_templates;
 
             if($_page) {
-                $tmp = $this->templates['page_' . $_page];
+                $tmp = $this->_templates['page_' . $_page];
             }
 
             return $tmp;
@@ -176,7 +180,7 @@
                                         $html .= $Forums->parseForum($this->getTemplate('portal_news'), $top->threads[$i]);
                                     }
 
-                                    $_template = $this->replaceVariable($match->getOption(), $_template, $html);
+                                    $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $html);
                                 }
                                 break;
                             case 'latestPosts':
@@ -191,7 +195,7 @@
                                     $html .= $Forums->parseForum($this->getTemplate('portal_latest_post_list_item', 'portal'), $threads[$i]);
                                 }
 
-                                $_template = $this->replaceVariable($match->getOption(), $_template, $html);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $html);
                                 break;
                             case 'categories':
                                 $C = new Category($this->_SQL);
@@ -203,7 +207,7 @@
                                     $html .= $Forums->parseForum($this->getTemplate('category_view', 'forums'), $cat);
                                 }
 
-                                $_template = $this->replaceVariable($match->getOption(), $_template, $html);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $html);
                                 break;
                             case 'groupPerms':
                                 $G = new Group($this->_SQL);
@@ -217,7 +221,7 @@
                                     $html .= $P->parseGroup($this->getTemplate('admin_categories_group_perms', 'admin'), $group);
                                 }
 
-                                $_template = $this->replaceVariable($match->getOption(), $_template, $html);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $html);
                                 break;
                             default:
                                 $fItem = null;
@@ -268,17 +272,17 @@
                                 $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $this->name);
                                 break;
                             case 'dir':
-                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, ($this->rootDir ? $this->rootDir : '') . '/' . $this->directory . '/');
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, ($this->_rootDir ? $this->_rootDir : '') . '/' . $this->directory . '/');
                                 break;
                             case 'assets':
                             case 'assetsDir':
-                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, ($this->rootDir ? $this->rootDir : '') . '/' . $this->directory . '/_assets/');
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, ($this->_rootDir ? $this->_rootDir : '') . '/' . $this->directory . '/_assets/');
                                 break;
                             case 'imgDir':
                             case 'img':
                             case 'imgs':
                             case 'images':
-                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, ($this->rootDir ? $this->rootDir : '') . '/' . $this->directory . '/_assets/img/');
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, ($this->_rootDir ? $this->_rootDir : '') . '/' . $this->directory . '/_assets/img/');
                                 break;
                         }
                         break;
@@ -329,7 +333,7 @@
                                 break;
                             case 'rootDir':
                             case 'rootDirectory':
-                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $this->rootDir);
+                                $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $this->_rootDir);
                                 break;
                             case 'currPage':
                             case 'currentPage':
@@ -429,68 +433,8 @@
                         if($match->getOption()) {
                             if(class_exists($match->getOption())) {
                                 /** @var PluginBase $plugin */
-                                $plugin = new ($match->getOption())($this);
-                                $_template = $plugin->customParse($_template);
-                            }
-                        }
-                        break;
-                }
-            }
-        }
-
-        protected function parseTemplate_new($_template) {
-            $matches = $this->findPlaceholders($_template);
-
-            foreach($matches as $match) {
-                /** @var $match Placeholder */
-                switch($match->getCategory()) {
-                    case 'forum':
-                        break;
-                    case 'user':
-                    case 'profile':
-                        if(isset($_GET['username']) || isset($_SESSION['user']['username'])) {
-                            $username = (isset($_GET['username']) ? $_GET['username'] : $_SESSION['user']['username']);
-
-                            $Profile    = new Profile($this);
-                            $User       = new User($this->_SQL);
-                            $user       = $User->getUser(str_replace('_', ' ', $username), false);
-
-                            if($user instanceof User) {
-                                $_template = $Profile->parseProfile($_template, $user);
-                            }
-                        }
-                        break;
-                    case 'structure':
-                        break;
-                    case 'theme':
-                        break;
-                    case 'site':
-                        break;
-                    case 'pagination':
-                        // TODO: Need to do something here. Idk just what yet.
-                        switch($match->getOption()) {
-                            case 'links':
-                                break;
-                        }
-                        break;
-                    case 'content':
-                        $contentQuery = new DBUtilQuery;
-                        $contentQuery->setName('contentQuery')
-                            ->setMultipleRows(false)
-                            ->setQuery("SELECT `value` FROM `{{PREFIX}}content_strings` WHERE `key` = :key")
-                            ->addParameter(':key', $match->getOption(), \PDO::PARAM_STR);
-                        $this->_SQL->runQuery($contentQuery);
-
-                        // TODO: Add some kind of error checking here.
-                        $content = (object) $this->_SQL->getResultByName($contentQuery->getName());
-                        $_template = $this->replaceVariable($match->getPlaceholder(), $_template, $content->value);
-                        break;
-                    case 'custom':
-                    default:
-                        if($match->getOption()) {
-                            if(class_exists($match->getOption())) {
-                                /** @var PluginBase $plugin */
-                                $plugin = new ($match->getOption())($this);
+                                $pluginClass = $match->getOPtion();
+                                $plugin = new $pluginClass($this);
                                 $_template = $plugin->customParse($_template);
                             }
                         }
@@ -505,7 +449,7 @@
          * @return mixed
          */
         protected function findPlaceholders($_template) {
-            preg_match_all('/' . $this->varWrapperStart . '(.*?)' . $this->varWrapperEnd . '/', $_template, $tmpMatches);
+            preg_match_all('/' . $this->_varWrapperStart . '(.*?)' . $this->_varWrapperEnd . '/', $_template, $tmpMatches);
 
             $matches = array();
             foreach($tmpMatches as $match) {
@@ -515,21 +459,21 @@
 
             $matches = array();
             foreach($matches as $match) {
-                $ph = new Placeholder($match);
+                $ph = new Placeholder($match, $this);
                 $matches[] = $ph->getObject();
             }
 
             return $matches;
         }
 
-        protected function replaceVariable($_match, $_template, $_replacement, $file = 'NONE', $line = 0) {
+        protected function replaceVariable($_placeholder, $_template, $_replacement, $file = 'NONE', $line = 0) {
             /*if(basename($file) == 'Profile.php') {
                 print_r($_replacement); echo "{$file} - {$line}<hr>";
 
                 new Logger("Replacing variable {$_match}, with {$_replacement}.", Logger::DEBUG, $file, $line);
             }*/
 
-            return str_replace($this->varWrapperStart . $_match . $this->varWrapperEnd, $_replacement, $_template);
+            return str_replace($_placeholder, $_replacement, $_template);
         }
 
         // Validate the themes that are loaded.

@@ -34,18 +34,20 @@
             $tR = $getThreads->result();
             $threads = array();
 
-            for($i = 0; $i < count($tR); $i++) {
-                $T = new Thread($this->S);
-                $T->setId($tR[$i]['id'])
-                    ->setTitle($tR[$i]['title'])
-                    ->setAuthor($tR[$i]['authorId'])
-                    ->setSticky($tR[$i]['sticky'])
-                    ->setClosed($tR[$i]['closed'])
-                    ->setPosted($tR[$i]['dateCreated'])
-                    ->setEdited($tR[$i]['lastEdited'])
-                    ->setTopicId($tR[$i]['topicId'])
-                    ->setPermissions($T->id);
-                $threads[] = $T;
+            if(is_array($tR)) {
+                for ($i = 0; $i < count($tR); $i++) {
+                    $T = new Thread($this->S);
+                    $T->setId($tR[$i]['id'])
+                        ->setTitle($tR[$i]['title'])
+                        ->setAuthor($tR[$i]['authorId'])
+                        ->setSticky($tR[$i]['sticky'])
+                        ->setClosed($tR[$i]['closed'])
+                        ->setPosted($tR[$i]['dateCreated'])
+                        ->setEdited($tR[$i]['lastEdited'])
+                        ->setTopicId($tR[$i]['topicId'])
+                        ->setPermissions($T->id);
+                    $threads[] = $T;
+                }
             }
 
 
@@ -111,8 +113,7 @@
                 ->setDBUtil($this->S)
                 ->execute();
 
-            $result = $this->S->getResultByName($createThread->getName());
-            $this->setId($result['id']);
+            return $this->S->getLastInsertId();
         }
 
         public function getThread($id, $byId, $topicId, Thread $thread) {

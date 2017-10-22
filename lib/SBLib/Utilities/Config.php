@@ -1,14 +1,12 @@
 <?php
     namespace SBLib\Utilities;
 
-    use SBLib\Utilities\MISC;
-
     class Config {
         public $configDirectory;
         public $config;
 
-        private $lastError = array();
-        private $lastMessage = array();
+        private $_lastError = array();
+        private $_lastMessage = array();
 
         /*
         Config object adds all the configuration variables from the config directory's
@@ -16,12 +14,16 @@
 
         Where you put the config directory doesn't matter. You can specify it's path in the constructor.
         */
-        public function __construct($cnfDir = 'config') {
-            $this->configDirectory = MISC::findFile($cnfDir); // Finds the config directory.
+        public function __construct($configDirectory = null) {
+            if($configDirectory == null) {
+                $configDirectory = 'config';
+            }
+
+            $this->configDirectory = MISC::findDirectory($configDirectory); // Finds the config directory.
 
             // Checks and handles the error upon config directory not existing.
             if(!file_exists($this->configDirectory)) {
-                $this->lastError[] = 'Config directory wasn\'t found.';
+                $this->_lastError[] = 'Config directory wasn\'t found.';
                 return false;
             }
 
@@ -49,9 +51,9 @@
                 } catch(\Exception $ex) {
                     // Catch the error (if any) when attempting to create the file.
                     if(defined('DEBUG')) {
-                        $this->lastError[] = $ex->getMessage();
+                        $this->_lastError[] = $ex->getMessage();
                     } else {
-                        $this->lastError[] = 'Something went wrong during the config loading.';
+                        $this->_lastError[] = 'Something went wrong during the config loading.';
                     }
                     return false;
                 }
@@ -59,39 +61,64 @@
         }
 
         /**
+         * @deprecated - Use Config::get instead.
+         * @param $name
+         * @param null $default
+         * @param bool $file
          * @return mixed
          */
-        public function getConfigValue($key, $defaultValue = null) {
+        public function getConfigValue($name, $default = null, $file = false) {
+            return self::get($name, $default, $file);
+        }
+
+        /**
+         * Gets a config value from the config array.
+         *
+         * @param string $name
+         * @param string $file
+         * @param mixed $default
+         *
+         * @return mixed
+         */
+        public function get($name, $default = null, $file = null) {
             $configVal = null;
 
             if(is_array($this->config)) {
-                if (isset(array_column($this->config, $key)[0])) {
-                    $configVal = array_column($this->config, $key)[0];
-                } else if (!empty(array_column($this->config, $key))) {
-                    $configVal = array_column($this->config, $key);
+                if($file === null) {
+                    if(count(array_column($this->config, $name)) > 0) {
+                        $configVal = array_column($this->config, $name)[0];
+                    } else {
+                        $configVal = array_column($this->config, $name);
+                    }
+                } else {
+                    if(count(array_column($this->config->$file, $name)) > 0) {
+                        $configVal = array_column($this->config->$file, $name)[0];
+                    } else {
+                        $configVal = array_column($this->config->$file, $name);
+                    }
                 }
             }
 
-            if($configVal == null || $configVal == '') {
-                return $defaultValue;
+            if(empty($configVal)) {
+                return $default;
             }
 
             return $configVal;
         }
 
         public function getLastError() {
-            return end($this->lastError);
+            return end($this->_lastError);
         }
 
         public function getLastMessage() {
-            return end($this->lastMessage);
+            return end($this->_lastMessage);
         }
 
         public function getErrors() {
-            return $this->lastError;
+            return $this->_lastError;
         }
 
         public function getMessages() {
-            return $this->lastMessage;
+            return $this->_lastMessage;
         }
     }

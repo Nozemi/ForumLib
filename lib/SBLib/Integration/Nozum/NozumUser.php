@@ -7,7 +7,7 @@
     use SBLib\Forums\Thread;
     use SBLib\Integration\IntegrationBaseUser;
     use SBLib\Users\User;
-    use ForumLib\Utilities\Config;
+    use SBLib\Utilities\Config;
 
     use SBLib\Utilities\Logger;
     use \PDO;
@@ -76,7 +76,16 @@
                 $this->lastError[] = 'Username and/or password is missing.';
                 return false;
             } else {
-                $C = new Config;
+                $Config = new Config;
+
+                $groupId = 0;
+                if(is_object($user->group)) {
+                    $groupId = $user->group->id;
+                }
+
+                if($groupId == null) {
+                    $groupId = $Config->get('defaultGroup', 0);
+                }
 
                 $register = new DBUtilQuery;
                 $register->setName('register')
@@ -108,28 +117,27 @@
                     ->addParameter(':email', $user->email, PDO::PARAM_STR)
                     ->addParameter(':firstname', $user->firstname, PDO::PARAM_STR)
                     ->addParameter(':lastname', $user->lastname, PDO::PARAM_STR)
-                    ->addParameter(':group', ($user->group->id ? $user->group->id : $C->getConfigValue('defaultGroup')), PDO::PARAM_INT)
+                    ->addParameter(':group', $groupId, PDO::PARAM_INT)
                     ->setDBUtil($this->S)
                     ->execute();
 
                 return $this->S->getLastInsertId();
             }
-
-            return true;
         }
 
         public function setPassword($p1, $p2 = null, $login = false, User $user) {
             if($p1 == $p2) {
                 // If $p1 and $p2 matches (both passwords provided), it'll hash the password, and store it in the object.
-                $this->password = password_hash($p1, PASSWORD_BCRYPT);
-                return $this;
+                $password = password_hash($p1, PASSWORD_BCRYPT);
             } else if(is_null($p2) && $login == true) {
                 // If password 2 is empty and $login is true, it'll store the clear text password in the object.
-                return $p1;
+                $password = $p1;
             } else {
                 $this->lastError[] = 'Passwords doesn\'t match.';
-                return false;
+                $password = null;
             }
+
+            return $password;
         }
 
         public function updateAccount(User $user) {

@@ -1,31 +1,32 @@
 <?php
-  namespace SBLib\Users;
 
-  use SBLib\Database\DBUtil;
+namespace SBLib\Users;
 
-  use SBLib\Integration\Nozum\NozumUser;
-  use SBLib\Integration\vB3\vB3User;
+use SBLib\Database\DBUtil;
 
-  use SBLib\Utilities\Config;
+use SBLib\Integration\Nozum\NozumUser;
+use SBLib\Integration\vB3\vB3User;
 
-  /*
-    The User object requires the PSQL class in order to function.
-    It also requires a table, with whatever prefix you desire, the important part is to end it with users. (e.g. site2341_users)
-    Within the table, there needs to be following columns:
-    - username (varchar(50))
-    - password (varchar(255))
-    - email (varchar(100))
-    - avatar (varchar(255))
-    - group (int(1))
-    - regip (varchar(15)) - Only supports IPv4 for now.
-    - regdate (datetime)
-    - lastlogin (datetime)
-    - lastloginip (varchar(15)) - Only supports IPv4 for now.
-    - firstname (varchar(30))
-    - lastname (varchar(30))
-  */
+use SBLib\Utilities\Config;
 
-  class User {
+/*
+  The User object requires the PSQL class in order to function.
+  It also requires a table, with whatever prefix you desire, the important part is to end it with users. (e.g. site2341_users)
+  Within the table, there needs to be following columns:
+  - username (varchar(50))
+  - password (varchar(255))
+  - email (varchar(100))
+  - avatar (varchar(255))
+  - group (int(1))
+  - regip (varchar(15)) - Only supports IPv4 for now.
+  - regdate (datetime)
+  - lastlogin (datetime)
+  - lastloginip (varchar(15)) - Only supports IPv4 for now.
+  - firstname (varchar(30))
+  - lastname (varchar(30))
+*/
+
+class User {
     public $id;       // Account User ID.
     public $username;  // Account username.
     public $groupId;
@@ -53,41 +54,43 @@
 
     public function __construct(DBUtil $SQL, $_uid = null) {
         // We'll check if the required parameters are filled.
-        if(!is_null($SQL)) {
+        if (!is_null($SQL)) {
             $this->S = $SQL;
 
             // Getting IP address for the user.
             $ipadr = '0.0.0.0';
 
-            if(isset($_SERVER['SERVER_ADDR'])) {
+            if (isset($_SERVER['SERVER_ADDR'])) {
                 $ipadr = $_SERVER['SERVER_ADDR'];
             }
 
-            if(isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
                 $ipadr = $_SERVER['HTTP_X_FORWARDED_FOR'];
             }
 
-            if(isset($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+            if (isset($_SERVER['HTTP_CF_CONNECTING_IP'])) {
                 $ipadr = $_SERVER['HTTP_CF_CONNECTING_IP'];
             }
-			
+
             $this->lastLogin = array(
-                'date'  => date('Y-m-d H:i:s'),
-                'ip'    => $ipadr
+                'date' => date('Y-m-d H:i:s'),
+                'ip' => $ipadr
             );
 
             $this->lastIp = $ipadr;
+            $this->integration = new NozumUser($this->S);
 
-            $C = new Config;
-            $this->config = $C->config;
-            switch(array_column($this->config, 'integration')) {
-                case 'vB3':
-                    $this->integration = new vB3User($this->S);
-                    break;
-                case 'Nozum':
-                default:
-                    $this->integration = new NozumUser($this->S);
-                    break;
+            $config = new Config;
+            if (is_array($config->config)) {
+                switch (array_column($config->config, 'integration')) {
+                    case 'vB3':
+                        $this->integration = new vB3User($this->S);
+                        break;
+                    case 'Nozum':
+                    default:
+                        $this->integration = new NozumUser($this->S);
+                        break;
+                }
             }
         } else {
             $this->lastError[] = 'Something went wrong with the user.';
@@ -158,7 +161,7 @@
     }
 
     public function setSQL(DBUtil $_SQL) {
-        if($_SQL instanceof DBUtil) {
+        if ($_SQL instanceof DBUtil) {
             $this->S = $_SQL;
             $this->lastMessage[] = 'Database was successfully set.';
         } else {
@@ -168,8 +171,8 @@
     }
 
     public function setId($_id) {
-      $this->id = $_id;
-      return $this;
+        $this->id = $_id;
+        return $this;
     }
 
     public function setPostCount($_id = null) {
@@ -182,8 +185,8 @@
     }
 
     public function setAvatar($_avatar) {
-      $this->avatar = $_avatar;
-      return $this;
+        $this->avatar = $_avatar;
+        return $this;
     }
 
     public function setAbout($_about) {
@@ -192,24 +195,28 @@
     }
 
     public function setGroupId($_gid) {
-      $this->groupId = $_gid;
-      return $this;
+        $this->groupId = $_gid;
+        return $this;
     }
 
-    public function setGroup($_gid) {
-      $G = new Group($this->S);
-      $this->group = $G->getGroup($_gid);
-      return $this;
+    public function setGroup($group) {
+        if($group instanceof Group) {
+            $this->group = $group;
+        } else {
+            $Group = new Group($this->S);
+            $this->group = $Group->getGroup($group);
+        }
+        return $this;
     }
 
     public function setFirstname($_firstname) {
-      $this->firstname = $_firstname;
-      return $this;
+        $this->firstname = $_firstname;
+        return $this;
     }
 
     public function setLastname($_lastname) {
-      $this->lastname = $_lastname;
-      return $this;
+        $this->lastname = $_lastname;
+        return $this;
     }
 
     public function setLocation($_location) {
@@ -218,33 +225,33 @@
     }
 
     public function setLastLogin($_date) {
-      $this->lastLogin = $_date;
-      return $this;
+        $this->lastLogin = $_date;
+        return $this;
     }
 
     public function setRegDate($_date) {
-      $this->regDate = $_date;
-      return $this;
+        $this->regDate = $_date;
+        return $this;
     }
 
     public function setLastIP($_ip) {
-      $this->lastIp = $_ip;
-      return $this;
+        $this->lastIp = $_ip;
+        return $this;
     }
 
     public function setRegIP($_ip) {
-      $this->regIp = $_ip;
-      return $this;
+        $this->regIp = $_ip;
+        return $this;
     }
 
     public function setEmail($_email) {
-      $this->email = $_email;
-      return $this;
+        $this->email = $_email;
+        return $this;
     }
 
     public function setUsername($_username) {
-      $this->username = $_username;
-      return $this;
+        $this->username = $_username;
+        return $this;
     }
 
     public function getURL() {
@@ -256,18 +263,18 @@
     }
 
     public function getLastMessage() {
-      return end($this->lastMessage);
+        return end($this->lastMessage);
     }
 
     public function getLastError() {
-      return end($this->lastError);
+        return end($this->lastError);
     }
 
     public function getErrors() {
-      return $this->lastError;
+        return $this->lastError;
     }
 
     public function getMessages() {
-      return $this->lastMessage;
+        return $this->lastMessage;
     }
-  }
+}

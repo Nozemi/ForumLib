@@ -16,7 +16,7 @@
         )
     */
     public function __construct(PSQL $SQL, $install) {
-      // Let's check if the $Database is not a null.
+      // Let's check if the $DatabaseWIP is not a null.
       if(!is_null($SQL)) {
         $this->S = $SQL;
       } else {

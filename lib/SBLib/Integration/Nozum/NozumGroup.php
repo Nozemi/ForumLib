@@ -61,12 +61,14 @@
                 ->setQuery("
                     INSERT INTO `{{DBP}}groups` SET
                          `title`    = :title
-                        ,`desc`     = :desc
+                        ,`desc`     = :description
                         ,`admin`    = :admin
+                        ,`order`    = :order
                 ")
                 ->addParameter(':title', $group->name)
-                ->addParameter(':desc', $group->description)
-                ->addParameter(':admin', $group->admin)
+                ->addParameter(':description', $group->description)
+                ->addParameter(':admin', ($group->admin ? 1 : 0), \PDO::PARAM_BOOL)
+                ->addParameter(':order', $group->order, \PDO::PARAM_INT)
                 ->setDBUtil($this->S)
                 ->execute();
 

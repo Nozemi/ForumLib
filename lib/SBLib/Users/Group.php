@@ -1,18 +1,20 @@
 <?php
-  namespace SBLib\Users;
 
-  use SBLib\Database\DBUtil;
+namespace SBLib\Users;
 
-  use SBLib\Integration\Nozum\NozumGroup;
-  use SBLib\Integration\vB3\vB3Group;
-  use SBLib\Utilities\Config;
+use SBLib\Database\DBUtil;
 
-  class Group {
+use SBLib\Integration\Nozum\NozumGroup;
+use SBLib\Integration\vB3\vB3Group;
+use SBLib\Utilities\Config;
+
+class Group {
     public $id;
     public $name;
     public $description;
     public $banned;
     public $admin;
+    public $order;
 
     private $S;
 
@@ -23,10 +25,10 @@
 
     public function __construct(DBUtil $SQL) {
         // Let's check if the $SQL is not a null.
-        if(!is_null($SQL)) {
+        if (!is_null($SQL)) {
             $this->S = $SQL;
             $this->config = new Config;
-            switch($this->config->getConfigValue('integration')) {
+            switch ($this->config->getConfigValue('integration')) {
                 case 'vB3':
                     $this->integration = new vB3Group($this->S);
                     break;
@@ -52,54 +54,67 @@
         return $this->integration->getGroup($_id, $this);
     }
 
-    public function createGroup() {
+    public function create() {
         $this->id = $this->integration->createGroup($this);
         return $this;
     }
 
+    /**
+     * @deprecated - use Group::create()
+     * @return $this
+     */
+    public function createGroup() {
+        return $this->create();
+    }
+
     public function unsetSQL() {
-      $this->S = null;
-      return $this;
+        $this->S = null;
+        return $this;
     }
 
     public function setId($_id) {
-      $this->id = $_id;
-      return $this;
+        $this->id = $_id;
+        return $this;
+    }
+
+    public function setOrder($order) {
+        $this->order = $order;
+        return $this;
     }
 
     public function setName($_name) {
-      $this->name = $_name;
-      return $this;
+        $this->name = $_name;
+        return $this;
     }
 
     public function setDescription($_desc) {
-      $this->description = $_desc;
-      return $this;
+        $this->description = $_desc;
+        return $this;
     }
 
     public function setBanned($_banned) {
-      $this->banned = $_banned;
-      return $this;
+        $this->banned = $_banned;
+        return $this;
     }
 
     public function setAdmin($_admin) {
-      $this->admin = $_admin;
-      return $this;
+        $this->admin = $_admin;
+        return $this;
     }
 
     public function getLastError() {
-      return end($this->lastError);
+        return end($this->lastError);
     }
 
     public function getLastMessage() {
-      return end($this->lastMessage);
+        return end($this->lastMessage);
     }
 
     public function getErrors() {
-      return $this->lastError;
+        return $this->lastError;
     }
 
     public function getMessages() {
-      return $this->lastMessage;
+        return $this->lastMessage;
     }
-  }
+}
