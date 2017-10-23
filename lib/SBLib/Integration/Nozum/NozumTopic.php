@@ -126,6 +126,8 @@
                 ->addParameter(':id', $id, PDO::PARAM_INT)
                 ->setDBUtil($this->S)
                 ->execute();
+
+            return;
         }
 
         public function deleteTopic($id, Topic $top) {

@@ -7,23 +7,24 @@
         protected $_arguments;
         protected $_placeholder;
 
-        public function __construct($placeholder, MainEngine $engine) {
-            if(is_array($placeholder)) {
-                print_r($placeholder);
-                return false;
-            }
+        public function __construct($placeholder) {
+            if(is_array($placeholder)) { return false; }
 
-            $options = explode('::', trim(str_replace($engine->getWrapper(MainEngine::END), '', str_replace($engine->getWrapper(MainEngine::START), '', $placeholder))));
+            $options = explode('::', trim(str_replace('{{', '', str_replace('}}', '', $placeholder))));
 
             $this->_category  = $options[0];
             $this->_option    = explode('(', $options[1])[0];
 
-            //$args = explode(',', str_replace(')', '', explode('(', $options[1])));
-            //if(count($args) > 1) {
-            //    $this->_arguments = $args[1];
-            //}
+            $arguments = explode('(', $options[1]);
+            $arguments = end($arguments);
+            $arguments = str_replace(')','', $arguments);
+            $arguments = explode(',', $arguments);
+            foreach($arguments as $argument) {
+                $this->_arguments[] = $argument;
+            }
 
             $this->_placeholder = $placeholder;
+            return true;
         }
 
         public function getObject() {
@@ -38,6 +39,18 @@
             return $this->_option;
         }
 
+        /**
+         * Returns the placeholder that should be replaced within the template file.
+         *
+         * @return mixed
+         */
+        public function get() {
+            return $this->_placeholder;
+        }
+        /**
+         * @deprecated - Use Placeholder::get instead
+         * @return mixed
+         */
         public function getPlaceholder() {
             return $this->_placeholder;
         }

@@ -61,6 +61,14 @@
             return $this->integration->getLatestPost($_topicId, $this);
         }
 
+        public function getThread($number) {
+            if(!empty($this->threads[$number])) {
+                return $this->threads[$number];
+            }
+
+            return null;
+        }
+
         public function setThreadCount() {
             $this->threadCount = $this->integration->setThreadCount($this);
             return $this;

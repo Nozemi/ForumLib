@@ -106,6 +106,14 @@
             return $configVal;
         }
 
+        public function getAll($fromFile = null) {
+            if($fromFile === null) {
+                return $this->config;
+            } else {
+                return $this->config[$fromFile];
+            }
+        }
+
         public function getLastError() {
             return end($this->_lastError);
         }

@@ -24,7 +24,7 @@
                 $this->S = $SQL;
                 $this->config = new Config;
 
-                switch($this->config->getConfigValue('integration')) {
+                switch($this->config->get('integration')) {
                     case 'vB3':
                         $this->integration = new vB3Post($this->S);
                         break;
