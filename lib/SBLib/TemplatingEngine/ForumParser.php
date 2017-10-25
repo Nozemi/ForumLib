@@ -1,5 +1,5 @@
 <?php
-    namespace SBLib\ThemeEngine;
+    namespace SBLib\TemplatingEngine;
 
     use SBLib\Forums\Post;
     use SBLib\Forums\Thread;

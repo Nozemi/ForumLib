@@ -28,16 +28,21 @@ class DBUtil {
     public function __construct($details) {
         $this->_connectionInfo = (object) array('host' => 'localhost', 'name' => null, 'port' => 3306, 'user' => 'root', 'pass' => '', 'prefix' => '', 'type' => self::MySQL);
 
-        foreach((object) $details as $key => $detail) {
-            $this->_connectionInfo->$key = $detail;
-        }
+        if($GLOBALS['DBUtil'] instanceof DButil) {
+            new Logger('Database already initialized. Getting the already opened connection.', Logger::INFO, __CLASS__, __LINE__);
+            $this->_pdoConnection = $GLOBALS['DBUtil']->getConnection();
+        } else {
+            foreach ((object)$details as $key => $detail) {
+                $this->_connectionInfo->$key = $detail;
+            }
 
-        if(!$this->isValid()) {
-            new Logger('Invalid database details', Logger::ERROR, __CLASS__, __LINE__);
-            throw new DBUtilException('Invalid database details.');
-        }
+            if (!$this->isValid()) {
+                new Logger('Invalid database details', Logger::ERROR, __CLASS__, __LINE__);
+                throw new DBUtilException('Invalid database details.');
+            }
 
-        $this->initialize();
+            $this->initialize();
+        }
     }
 
     private function isValid() {

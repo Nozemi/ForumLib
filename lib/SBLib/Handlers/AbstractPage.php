@@ -47,6 +47,10 @@
             }
         }
 
+        public function getParameters() {
+            return $this->_params;
+        }
+
         public function getDBUtil() {
             return $this->_dbUtil;
         }

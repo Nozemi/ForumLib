@@ -1,5 +1,5 @@
 <?php
-    namespace SBLib\ThemeEngine;
+    namespace SBLib\TemplatingEngine;
 
     class Placeholder {
         protected $_category;
