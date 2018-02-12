@@ -87,7 +87,7 @@ class DBUtil {
                 \PDO::ATTR_TIMEOUT => 4
             ];
 
-            $connection = new \PDO('mysql:host=' . $this->_connectionInfo->host . ';dbname=' . $this->_connectionInfo->name . ';charset=utf8', $this->_connectionInfo->name, $this->_connectionInfo->pass, $options);
+            $connection = new \PDO('mysql:host=' . $this->_connectionInfo->host . ';dbname=' . $this->_connectionInfo->name . ';charset=utf8', $this->_connectionInfo->user, $this->_connectionInfo->pass, $options);
 
             $connection->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
             $connection->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
