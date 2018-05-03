@@ -1,3 +1,5 @@
+Continued development at: https://lab.nozemi.me/slickboard
+
 # Slick Board's Backend Library
 A forum backend library, as seen in Slibk Board - my forum software.
 You can either build on this library yourself,
